@@ -166,6 +166,29 @@
             </div>
         </form>
 
+        @if ($editing && $trip->isGroup())
+            @can('admin')
+                <form method="POST" action="{{ route('trips.invite', $trip) }}" class="card mt-10 p-5">
+                    @csrf
+                    <p class="card-title">Neue Person einladen</p>
+                    <p class="mt-1 text-sm text-muted">Für Leute ohne Konto: Sie bekommen eine Einladung per E-Mail und sind nach dem Annehmen direkt in dieser Reise.</p>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
+                        <div>
+                            <label for="invite-name" class="label">Name</label>
+                            <input id="invite-name" name="name" value="{{ old('name') }}" required maxlength="100" class="input">
+                            @error('name', 'invite')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="invite-email" class="label">E-Mail-Adresse</label>
+                            <input id="invite-email" name="email" type="email" required class="input">
+                            @error('email', 'invite')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
+                        <button type="submit" class="btn btn-secondary"><x-icon name="send" size="18" /> Einladen</button>
+                    </div>
+                </form>
+            @endcan
+        @endif
+
         @if ($editing)
             @can('delete', $trip)
                 <div class="card mt-10 p-5" x-data="{ confirming: false }">

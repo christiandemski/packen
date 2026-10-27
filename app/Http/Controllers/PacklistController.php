@@ -6,6 +6,7 @@ use App\Enums\PacklistGroup;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Services\ContainerService;
+use App\Services\GroupItemService;
 use App\Services\PacklistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -102,7 +103,7 @@ class PacklistController extends Controller
     /** Abhaken – per fetch (JSON) oder als normales Formular. */
     public function toggle(Request $request, Trip $trip, PacklistEntry $entry): JsonResponse|RedirectResponse
     {
-        Gate::authorize('update', $entry);
+        Gate::authorize('toggle', $entry);
 
         $request->validate([
             'packed' => ['required', 'boolean'],
@@ -112,13 +113,14 @@ class PacklistController extends Controller
         $applied = $entry->setPacked(
             $request->boolean('packed'),
             $request->filled('changed_at') ? Carbon::parse($request->input('changed_at')) : null,
+            $request->user(),
         );
 
         if ($request->expectsJson()) {
             return response()->json([
                 'applied' => $applied,
                 'packed' => $entry->fresh()->packed,
-                'progress' => $this->packlists->progress($trip, $request->user()),
+                'progress' => $this->packlists->progress($trip, $entry->user),
             ]);
         }
 
@@ -130,6 +132,14 @@ class PacklistController extends Controller
         Gate::authorize('delete', $entry);
 
         $name = $entry->load('item')->name();
+
+        // Gemeinsamer Gegenstand: Entfernen heißt „wieder abgeben“.
+        if ($entry->groupItem) {
+            app(GroupItemService::class)->release($entry->groupItem, $request->user());
+
+            return redirect()->route('trips.show', $trip)->with('status', "„{$name}“ wieder an die Gruppe abgegeben.");
+        }
+
         $this->packlists->removeEntry($entry);
 
         return redirect()->route('trips.show', $trip)->with('status', "„{$name}“ entfernt.");

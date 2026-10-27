@@ -56,6 +56,7 @@ class AccountService
                 $trip->members()->updateExistingPivot($successor->id, ['role' => TripMemberRole::Owner->value]);
             }
 
+            app(GroupItemService::class)->releaseAllFor($user);
             $this->endSessions($user);
             $this->avatars->delete($user);
             Invitation::where('email', $user->email)->delete();

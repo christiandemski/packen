@@ -1,11 +1,11 @@
-@props(['trip', 'entry', 'containers', 'view' => 'groups'])
+@props(['trip', 'entry', 'containers', 'view' => 'groups', 'canEdit' => true])
 @php
     use App\Enums\EntrySource;
 
     $toggleUrl = route('packlist.toggle', [$trip, $entry]);
     $perDayHint = $entry->item?->per_day && ! $entry->quantity_locked && $entry->source === EntrySource::Template;
     $containerName = $view === 'groups' ? $containers->firstWhere('id', $entry->container_id)?->name : null;
-    $details = array_filter([$entry->note, $perDayHint ? $trip->days().' Tage' : null, $containerName ? 'in: '.$containerName : null]);
+    $details = array_filter([$entry->note, $perDayHint ? $trip->days().' Tage' : null, $containerName ? 'in: '.$containerName : null, $entry->packed && $entry->packer ? 'gepackt von '.$entry->packer->name : null]);
     $uid = $view.'-'.$entry->id;
 @endphp
 <li x-data="{ edit: false }" x-show="!onlyOpen || !packed[{{ $entry->id }}]">
@@ -27,10 +27,15 @@
         @if ($view === 'containers' && $entry->weight() > 0)
             <span class="text-xs font-semibold text-muted">{{ \App\Models\Container::kg($entry->weight()) }}</span>
         @endif
+        @if ($canEdit)
         <button type="button" @click="edit = !edit" :aria-expanded="edit" class="mr-3 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2" aria-label="{{ $entry->name() }} bearbeiten">
             <span class="rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold {{ $entry->quantity_locked ? 'text-accent-ink' : 'text-ink' }}">{{ $entry->quantity }}×</span>
         </button>
+        @else
+            <span class="mr-5 ml-2 rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold">{{ $entry->quantity }}×</span>
+        @endif
     </div>
+    @if ($canEdit)
     <div x-show="edit" x-cloak class="flex flex-wrap items-end gap-2 bg-line-soft/60 px-5 py-3">
         <form method="POST" action="{{ route('packlist.update', [$trip, $entry]) }}" data-keep-scroll class="flex flex-1 flex-wrap items-end gap-2">
             @csrf @method('PATCH')
@@ -60,5 +65,15 @@
             @csrf @method('DELETE')
             <button type="submit" class="icon-btn text-warn-ink" aria-label="{{ $entry->name() }} entfernen"><x-icon name="trash" size="18" /></button>
         </form>
+        @if ($trip->isGroup() && ! $entry->group_item_id)
+            <form method="POST" action="{{ route('group-items.store', $trip) }}" class="w-full">
+                @csrf
+                <input type="hidden" name="kind" value="request">
+                <input type="hidden" name="name" value="{{ $entry->name() }}">
+                <input type="hidden" name="source_entry_id" value="{{ $entry->id }}">
+                <button type="submit" class="text-sm font-bold text-accent-ink hover:underline"><x-icon name="users" size="14" class="inline" /> Hab ich nicht – in die Gruppe fragen</button>
+            </form>
+        @endif
     </div>
+    @endif
 </li>

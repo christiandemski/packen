@@ -35,6 +35,14 @@
             </nav>
 
             <div class="flex items-center gap-1">
+                @php($unread = auth()->user()->unreadNotifications()->count())
+                <a href="{{ route('notifications.index') }}" class="icon-btn relative {{ request()->routeIs('notifications.*') ? 'bg-line-soft' : '' }}"
+                   aria-label="Benachrichtigungen{{ $unread ? ', '.$unread.' neu' : '' }}">
+                    <x-icon name="bell" />
+                    @if ($unread)
+                        <span class="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-warn px-1 text-[10px] leading-4 font-extrabold text-white">{{ $unread > 9 ? '9+' : $unread }}</span>
+                    @endif
+                </a>
                 @can('admin')
                     <a href="{{ route('admin.index') }}" class="icon-btn {{ request()->routeIs('admin.*') ? 'bg-line-soft' : '' }}" aria-label="Admin">
                         <x-icon name="shield" />

@@ -97,6 +97,11 @@ class TripService
         $removed = $current->diff($wanted)->all();
         $trip->members()->detach($removed);
         PacklistEntry::where('trip_id', $trip->id)->whereIn('user_id', $removed)->delete();
+        foreach (User::whereIn('id', $removed)->get() as $user) {
+            app(GroupItemService::class)->releaseAllFor($user, $trip);
+        }
+        DB::table('packlist_grants')->where('trip_id', $trip->id)
+            ->where(fn ($q) => $q->whereIn('owner_id', $removed)->orWhereIn('grantee_id', $removed))->delete();
         DB::table('trip_templates')->where('trip_id', $trip->id)->whereIn('user_id', $removed)->delete();
 
         foreach (User::whereIn('id', $wanted->diff($current))->get() as $user) {

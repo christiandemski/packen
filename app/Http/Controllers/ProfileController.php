@@ -24,7 +24,10 @@ class ProfileController extends Controller
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
 
-        $request->user()->update(['name' => trim($data['name'])]);
+        $request->user()->update([
+            'name' => trim($data['name']),
+            'email_notifications' => $request->boolean('email_notifications'),
+        ]);
 
         return redirect()->route('profile.edit')->with('status', 'Gespeichert.');
     }

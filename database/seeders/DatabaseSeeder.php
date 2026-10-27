@@ -8,6 +8,7 @@ use App\Enums\TripMode;
 use App\Enums\TripType;
 use App\Models\User;
 use App\Services\ContainerService;
+use App\Services\GroupItemService;
 use App\Services\PacklistService;
 use App\Services\StarterTemplates;
 use App\Services\TripService;
@@ -81,5 +82,11 @@ class DatabaseSeeder extends Seeder
         $admin->containers()->create(['name' => 'Eurobox Küche', 'kind' => 'box', 'capacity_l' => 64]);
         $admin->items()->whereIn('name', ['Handy-Ladekabel', 'Powerbank', 'Kopfhörer', 'Personalausweis', 'Geldbörse'])->update(['default_container_id' => $backpack->id]);
         app(ContainerService::class)->setForTrip($lisbon, $admin, [$suitcase->id, $backpack->id]);
+
+        // Gemeinsam: Anna fragt nach einem Föhn, der Reiseadapter ist schon vergeben
+        $groupItems = app(GroupItemService::class);
+        $groupItems->request($lisbon, $anna, 'Föhn', 'Reisegröße reicht');
+        $groupItems->plan($lisbon, $admin, 'Reiseadapter Typ F', null, $max);
+        $groupItems->plan($lisbon, $admin, 'Sonnencreme LSF 50');
     }
 }
