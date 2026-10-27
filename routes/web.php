@@ -1,7 +1,51 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\InvitationController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\AdminLoginController;
+use App\Http\Controllers\Auth\InvitationAcceptanceController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::middleware('guest')->group(function () {
+    Route::get('/anmelden', [MagicLinkController::class, 'create'])->name('login');
+    Route::post('/anmelden', [MagicLinkController::class, 'store'])->name('login.send');
+    Route::get('/anmelden/link/{token}', [MagicLinkController::class, 'show'])->name('login.link');
+    Route::post('/anmelden/link/{token}', [MagicLinkController::class, 'consume'])->name('login.consume');
+
+    Route::get('/admin-anmeldung', [AdminLoginController::class, 'create'])->name('admin.login');
+    Route::post('/admin-anmeldung', [AdminLoginController::class, 'store'])->name('admin.login.store');
+
+    Route::get('/einladung/{token}', [InvitationAcceptanceController::class, 'show'])->name('invitation.show');
+    Route::post('/einladung/{token}', [InvitationAcceptanceController::class, 'store'])->name('invitation.accept');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/', HomeController::class)->name('home');
+    Route::post('/abmelden', LogoutController::class)->name('logout');
+
+    Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profil', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::resource('reisen', TripController::class)
+        ->parameters(['reisen' => 'trip'])
+        ->names('trips')
+        ->except('index');
+    Route::get('/reisen/{trip}/bild', [TripController::class, 'cover'])->name('trips.cover');
+
+    Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', AdminController::class)->name('index');
+        Route::post('/einladungen', [InvitationController::class, 'store'])->name('invitations.store');
+        Route::post('/einladungen/{invitation}/erneut', [InvitationController::class, 'resend'])->name('invitations.resend');
+        Route::delete('/einladungen/{invitation}', [InvitationController::class, 'destroy'])->name('invitations.destroy');
+        Route::post('/benutzer/{user}/sperren', [UserController::class, 'block'])->name('users.block');
+        Route::post('/benutzer/{user}/entsperren', [UserController::class, 'unblock'])->name('users.unblock');
+        Route::delete('/benutzer/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
 });
