@@ -213,6 +213,9 @@ try {
     // ignorieren
 }
 
+// Gemeinsames Auswahlblatt (z. B. Kleidung für einen Outfit-Slot): Ziel-URL und Beschriftung
+Alpine.store('picker', { url: '', label: '' });
+
 initOffline({ authenticated: document.body.dataset.auth === '1' });
 
 window.Alpine = Alpine;

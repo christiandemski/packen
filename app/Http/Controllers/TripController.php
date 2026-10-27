@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EntrySource;
 use App\Enums\PacklistGroup;
 use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
@@ -11,6 +12,7 @@ use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
 use App\Services\ContainerService;
+use App\Services\OutfitService;
 use App\Services\PacklistService;
 use App\Services\TripService;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +52,7 @@ class TripController extends Controller
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
     }
 
-    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers): View
+    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits): View
     {
         Gate::authorize('view', $trip);
         $user = $request->user();
@@ -71,6 +73,11 @@ class TripController extends Controller
             ->whereHas('entries', fn ($q) => $q->where('user_id', $user->id))
             ->orderByDesc('start_date')->get();
 
+        $outfitDays = $outfits->days($trip, $user);
+        $selectedDay = $outfitDays->first(fn ($day) => $day->date->toDateString() === $request->query('tag'))
+            ?? $outfitDays->first(fn ($day) => $day->date->isToday())
+            ?? $outfitDays->first();
+
         $tripContainers = $trip->containersFor($user)->orderBy('name')->get();
         $summary = $containers->summary($trip, $user, $entries);
 
@@ -83,6 +90,13 @@ class TripController extends Controller
             'neededLabel' => ContainerService::neededLabel($summary),
             'unassigned' => $entries->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
+            'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
+            'outfitDays' => $outfitDays,
+            'selectedDay' => $selectedDay?->date->toDateString(),
+            'outfitOverview' => $outfits->overview($outfitDays),
+            'outfitQuantities' => $outfits->quantities($outfitDays),
+            'clothingItems' => $outfits->clothingItems($user),
+            'hasOutfitEntries' => $entries->contains(fn (PacklistEntry $e) => $e->source === EntrySource::Outfit),
             'progress' => $packlists->progress($trip, $user),
             'templates' => $templates,
             'selected' => $selected,

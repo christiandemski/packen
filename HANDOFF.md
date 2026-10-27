@@ -175,6 +175,13 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Button „In die Packliste übernehmen“ aktualisiert die Kleidungseinträge.
 - Bei mehr als 7 Tagen: Spalten horizontal scrollbar.
 
+**Umgesetzt – Präzisierungen:**
+
+- Ein Waschtag beendet einen Abschnitt (gewaschen wird abends); „pro Tag“ zählt die **Einsätze** im Abschnitt – Socken in „Tag“ und „Sport“ am selben Tag = 2.
+- „In die Packliste übernehmen“ setzt die Kleidungseinträge auf `source = outfit`. Von Hand geänderte Mengen (`quantity_locked`) bleiben; Teile, die in keinem Outfit mehr vorkommen, fallen an die Vorlagen zurück (oder weg, wenn keine Vorlage sie enthält).
+- Zusätzlich: „Wie am Vortag“ kopiert Slots und Teile des vorigen Tages; im Auswahlblatt lässt sich ein neues Kleidungsstück direkt anlegen.
+- Temperatur in den Tageskacheln folgt mit dem Wetter (siehe „Später“).
+
 ### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände
 
 - Owner lädt Mitglieder ein (aus bestehenden Freunden der App; Admin kann neue Freunde einladen, die nach Registrierung direkt in der Reise landen).
