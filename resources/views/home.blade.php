@@ -1,5 +1,6 @@
 <x-layouts.app title="Reisen">
-    <div x-data="tripOverview">
+    {{-- Laufende und kommende Reisen werden für unterwegs (offline) vorgeladen. --}}
+    <div x-data="tripOverview" data-offline-prefetch="{{ json_encode($upcoming->map(fn ($trip) => route('trips.show', $trip, false))->values()) }}">
         <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="eyebrow">Hallo {{ auth()->user()->name }}</p>

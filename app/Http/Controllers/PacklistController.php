@@ -9,6 +9,7 @@ use App\Services\PacklistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -71,12 +72,20 @@ class PacklistController extends Controller
     {
         Gate::authorize('update', $entry);
 
-        $data = $request->validate(['packed' => ['required', 'boolean']]);
-        $entry->setPacked($request->boolean('packed'));
+        $request->validate([
+            'packed' => ['required', 'boolean'],
+            'changed_at' => ['nullable', 'date'],
+        ]);
+
+        $applied = $entry->setPacked(
+            $request->boolean('packed'),
+            $request->filled('changed_at') ? Carbon::parse($request->input('changed_at')) : null,
+        );
 
         if ($request->expectsJson()) {
             return response()->json([
-                'packed' => $entry->packed,
+                'applied' => $applied,
+                'packed' => $entry->fresh()->packed,
                 'progress' => $this->packlists->progress($trip, $request->user()),
             ]);
         }

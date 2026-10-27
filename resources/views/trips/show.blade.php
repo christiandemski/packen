@@ -104,7 +104,6 @@
                     </div>
                 </div>
 
-                <p x-show="error" x-text="error" x-cloak role="alert" class="mt-3 rounded-chip bg-warn-soft px-4 py-3 text-sm font-bold text-warn-ink"></p>
 
                 <div class="mt-4 space-y-4">
                     @foreach ($groups as $groupKey => $entries)

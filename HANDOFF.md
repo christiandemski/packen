@@ -290,6 +290,16 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 - Abhaken offline möglich; Änderungen werden in einer lokalen Warteschlange gesammelt und beim nächsten Netz übertragen.
 - Konfliktregel: letzter Stand pro Eintrag gewinnt (Zeitstempel). Gruppen-Anfragen annehmen nur online (wegen Exklusivität).
 
+**Umsetzung (Stand Meilenstein 3):**
+
+- `public/sw.js`: Seiten (`/`, `/reisen/{id}`) erst Netz, sonst Cache, sonst `offline.html`; `/build/*` Cache zuerst; Titel- und Benutzerbilder stale-while-revalidate. Beim Ändern des Workers `VERSION` hochzählen.
+- Laufende und kommende Reisen werden von der Startseite aus vorgeladen, auch wenn man sie noch nicht geöffnet hat.
+- `resources/js/offline.js`: Warteschlange in `localStorage` (pro Eintrag nur die letzte Änderung, mit Gerätezeit). Übertragen sofort, bei `online` und alle 15 s, solange etwas aussteht. Bei 419 wird über `/csrf-token` ein frischer Token geholt.
+- Server: `packed_changed_at` am Eintrag; ältere Änderungen werden verworfen, Zeitpunkte in der Zukunft auf „jetzt“ gekappt.
+- Jede App-Antwort trägt `X-Packen: 1`. Antworten ohne diese Kennung (Router, Proxy, WLAN-Vorschaltseite) gelten als „kein Netz“ – sonst würde z. B. eine fremde 404 eine Änderung verwerfen.
+- Offline sind nur Abhaken und Lesen möglich; Formulare werden abgefangen und mit Hinweis blockiert.
+- Abmelden bzw. jede Gästeseite löscht die Caches mit persönlichen Daten.
+
 ---
 
 ## 9. Spätere Anbindung an „unterwegs“

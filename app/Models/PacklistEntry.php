@@ -7,12 +7,13 @@ use App\Enums\PacklistGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class PacklistEntry extends Model
 {
     protected $fillable = [
         'trip_id', 'user_id', 'item_id', 'custom_name', 'group', 'quantity', 'quantity_locked',
-        'source', 'excluded', 'note', 'packed', 'packed_at',
+        'source', 'excluded', 'note', 'packed', 'packed_at', 'packed_changed_at',
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class PacklistEntry extends Model
             'excluded' => 'boolean',
             'packed' => 'boolean',
             'packed_at' => 'datetime',
+            'packed_changed_at' => 'datetime',
         ];
     }
 
@@ -65,8 +67,27 @@ class PacklistEntry extends Model
         return $this->item->pack_last ? PacklistGroup::DepartureDay : PacklistGroup::forCategory($this->item->category);
     }
 
-    public function setPacked(bool $packed): void
+    /**
+     * Abhaken mit „letzter Stand gewinnt“: Eine Änderung, die laut Gerät älter ist als die
+     * gespeicherte, wird verworfen (z. B. ein spät synchronisierter Offline-Haken).
+     *
+     * @return bool ob die Änderung übernommen wurde
+     */
+    public function setPacked(bool $packed, ?Carbon $changedAt = null): bool
     {
-        $this->update(['packed' => $packed, 'packed_at' => $packed ? now() : null]);
+        // Gerätezeit nie in der Zukunft akzeptieren, sonst blockiert eine falsch gehende Uhr spätere Änderungen.
+        $changedAt = $changedAt === null ? now() : $changedAt->copy()->min(now());
+
+        if ($this->packed_changed_at !== null && $this->packed_changed_at->gt($changedAt)) {
+            return false;
+        }
+
+        $this->update([
+            'packed' => $packed,
+            'packed_at' => $packed ? ($this->packed ? $this->packed_at : $changedAt) : null,
+            'packed_changed_at' => $changedAt,
+        ]);
+
+        return true;
     }
 }

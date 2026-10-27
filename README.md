@@ -36,3 +36,9 @@ php artisan packen:admin
 ```
 
 Legt einen lokalen Admin an oder setzt dessen Passwort (Übergang, bis BearID angebunden ist).
+
+## Offline (PWA)
+
+Reisen, die einmal mit Netz geöffnet wurden (laufende und kommende werden automatisch vorgeladen), lassen sich ohne Netz öffnen und abhaken. Details: Abschnitt 8 im [HANDOFF](HANDOFF.md).
+
+Zum Testen lokal: Reise öffnen, `ddev stop`, Seite neu laden und abhaken, `ddev start` – spätestens nach 15 Sekunden ist die Änderung auf dem Server. Nach Änderungen an `public/sw.js` dort `VERSION` hochzählen.

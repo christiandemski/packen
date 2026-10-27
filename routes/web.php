@@ -33,6 +33,8 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::post('/abmelden', LogoutController::class)->name('logout');
+    // Frischer CSRF-Token für die Offline-Warteschlange (die Seite kann aus dem Cache stammen).
+    Route::get('/csrf-token', fn () => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'))->name('csrf');
 
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');

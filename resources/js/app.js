@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import { enqueue, flush, initOffline, pendingChanges } from './offline';
 
 /** localStorage kann in privaten Fenstern fehlen oder werfen – dann einfach ohne Merken. */
 const storage = {
@@ -151,16 +152,22 @@ Alpine.data('avatarCropper', () => ({
     },
 }));
 
-const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-
 /**
- * Packliste: Abhaken sofort im Browser, Speichern im Hintergrund. Schlägt das fehl,
- * wird der Haken zurückgenommen. (Offline-Warteschlange folgt in einem eigenen Schritt.)
+ * Packliste: Abhaken sofort im Browser, gespeichert wird über die Warteschlange –
+ * online sofort, offline sobald wieder Netz da ist.
  */
 Alpine.data('packlist', (packed = {}) => ({
     packed,
     onlyOpen: storage.get('packen.onlyOpen', '0') === '1',
-    error: null,
+    init() {
+        // Noch nicht übertragene Haken über den (evtl. gecachten) Seitenstand legen.
+        for (const [id, change] of Object.entries(pendingChanges())) {
+            if (id in this.packed) this.packed[id] = change.packed;
+        }
+        window.addEventListener('packlist:synced', ({ detail }) => {
+            if (detail.id in this.packed && !(detail.id in pendingChanges())) this.packed[detail.id] = detail.packed;
+        });
+    },
     get total() {
         return Object.keys(this.packed).length;
     },
@@ -177,25 +184,11 @@ Alpine.data('packlist', (packed = {}) => ({
         this.onlyOpen = !this.onlyOpen;
         storage.set('packen.onlyOpen', this.onlyOpen ? '1' : '0');
     },
-    async toggle(id, url) {
+    toggle(id, url) {
         const next = !this.packed[id];
         this.packed[id] = next;
-        this.error = null;
-        try {
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                },
-                body: JSON.stringify({ packed: next }),
-            });
-            if (!response.ok) throw new Error(response.status);
-        } catch {
-            this.packed[id] = !next;
-            this.error = 'Konnte nicht gespeichert werden. Bist du online?';
-        }
+        enqueue(id, url, next);
+        flush();
     },
 }));
 
@@ -218,6 +211,8 @@ try {
 } catch {
     // ignorieren
 }
+
+initOffline({ authenticated: document.body.dataset.auth === '1' });
 
 window.Alpine = Alpine;
 Alpine.start();
