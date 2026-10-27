@@ -1,0 +1,49 @@
+{
+  "node_modules/@fontsource-variable/manrope/files/manrope-cyrillic-ext-wght-normal.woff2": {
+    "file": "assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-cyrillic-ext-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2": {
+    "file": "assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-cyrillic-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/manrope/files/manrope-greek-wght-normal.woff2": {
+    "file": "assets/manrope-greek-wght-normal-DL7QRZyv.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-greek-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/manrope/files/manrope-latin-ext-wght-normal.woff2": {
+    "file": "assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-latin-ext-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2": {
+    "file": "assets/manrope-latin-wght-normal-DHIcAJRg.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2"
+  },
+  "node_modules/@fontsource-variable/manrope/files/manrope-vietnamese-wght-normal.woff2": {
+    "file": "assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2",
+    "src": "node_modules/@fontsource-variable/manrope/files/manrope-vietnamese-wght-normal.woff2"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CHwFIM1b.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2",
+      "assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+      "assets/manrope-greek-wght-normal-DL7QRZyv.woff2",
+      "assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2",
+      "assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+      "assets/manrope-latin-wght-normal-DHIcAJRg.woff2"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D7hO9ePY.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
