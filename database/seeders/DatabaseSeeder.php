@@ -7,6 +7,7 @@ use App\Enums\Transport;
 use App\Enums\TripMode;
 use App\Enums\TripType;
 use App\Models\User;
+use App\Services\ContainerService;
 use App\Services\PacklistService;
 use App\Services\StarterTemplates;
 use App\Services\TripService;
@@ -73,5 +74,12 @@ class DatabaseSeeder extends Seeder
         $packlists->setTemplates($lisbon, $admin, $admin->templates()->whereIn('name', ['Basis', 'Städtetrip'])->pluck('id')->all());
         $packlists->addEntry($lisbon, $admin, ['custom_name' => 'Pastéis-Rezept für Mama', 'group' => 'misc']);
         $lisbon->entries()->where('user_id', $admin->id)->inRandomOrder()->limit(8)->get()->each->setPacked(true);
+
+        // Behältnisse: Fluggepäck für Lissabon, Eurobox für Touren mit dem Auto
+        $suitcase = $admin->containers()->create(['name' => 'Großer Koffer', 'kind' => 'suitcase', 'capacity_l' => 80, 'max_weight_g' => 23000, 'empty_weight_g' => 4200]);
+        $backpack = $admin->containers()->create(['name' => 'Handgepäck-Rucksack', 'kind' => 'backpack', 'capacity_l' => 30, 'max_weight_g' => 8000]);
+        $admin->containers()->create(['name' => 'Eurobox Küche', 'kind' => 'box', 'capacity_l' => 64]);
+        $admin->items()->whereIn('name', ['Handy-Ladekabel', 'Powerbank', 'Kopfhörer', 'Personalausweis', 'Geldbörse'])->update(['default_container_id' => $backpack->id]);
+        app(ContainerService::class)->setForTrip($lisbon, $admin, [$suitcase->id, $backpack->id]);
     }
 }

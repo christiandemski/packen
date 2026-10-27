@@ -150,7 +150,7 @@ Meilenstein 1–4 ergeben ein vollständig nutzbares Tool für mich allein. Ab M
 - Freitext-Einträge, Mengen ändern, Einträge löschen.
 - Liste von einer früheren Reise kopieren.
 
-### 5.3b Meilenstein 3b: Behältnisse (optional nutzbar)
+### 5.3b Meilenstein 3b: Behältnisse (optional nutzbar) – umgesetzt
 
 Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typisch mit dem Auto).
 

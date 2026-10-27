@@ -96,6 +96,12 @@ class User extends Authenticatable
         return $this->hasMany(Item::class, 'owner_id');
     }
 
+    /** @return HasMany<Container, $this> */
+    public function containers(): HasMany
+    {
+        return $this->hasMany(Container::class, 'owner_id');
+    }
+
     /** @return HasMany<Template, $this> */
     public function templates(): HasMany
     {

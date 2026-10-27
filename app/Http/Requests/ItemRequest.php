@@ -34,6 +34,7 @@ class ItemRequest extends FormRequest
             'per_day' => ['boolean'],
             'pack_last' => ['boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'default_container_id' => ['nullable', 'integer', Rule::exists('containers', 'id')->where('owner_id', $this->user()->id)],
         ];
     }
 
@@ -43,6 +44,7 @@ class ItemRequest extends FormRequest
             'category' => 'Kategorie',
             'weight_g' => 'Gewicht',
             'notes' => 'Notiz',
+            'default_container_id' => 'Standardplatz',
         ];
     }
 

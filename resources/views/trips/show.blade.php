@@ -1,6 +1,6 @@
 @php
     use App\Enums\PacklistGroup;
-    use App\Enums\EntrySource;
+    use App\Models\Container;
     use Illuminate\Support\Str;
 
     $packedState = $groups->flatten()->mapWithKeys(fn ($e) => [$e->id => $e->packed]);
@@ -34,7 +34,7 @@
         </div>
 
         {{-- ───────────── Packliste ───────────── --}}
-        <div role="tabpanel" x-show="tab === 'packlist'" class="mt-4" x-data="packlist(@js((object) $packedState->all()))">
+        <div role="tabpanel" x-show="tab === 'packlist'" class="mt-4" x-data="packlist(@js((object) $packedState->all()), @js($initialView))">
             @if ($isEmpty)
                 <div class="card p-5">
                     <p class="card-title">Stell deine Packliste zusammen</p>
@@ -105,7 +105,15 @@
                 </div>
 
 
-                <div class="mt-4 space-y-4">
+                @if ($userContainers->isNotEmpty())
+                    <div class="segment mt-4" role="group" aria-label="Ansicht der Packliste">
+                        <button type="button" class="segment-item" :aria-pressed="view === 'groups'" @click="view = 'groups'"><x-icon name="list-checks" size="16" /> Nach Gruppe</button>
+                        <button type="button" class="segment-item" :aria-pressed="view === 'containers'" @click="view = 'containers'"><x-icon name="luggage" size="16" /> Nach Behältnis</button>
+                    </div>
+                @endif
+
+                {{-- Nach Gruppe --}}
+                <div class="mt-4 space-y-4" x-show="view === 'groups'">
                     @foreach ($groups as $groupKey => $entries)
                         @php($group = PacklistGroup::from($groupKey))
                         @php($ids = $entries->pluck('id')->values())
@@ -121,54 +129,84 @@
                             </div>
                             <ul class="divide-y divide-line-soft">
                                 @foreach ($entries as $entry)
-                                    @php($toggleUrl = route('packlist.toggle', [$trip, $entry]))
-                                    <li x-data="{ edit: false }" x-show="!onlyOpen || !packed[{{ $entry->id }}]">
-                                        <div class="flex min-h-[52px] items-center">
-                                            <button type="button" role="checkbox" :aria-checked="!!packed[{{ $entry->id }}]" aria-checked="{{ $entry->packed ? 'true' : 'false' }}"
-                                                    @click="toggle({{ $entry->id }}, @js($toggleUrl))"
-                                                    class="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-5 text-left">
-                                                <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-[7px] border-2 transition"
-                                                      :class="packed[{{ $entry->id }}] ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-transparent'">
-                                                    <x-icon name="check" size="16" :stroke-width="3" />
-                                                </span>
-                                                <span class="min-w-0">
-                                                    <span class="block truncate text-[15px] font-semibold transition" :class="packed[{{ $entry->id }}] && 'text-muted line-through'">{{ $entry->name() }}</span>
-                                                    @if ($entry->note || $entry->item?->per_day)
-                                                        <span class="block truncate text-xs font-semibold text-muted">
-                                                            {{ $entry->note }}
-                                                            @if ($entry->item?->per_day && ! $entry->quantity_locked && $entry->source === EntrySource::Template){{ $entry->note ? ' · ' : '' }}{{ $trip->days() }} Tage @endif
-                                                        </span>
-                                                    @endif
-                                                </span>
-                                            </button>
-                                            <button type="button" @click="edit = !edit" :aria-expanded="edit" class="mr-3 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2" aria-label="{{ $entry->name() }} bearbeiten">
-                                                <span class="rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold {{ $entry->quantity_locked ? 'text-accent-ink' : 'text-ink' }}">{{ $entry->quantity }}×</span>
-                                            </button>
-                                        </div>
-                                        <div x-show="edit" x-cloak class="flex flex-wrap items-end gap-2 bg-line-soft/60 px-5 py-3">
-                                            <form method="POST" action="{{ route('packlist.update', [$trip, $entry]) }}" data-keep-scroll class="flex flex-1 flex-wrap items-end gap-2">
-                                                @csrf @method('PATCH')
-                                                <div class="w-24">
-                                                    <label class="label" for="qty-{{ $entry->id }}">Menge</label>
-                                                    <input id="qty-{{ $entry->id }}" name="quantity" type="number" min="1" max="999" inputmode="numeric" value="{{ $entry->quantity }}" class="input">
-                                                </div>
-                                                <div class="min-w-40 flex-1">
-                                                    <label class="label" for="note-{{ $entry->id }}">Notiz</label>
-                                                    <input id="note-{{ $entry->id }}" name="note" maxlength="200" value="{{ $entry->note }}" class="input">
-                                                </div>
-                                                <button type="submit" class="btn btn-primary">Speichern</button>
-                                            </form>
-                                            <form method="POST" action="{{ route('packlist.destroy', [$trip, $entry]) }}" data-keep-scroll>
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="icon-btn text-warn-ink" aria-label="{{ $entry->name() }} entfernen"><x-icon name="trash" size="18" /></button>
-                                            </form>
-                                        </div>
-                                    </li>
+                                    <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="groups" />
                                 @endforeach
                             </ul>
                         </section>
                     @endforeach
+                </div>
 
+                {{-- Nach Behältnis --}}
+                @if ($userContainers->isNotEmpty())
+                    <div class="mt-4 space-y-4" x-show="view === 'containers'" x-cloak>
+                        <div class="card flex flex-wrap items-center gap-3 p-5">
+                            <div class="min-w-0 flex-1">
+                                @if ($tripContainers->isEmpty())
+                                    <p class="card-title">Worin packst du?</p>
+                                    <p class="mt-1 text-sm text-muted">Wähle die Behältnisse für diese Reise – Gegenstände mit Standardplatz landen automatisch darin.</p>
+                                @else
+                                    <p class="text-xs font-bold tracking-[0.06em] text-muted uppercase">Du brauchst</p>
+                                    <p class="mt-0.5 text-[17px] font-extrabold">{{ $neededLabel ?? 'noch nichts zugeordnet' }}</p>
+                                    @if ($unassigned->isNotEmpty())
+                                        <p class="mt-0.5 text-sm font-semibold text-muted">{{ $unassigned->count() }} {{ $unassigned->count() === 1 ? 'Eintrag' : 'Einträge' }} noch ohne Behältnis</p>
+                                    @endif
+                                @endif
+                            </div>
+                            <button type="button" class="btn btn-secondary" @click="$dispatch('open-sheet', 'containers')"><x-icon name="luggage" size="18" /> Behältnisse wählen</button>
+                        </div>
+
+                        @foreach ($containerSummary as $row)
+                            @php($ids = $row['entries']->pluck('id')->values())
+                            <section class="card overflow-hidden" x-show="!onlyOpen || {{ $ids->isEmpty() ? 'true' : 'false' }} || openIn(@js($ids)) > 0">
+                                <div class="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
+                                    <div>
+                                        <h2 class="card-title flex items-center gap-2"><x-icon :name="$row['container']->kind->icon()" size="18" class="text-accent" /> {{ $row['container']->name }}</h2>
+                                        <p class="mt-0.5 text-xs font-bold {{ $row['over'] ? 'text-warn-ink' : 'text-muted' }}">
+                                            {{ $row['entries']->count() }} {{ $row['entries']->count() === 1 ? 'Eintrag' : 'Einträge' }}@if ($row['weight'] > 0) · {{ Container::kg($row['weight']) }}@endif @if ($row['container']->max_weight_g) von max. {{ Container::kg($row['container']->max_weight_g) }}@endif @if ($row['over']) – zu schwer!@endif
+                                        </p>
+                                    </div>
+                                    @if ($ids->isNotEmpty())
+                                        <span class="text-xs font-bold text-muted"><span x-text="{{ $ids->count() }} - openIn(@js($ids))"></span>/{{ $ids->count() }}</span>
+                                    @endif
+                                </div>
+                                @if ($row['container']->max_weight_g)
+                                    @php($load = min(100, (int) round($row['weight'] / $row['container']->max_weight_g * 100)))
+                                    <div class="mx-5 mb-2 h-1.5 overflow-hidden rounded-full bg-line-soft">
+                                        <div class="h-full rounded-full {{ $row['over'] ? 'bg-warn' : 'bg-accent' }}" style="width: {{ $load }}%"></div>
+                                    </div>
+                                @endif
+                                @if ($row['entries']->isEmpty())
+                                    <p class="px-5 pb-4 text-sm text-muted">Noch leer.</p>
+                                @else
+                                    <ul class="divide-y divide-line-soft">
+                                        @foreach ($row['entries'] as $entry)
+                                            <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="containers" />
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </section>
+                        @endforeach
+
+                        @if ($unassigned->isNotEmpty())
+                            @php($ids = $unassigned->pluck('id')->values())
+                            <section class="card overflow-hidden border-dashed" x-show="!onlyOpen || openIn(@js($ids)) > 0">
+                                <div class="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
+                                    <h2 class="card-title text-muted">Ohne Behältnis</h2>
+                                    @if ($tripContainers->isNotEmpty())
+                                        <button type="button" class="btn btn-ghost min-h-10 px-3 text-sm" @click="$dispatch('open-sheet', 'assign')">Zuordnen …</button>
+                                    @endif
+                                </div>
+                                <ul class="divide-y divide-line-soft">
+                                    @foreach ($unassigned as $entry)
+                                        <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="containers" />
+                                    @endforeach
+                                </ul>
+                            </section>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="mt-4">
                     <p x-show="onlyOpen && done === total" x-cloak class="card p-6 text-center text-[15px] font-bold text-accent-ink">
                         Alles gepackt – gute Reise!
                     </p>
@@ -262,6 +300,56 @@
             </form>
         @endif
     </x-sheet>
+
+    {{-- Behältnisse für diese Reise --}}
+    <x-sheet name="containers" title="Behältnisse für diese Reise">
+        @if ($userContainers->isNotEmpty())
+            <form method="POST" action="{{ route('packlist.containers', $trip) }}">
+                @csrf @method('PUT')
+                <div class="space-y-2">
+                    @foreach ($userContainers as $container)
+                        <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-chip border border-line px-3 py-2 has-checked:border-accent has-checked:bg-accent-soft/50">
+                            <input type="checkbox" name="container_ids[]" value="{{ $container->id }}" @checked($tripContainers->contains('id', $container->id)) class="size-5 accent-[var(--accent)]">
+                            <x-icon :name="$container->kind->icon()" size="18" class="text-muted" />
+                            <span class="flex-1 text-[15px] font-bold">{{ $container->name }}</span>
+                            <span class="text-xs font-semibold text-muted">{{ $container->limitsLabel() }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <button type="submit" class="btn btn-primary mt-4 w-full">Übernehmen</button>
+            </form>
+        @endif
+        <a href="{{ route('containers.index') }}" class="mt-3 block text-center text-sm font-bold text-accent-ink underline">Behältnisse verwalten</a>
+    </x-sheet>
+
+    {{-- Mehrere Einträge zuordnen --}}
+    @if ($tripContainers->isNotEmpty() && $unassigned->isNotEmpty())
+        <x-sheet name="assign" title="Zuordnen">
+            <form method="POST" action="{{ route('packlist.assign', $trip) }}" x-data="{ selected: [] }">
+                @csrf @method('PATCH')
+                <label for="assign-container" class="label">In</label>
+                <select id="assign-container" name="container_id" class="input">
+                    @foreach ($tripContainers as $container)
+                        <option value="{{ $container->id }}">{{ $container->name }}</option>
+                    @endforeach
+                </select>
+                <ul class="mt-3 max-h-72 overflow-y-auto">
+                    @foreach ($unassigned as $entry)
+                        <li>
+                            <label class="flex min-h-[48px] cursor-pointer items-center gap-3 rounded-chip px-2 hover:bg-line-soft">
+                                <input type="checkbox" name="entry_ids[]" value="{{ $entry->id }}" x-model="selected" class="size-5 accent-[var(--accent)]">
+                                <span class="flex-1 text-[15px] font-semibold">{{ $entry->name() }}</span>
+                                <span class="text-xs font-bold text-muted">{{ $entry->quantity }}×</span>
+                            </label>
+                        </li>
+                    @endforeach
+                </ul>
+                <button type="submit" class="btn btn-primary mt-4 w-full" :disabled="selected.length === 0">
+                    <span x-text="selected.length > 1 ? selected.length + ' Einträge zuordnen' : 'Zuordnen'">Zuordnen</span>
+                </button>
+            </form>
+        </x-sheet>
+    @endif
 
     {{-- Gegenstand hinzufügen --}}
     <x-sheet name="add-entry" title="Gegenstand hinzufügen">

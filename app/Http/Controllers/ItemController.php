@@ -28,7 +28,7 @@ class ItemController extends Controller
     {
         $category = ItemCategory::tryFrom((string) $request->query('kategorie')) ?? ItemCategory::Misc;
 
-        return view('items.form', ['item' => new Item(['category' => $category])]);
+        return view('items.form', ['item' => new Item(['category' => $category]), 'containers' => $request->user()->containers()->orderBy('name')->get()]);
     }
 
     public function store(ItemRequest $request): RedirectResponse
@@ -38,11 +38,11 @@ class ItemController extends Controller
         return redirect()->route('items.index')->with('status', "„{$item->name}“ ist im Katalog.");
     }
 
-    public function edit(Item $item): View
+    public function edit(Request $request, Item $item): View
     {
         Gate::authorize('update', $item);
 
-        return view('items.form', ['item' => $item->load('templates')]);
+        return view('items.form', ['item' => $item->load('templates'), 'containers' => $request->user()->containers()->orderBy('name')->get()]);
     }
 
     public function update(ItemRequest $request, Item $item, PacklistService $packlists): RedirectResponse

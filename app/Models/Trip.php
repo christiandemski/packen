@@ -63,6 +63,12 @@ class Trip extends Model
         return $this->belongsToMany(Template::class, 'trip_templates')->wherePivot('user_id', $user->id);
     }
 
+    /** Behältnisse, die eine Person auf diese Reise mitnimmt. */
+    public function containersFor(User $user): BelongsToMany
+    {
+        return $this->belongsToMany(Container::class, 'trip_containers')->wherePivot('user_id', $user->id);
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->members()->whereKey($user->id)->exists();

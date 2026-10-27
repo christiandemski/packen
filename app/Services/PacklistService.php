@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
  */
 class PacklistService
 {
+    public function __construct(private readonly ContainerService $containers) {}
+
     /** @param list<int> $templateIds */
     public function setTemplates(Trip $trip, User $user, array $templateIds): void
     {
@@ -75,6 +77,8 @@ class PacklistService
         PacklistEntry::where(['trip_id' => $trip->id, 'user_id' => $user->id, 'source' => EntrySource::Template])
             ->whereNotIn('item_id', array_keys($wanted))
             ->delete();
+
+        $this->containers->applyDefaults($trip, $user);
     }
 
     /** Für alle Mitglieder neu berechnen, z. B. nach Änderung des Zeitraums. */
@@ -143,7 +147,9 @@ class PacklistService
                 'note' => $data['note'] ?? null,
             ])->save();
 
-            return $entry;
+            $this->containers->applyDefaults($trip, $user);
+
+            return $entry->refresh();
         }
 
         return PacklistEntry::create([
@@ -185,6 +191,10 @@ class PacklistService
                 ->merge(DB::table('trip_templates')->where(['trip_id' => $target->id, 'user_id' => $user->id])->pluck('template_id'))
                 ->unique()->values()->all();
 
+            // Behältnisse zuerst, damit Standardplätze beim Zusammensetzen greifen.
+            $this->containers->setForTrip($target, $user, $this->containers->selectedIds($source, $user)
+                ->merge($this->containers->selectedIds($target, $user))->unique()->values()->all());
+
             $this->setTemplates($target, $user, $templateIds);
 
             $copied = 0;
@@ -209,9 +219,17 @@ class PacklistService
                     'quantity_locked' => $entry->quantity_locked,
                     'source' => EntrySource::Manual,
                     'note' => $entry->note,
+                    'container_id' => $entry->container_id,
                 ]);
                 $copied++;
             }
+
+            // Wo etwas auf der früheren Reise lag, kommt es diesmal wieder hin (sofern noch nicht zugeordnet).
+            $places = PacklistEntry::where(['trip_id' => $source->id, 'user_id' => $user->id])
+                ->whereNotNull('item_id')->whereNotNull('container_id')->pluck('container_id', 'item_id');
+            PacklistEntry::where(['trip_id' => $target->id, 'user_id' => $user->id])->whereNull('container_id')
+                ->whereIn('item_id', $places->keys())->get()
+                ->each(fn (PacklistEntry $e) => $e->update(['container_id' => $places[$e->item_id]]));
 
             return $copied;
         });

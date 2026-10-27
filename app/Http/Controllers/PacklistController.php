@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\PacklistGroup;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
+use App\Services\ContainerService;
 use App\Services\PacklistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +30,34 @@ class PacklistController extends Controller
         $this->packlists->setTemplates($trip, $request->user(), $data['template_ids'] ?? []);
 
         return redirect()->route('trips.show', $trip)->with('status', 'Packliste aktualisiert.');
+    }
+
+    /** Welche Behältnisse kommen mit? */
+    public function containers(Request $request, Trip $trip, ContainerService $containers): RedirectResponse
+    {
+        Gate::authorize('pack', $trip);
+
+        $data = $request->validate(['container_ids' => ['array'], 'container_ids.*' => ['integer']]);
+        $containers->setForTrip($trip, $request->user(), $data['container_ids'] ?? []);
+
+        return redirect()->route('trips.show', ['trip' => $trip, 'ansicht' => 'behaeltnisse'])->with('status', 'Behältnisse aktualisiert.');
+    }
+
+    /** Mehrere Einträge in ein Behältnis legen (oder herausnehmen). */
+    public function assign(Request $request, Trip $trip, ContainerService $containers): RedirectResponse
+    {
+        Gate::authorize('pack', $trip);
+
+        $data = $request->validate([
+            'entry_ids' => ['required', 'array'],
+            'entry_ids.*' => ['integer'],
+            'container_id' => ['nullable', 'integer'],
+        ], ['entry_ids.required' => 'Bitte mindestens einen Eintrag auswählen.']);
+
+        $count = $containers->assign($trip, $request->user(), $data['entry_ids'], $data['container_id'] ?? null);
+
+        return redirect()->route('trips.show', ['trip' => $trip, 'ansicht' => 'behaeltnisse'])
+            ->with('status', $count === 1 ? '1 Eintrag zugeordnet.' : "{$count} Einträge zugeordnet.");
     }
 
     public function store(Request $request, Trip $trip): RedirectResponse
@@ -63,8 +92,11 @@ class PacklistController extends Controller
         if ($request->has('note')) {
             $entry->update(['note' => $data['note']]);
         }
+        if ($request->has('container_id')) {
+            app(ContainerService::class)->assign($trip, $request->user(), [$entry->id], $request->integer('container_id') ?: null);
+        }
 
-        return redirect()->route('trips.show', $trip);
+        return redirect()->route('trips.show', ['trip' => $trip, 'ansicht' => $request->input('ansicht') === 'behaeltnisse' ? 'behaeltnisse' : null]);
     }
 
     /** Abhaken – per fetch (JSON) oder als normales Formular. */

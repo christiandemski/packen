@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\PacklistGroup;
 use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
+use App\Models\Container;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\ContainerService;
 use App\Services\PacklistService;
 use App\Services\TripService;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +50,7 @@ class TripController extends Controller
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
     }
 
-    public function show(Request $request, Trip $trip, PacklistService $packlists): View
+    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers): View
     {
         Gate::authorize('view', $trip);
         $user = $request->user();
@@ -69,9 +71,18 @@ class TripController extends Controller
             ->whereHas('entries', fn ($q) => $q->where('user_id', $user->id))
             ->orderByDesc('start_date')->get();
 
+        $tripContainers = $trip->containersFor($user)->orderBy('name')->get();
+        $summary = $containers->summary($trip, $user, $entries);
+
         return view('trips.show', [
             'trip' => $trip->load('members'),
             'groups' => $groups,
+            'userContainers' => Container::accessibleBy($user)->orderBy('name')->get(),
+            'tripContainers' => $tripContainers,
+            'containerSummary' => $summary,
+            'neededLabel' => ContainerService::neededLabel($summary),
+            'unassigned' => $entries->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
+            'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'progress' => $packlists->progress($trip, $user),
             'templates' => $templates,
             'selected' => $selected,
