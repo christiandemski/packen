@@ -58,6 +58,12 @@ jobs:
       - run: npm ci && npm run build
 
       - name: Rauchtest ohne Dev-Pakete
+        env:
+          # Keine Datenbank im Runner: Cache und Sessions im Speicher.
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          CACHE_STORE: array
+          SESSION_DRIVER: array
         run: |
           cp .env.example .env
           php artisan key:generate --force
