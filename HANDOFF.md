@@ -24,7 +24,7 @@ Die App ist ein eigenes Projekt. Später soll sie per API an meinen Aktivitäten
 | Framework | Laravel (aktuelle LTS-/Stable-Version), Document Root zeigt auf `/public` |
 | Frontend | Blade + Alpine.js, mobile-first; kein separates SPA-Projekt |
 | Offline | PWA mit Service Worker, Packliste muss offline abhakbar sein und später synchronisieren |
-| Domain | eigene Subdomain unter codekorb.de (Name noch offen, z. B. `packen.codekorb.de`) |
+| Domain | `packen.allpixx.de` (Netcup Plesk, PHP 8.5, Deployment per Git-Webhook, siehe README) |
 | Sprache | Oberfläche komplett Deutsch |
 | Tests | Pest (Feature-Tests für Rechte und Kernlogik sind Pflicht) |
 
@@ -319,7 +319,7 @@ Bei der Umsetzung jetzt nur darauf achten, dass Reisen sauber über einen Servic
 ## 10. Offene Punkte
 
 - Welches Protokoll bietet BearID (OIDC? eigenes Token?) und welche Daten liefert es?
-- Name der App und der Subdomain.
+- ~~Name der App und der Subdomain~~ → Packen, packen.allpixx.de
 - SMTP-Zugang für den Mailversand.
 - Wetterdienst für später (frei nutzbar, ohne personenbezogene Daten).
 

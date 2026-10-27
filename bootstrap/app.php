@@ -19,11 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
 
-        // Lokal sitzt der DDEV-Router davor. Auf dem Server nur gezielt Proxies vertrauen,
-        // sonst lässt sich die IP für das Rate-Limit per X-Forwarded-For fälschen.
-        if (getenv('IS_DDEV_PROJECT') === 'true') {
-            $middleware->trustProxies(at: '*');
-        }
+        // Nur bekannten Proxies vertrauen, sonst lässt sich die IP für das Rate-Limit per
+        // X-Forwarded-For fälschen. Lokal sitzt der DDEV-Router davor, bei Plesk ein nginx
+        // auf demselben Server vor Apache.
+        $middleware->trustProxies(at: getenv('IS_DDEV_PROJECT') === 'true' ? '*' : ['127.0.0.1', '::1']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

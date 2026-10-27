@@ -1,0 +1,88 @@
+# Baut bei jedem Push auf main eine lauffähige Fassung (vendor ohne Dev-Pakete, gebaute Assets)
+# und legt sie auf den Branch „production“. Plesk zieht nur diesen Branch – auf dem Server
+# braucht es weder Node noch Composer. Danach führt Plesk deploy.sh aus (Migrationen, Caches).
+name: Build für production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_sqlite, gd, intl
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: npm ci && npm run build
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php vendor/bin/pest
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, gd, intl
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
+      - run: npm ci && npm run build
+
+      - name: Rauchtest ohne Dev-Pakete
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan optimize
+          php artisan route:list --except-vendor > /dev/null
+          php artisan optimize:clear
+          rm .env
+
+      - name: Auslieferung zusammenstellen
+        run: |
+          mkdir dist
+          rsync -a ./ dist/ \
+            --exclude .git --exclude .github --exclude .ddev --exclude .idea \
+            --exclude node_modules --exclude tests --exclude .env --exclude '.env.*' \
+            --exclude phpunit.xml --exclude 'storage/logs/*.log'
+          # Die normale .gitignore würde vendor/ und public/build/ ausschließen – hier gehören sie dazu.
+          printf '%s\n' '/.env' '/storage/*.key' '/public/hot' > dist/.gitignore
+          cp .env.example dist/.env.example
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: production
+          publish_dir: ./dist
+          enable_jekyll: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          full_commit_message: 'Build ${{ github.sha }}: ${{ github.event.head_commit.message }}'

@@ -29,13 +29,43 @@ ddev exec php vendor/bin/pest
 
 Die Tests laufen gegen SQLite im Speicher.
 
-## Admin auf dem Server anlegen
+## Deployment (https://packen.allpixx.de)
 
-```bash
-php artisan packen:admin
-```
+**`main` ist live.** Ein Push auf `main` startet die GitHub Action [`deploy.yml`](.github/workflows/deploy.yml): Tests → Build (vendor ohne Dev-Pakete, Vite-Assets) → Branch `production`. Plesk zieht `production` per Webhook und führt [`deploy.sh`](deploy.sh) aus (Wartungsmodus, Migrationen, Caches).
 
-Legt einen lokalen Admin an oder setzt dessen Passwort (Übergang, bis BearID angebunden ist).
+Einmalig in Plesk (Netcup Webhosting, PHP 8.5):
+
+1. **Git:** Branch auf `production` stellen. Unter „Weitere Bereitstellungsaktionen“: `bash deploy.sh`
+2. **Hosting:** Dokumentenstamm `…/public` (ist gesetzt).
+3. **Datenbank:** MariaDB-Datenbank und Benutzer anlegen.
+4. **`.env`** im Deploy-Verzeichnis anlegen (wird von Git nie überschrieben), Vorlage `.env.example`, abweichend:
+
+   ```dotenv
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://packen.allpixx.de
+   DB_HOST=localhost
+   DB_DATABASE=…
+   DB_USERNAME=…
+   DB_PASSWORD=…
+   SESSION_SECURE_COOKIE=true
+   MAIL_MAILER=smtp
+   MAIL_HOST=…            # SMTP des Hostings
+   MAIL_PORT=587
+   MAIL_USERNAME=…
+   MAIL_PASSWORD=…
+   MAIL_FROM_ADDRESS=packen@allpixx.de
+   ```
+
+5. Per SSH im Deploy-Verzeichnis einmalig (`/opt/plesk/php/8.5/bin/php` statt `php`, falls nötig):
+
+   ```bash
+   php artisan key:generate
+   bash deploy.sh
+   php artisan packen:admin      # lokalen Admin anlegen bzw. Passwort setzen
+   ```
+
+Eine Queue oder einen Cronjob braucht die App derzeit nicht.
 
 ## Offline (PWA)
 
