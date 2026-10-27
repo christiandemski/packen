@@ -29,7 +29,7 @@ class TripFactory extends Factory
             'type' => fake()->randomElement(TripType::cases()),
             'mode' => TripMode::Solo,
             'accommodation' => fake()->randomElement(Accommodation::cases()),
-            'transport' => fake()->randomElement(Transport::cases()),
+            'transports' => [fake()->randomElement(Transport::cases())],
         ];
     }
 

@@ -4,10 +4,12 @@ namespace App\Enums;
 
 enum Transport: string
 {
-    case Car = 'car';
-    case Train = 'train';
     case Plane = 'plane';
+    case Train = 'train';
+    case Car = 'car';
+    case RentalCar = 'rental_car';
     case Bus = 'bus';
+    case Ferry = 'ferry';
     case Bike = 'bike';
     case OnFoot = 'on_foot';
     case Other = 'other';
@@ -15,10 +17,12 @@ enum Transport: string
     public function label(): string
     {
         return match ($this) {
-            self::Car => 'Auto',
-            self::Train => 'Bahn',
             self::Plane => 'Flugzeug',
+            self::Train => 'Bahn',
+            self::Car => 'Auto',
+            self::RentalCar => 'Mietwagen',
             self::Bus => 'Bus',
+            self::Ferry => 'Fähre',
             self::Bike => 'Fahrrad',
             self::OnFoot => 'Zu Fuß',
             self::Other => 'Sonstiges',
@@ -28,10 +32,11 @@ enum Transport: string
     public function icon(): string
     {
         return match ($this) {
-            self::Car => 'car',
-            self::Train => 'train',
             self::Plane => 'plane',
+            self::Train => 'train',
+            self::Car, self::RentalCar => 'car',
             self::Bus => 'bus',
+            self::Ferry => 'ship',
             self::Bike => 'bike',
             self::OnFoot => 'footprints',
             self::Other => 'compass',

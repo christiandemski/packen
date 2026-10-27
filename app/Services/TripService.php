@@ -23,7 +23,7 @@ class TripService
 
     /**
      * @param  array{name: string, start_date: string, end_date: string, type: string, mode?: string,
-     *     accommodation?: ?string, transport?: ?string, location?: ?string}  $data
+     *     accommodation?: ?string, transports?: list<string>, location?: ?string}  $data
      * @param  list<int>  $memberIds
      */
     public function create(User $owner, array $data, ?UploadedFile $cover = null, array $memberIds = []): Trip
@@ -107,7 +107,7 @@ class TripService
     private function attributes(array $data): array
     {
         return collect($data)->only([
-            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transport', 'location',
+            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location',
         ])->all();
     }
 
