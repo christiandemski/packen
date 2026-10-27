@@ -1,4 +1,4 @@
-@props(['trip'])
+@props(['trip', 'progress' => null])
 @php
     $status = $trip->status();
     $others = $trip->members->where('id', '!=', auth()->id());
@@ -43,6 +43,19 @@
                 <p class="flex items-center gap-2"><x-icon name="map-pin" size="16" class="text-muted" /> <span class="truncate">{{ $trip->location }}</span></p>
             @endif
         </div>
+
+        @if ($progress && $progress['total'] > 0 && $status !== 'past')
+            @php($percent = (int) round($progress['packed'] / $progress['total'] * 100))
+            <div>
+                <div class="flex justify-between text-xs font-bold text-muted">
+                    <span>{{ $progress['packed'] }} von {{ $progress['total'] }} gepackt</span>
+                    <span class="text-accent-ink">{{ $percent }} %</span>
+                </div>
+                <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line-soft">
+                    <div class="h-full rounded-full bg-accent" style="width: {{ $percent }}%"></div>
+                </div>
+            </div>
+        @endif
 
         <div class="mt-auto flex items-center justify-between gap-3 border-t border-line-soft pt-3">
             <div class="flex min-w-0 flex-wrap items-center gap-1.5">

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\PacklistController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StarterTemplateController;
 use App\Http\Controllers\TemplateController;
@@ -36,12 +37,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profil', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/profil/bild', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::get('/benutzer/{user}/bild', [ProfileController::class, 'showAvatar'])->name('users.avatar');
 
     Route::resource('reisen', TripController::class)
         ->parameters(['reisen' => 'trip'])
         ->names('trips')
         ->except('index');
     Route::get('/reisen/{trip}/bild', [TripController::class, 'cover'])->name('trips.cover');
+
+    Route::prefix('/reisen/{trip}')->name('packlist.')->scopeBindings()->group(function () {
+        Route::put('/module', [PacklistController::class, 'templates'])->name('templates');
+        Route::post('/kopieren', [PacklistController::class, 'copy'])->name('copy');
+        Route::post('/eintraege', [PacklistController::class, 'store'])->name('store');
+        Route::patch('/eintraege/{entry}', [PacklistController::class, 'update'])->name('update');
+        Route::patch('/eintraege/{entry}/gepackt', [PacklistController::class, 'toggle'])->name('toggle');
+        Route::delete('/eintraege/{entry}', [PacklistController::class, 'destroy'])->name('destroy');
+    });
 
     Route::resource('katalog', ItemController::class)
         ->parameters(['katalog' => 'item'])

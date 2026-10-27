@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ItemCategory;
 use App\Models\Item;
 use App\Models\Template;
+use App\Services\PacklistService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
 class TemplateItemController extends Controller
 {
     public const MAX_QUANTITY = 99;
+
+    public function __construct(private readonly PacklistService $packlists) {}
 
     /** Fügt Gegenstände aus dem Katalog hinzu – oder legt einen neuen an und fügt ihn hinzu. */
     public function store(Request $request, Template $template): RedirectResponse
@@ -32,6 +35,7 @@ class TemplateItemController extends Controller
                 ?? $user->items()->create(['name' => $name, 'category' => $data['new_category']]);
 
             $template->items()->syncWithoutDetaching([$item->id => ['quantity' => 1]]);
+            $this->packlists->syncTemplate($template);
 
             return back()->with('status', "„{$item->name}“ hinzugefügt.");
         }
@@ -45,6 +49,7 @@ class TemplateItemController extends Controller
         $ids = Item::accessibleBy($user)->whereIn('id', $data['item_ids'])->pluck('id');
 
         $template->items()->syncWithoutDetaching($ids->mapWithKeys(fn ($id) => [$id => ['quantity' => 1]])->all());
+        $this->packlists->syncTemplate($template);
 
         return back()->with('status', $ids->count() === 1 ? '1 Gegenstand hinzugefügt.' : "{$ids->count()} Gegenstände hinzugefügt.");
     }
@@ -57,6 +62,7 @@ class TemplateItemController extends Controller
         $data = $request->validate(['quantity' => ['required', 'integer', 'min:1', 'max:'.self::MAX_QUANTITY]]);
 
         $template->items()->updateExistingPivot($item->id, ['quantity' => $data['quantity']]);
+        $this->packlists->syncTemplate($template);
 
         return back();
     }
@@ -66,6 +72,7 @@ class TemplateItemController extends Controller
         Gate::authorize('update', $template);
 
         $template->items()->detach($item->id);
+        $this->packlists->syncTemplate($template);
 
         return back()->with('status', "„{$item->name}“ entfernt.");
     }

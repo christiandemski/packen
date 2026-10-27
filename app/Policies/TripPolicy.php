@@ -12,6 +12,12 @@ class TripPolicy
         return $trip->hasMember($user);
     }
 
+    /** Die eigene Packliste pflegen darf jedes Mitglied. */
+    public function pack(User $user, Trip $trip): bool
+    {
+        return $trip->hasMember($user);
+    }
+
     public function create(User $user): bool
     {
         return $user->active;

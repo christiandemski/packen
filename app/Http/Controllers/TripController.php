@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PacklistGroup;
 use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
+use App\Models\PacklistEntry;
+use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\PacklistService;
 use App\Services\TripService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,11 +48,37 @@ class TripController extends Controller
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
     }
 
-    public function show(Trip $trip): View
+    public function show(Request $request, Trip $trip, PacklistService $packlists): View
     {
         Gate::authorize('view', $trip);
+        $user = $request->user();
 
-        return view('trips.show', ['trip' => $trip->load('members')]);
+        $entries = $trip->entries()->with('item')->where('user_id', $user->id)->visible()->get();
+        $groups = $entries
+            ->sortBy(fn (PacklistEntry $entry) => mb_strtolower($entry->name()))
+            ->groupBy(fn (PacklistEntry $entry) => $entry->packlistGroup()->value)
+            ->sortBy(fn ($group, $key) => PacklistGroup::from($key)->position());
+
+        $templates = Template::accessibleBy($user)->withCount('items')->orderBy('name')->get();
+        $selected = $trip->templatesFor($user)->pluck('templates.id');
+
+        // Vorschlag für eine neue Liste: „Basis“ plus die Vorlage, die wie die Reiseart heißt.
+        $suggested = $templates->filter(fn (Template $t) => in_array(mb_strtolower($t->name), ['basis', mb_strtolower($trip->type->label())], true))->pluck('id');
+
+        $otherTrips = $user->trips()->whereKeyNot($trip->id)
+            ->whereHas('entries', fn ($q) => $q->where('user_id', $user->id))
+            ->orderByDesc('start_date')->get();
+
+        return view('trips.show', [
+            'trip' => $trip->load('members'),
+            'groups' => $groups,
+            'progress' => $packlists->progress($trip, $user),
+            'templates' => $templates,
+            'selected' => $selected,
+            'suggested' => $suggested,
+            'otherTrips' => $otherTrips,
+            'addable' => $packlists->addableItems($trip, $user),
+        ]);
     }
 
     public function edit(Request $request, Trip $trip): View

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 class Trip extends Model
@@ -48,6 +49,18 @@ class Trip extends Model
         return $this->belongsToMany(User::class, 'trip_members')
             ->using(TripMember::class)
             ->withPivot(['role', 'outfits_shared', 'joined_at']);
+    }
+
+    /** @return HasMany<PacklistEntry, $this> */
+    public function entries(): HasMany
+    {
+        return $this->hasMany(PacklistEntry::class);
+    }
+
+    /** Für die Packliste gewählte Vorlagen einer Person. */
+    public function templatesFor(User $user): BelongsToMany
+    {
+        return $this->belongsToMany(Template::class, 'trip_templates')->wherePivot('user_id', $user->id);
     }
 
     public function hasMember(User $user): bool

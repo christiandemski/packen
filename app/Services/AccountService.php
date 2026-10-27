@@ -11,7 +11,10 @@ use Illuminate\Support\Str;
 /** Sperren, Entsperren und Löschen von Konten. */
 class AccountService
 {
-    public function __construct(private readonly TripService $trips) {}
+    public function __construct(
+        private readonly TripService $trips,
+        private readonly AvatarService $avatars,
+    ) {}
 
     public function block(User $user): void
     {
@@ -54,6 +57,7 @@ class AccountService
             }
 
             $this->endSessions($user);
+            $this->avatars->delete($user);
             Invitation::where('email', $user->email)->delete();
 
             $user->delete();

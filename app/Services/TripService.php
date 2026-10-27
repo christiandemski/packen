@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\TripMemberRole;
 use App\Enums\TripMode;
+use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 class TripService
 {
     public const COVER_DISK = 'local';
+
+    public function __construct(private readonly PacklistService $packlists) {}
 
     /**
      * @param  array{name: string, start_date: string, end_date: string, type: string, mode?: string,
@@ -57,6 +60,10 @@ class TripService
 
             $trip->update($attributes);
 
+            if ($trip->wasChanged(['start_date', 'end_date'])) {
+                $this->packlists->syncTrip($trip); // „pro Tag“-Mengen hängen an der Reisedauer
+            }
+
             if ($oldCover !== null && $oldCover !== $trip->cover_path) {
                 Storage::disk(self::COVER_DISK)->delete($oldCover);
             }
@@ -87,7 +94,10 @@ class TripService
 
         $current = $trip->members()->whereKeyNot($trip->owner_id)->pluck('users.id');
 
-        $trip->members()->detach($current->diff($wanted)->all());
+        $removed = $current->diff($wanted)->all();
+        $trip->members()->detach($removed);
+        PacklistEntry::where('trip_id', $trip->id)->whereIn('user_id', $removed)->delete();
+        DB::table('trip_templates')->where('trip_id', $trip->id)->whereIn('user_id', $removed)->delete();
 
         foreach (User::whereIn('id', $wanted->diff($current))->get() as $user) {
             $trip->addMember($user);

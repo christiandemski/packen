@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\Template;
+use App\Services\PacklistService;
 use App\Services\StarterTemplates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,10 +59,11 @@ class TemplateController extends Controller
         return redirect()->route('templates.show', $template)->with('status', 'Gespeichert.');
     }
 
-    public function destroy(Template $template): RedirectResponse
+    public function destroy(Template $template, PacklistService $packlists): RedirectResponse
     {
         Gate::authorize('delete', $template);
 
+        $packlists->detachTemplate($template);
         $template->delete();
 
         return redirect()->route('templates.index')->with('status', "Vorlage „{$template->name}“ gelöscht. Die Gegenstände bleiben im Katalog.");

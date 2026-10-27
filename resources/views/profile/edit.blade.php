@@ -8,6 +8,47 @@
             </div>
         </div>
 
+        <div class="card p-5" x-data="avatarCropper">
+            <p class="card-title">Bild</p>
+
+            <div x-show="!on" class="mt-4 flex flex-wrap items-center gap-4">
+                <x-avatar :user="$user" size="xl" />
+                <div class="flex flex-wrap gap-2">
+                    <label class="btn btn-secondary cursor-pointer">
+                        <x-icon name="image" size="18" /> Bild wählen
+                        <input type="file" accept="image/*" class="sr-only" @change="pick">
+                    </label>
+                    @if ($user->avatar_path)
+                        <form method="POST" action="{{ route('profile.avatar') }}">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="avatar" value="">
+                            <button type="submit" class="btn btn-ghost">Entfernen</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('profile.avatar') }}" x-show="on" x-cloak @submit.prevent="submit" class="mt-2">
+                @csrf @method('PUT')
+                <input type="hidden" name="avatar" x-ref="data">
+                <div x-ref="stage" tabindex="0" aria-label="Bildausschnitt, mit den Pfeiltasten verschieben"
+                     @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up"
+                     @wheel.prevent="wheel" @keydown="key"
+                     class="relative mx-auto mt-3 mb-3 size-[220px] cursor-grab touch-none overflow-hidden rounded-full bg-line-soft outline-offset-4 select-none active:cursor-grabbing">
+                    <img x-ref="img" alt="" draggable="false" class="pointer-events-none absolute top-0 left-0 max-w-none origin-top-left">
+                </div>
+                <input type="range" min="1" max="4" step="0.01" :value="z" @input="zoom(+$event.target.value)" aria-label="Bildausschnitt vergrößern" class="mx-auto block w-56 accent-[var(--accent)]">
+                <p class="mt-2 text-center text-sm text-muted">Ziehen zum Verschieben, Regler oder zwei Finger zum Vergrößern.</p>
+                <div class="mt-4 flex justify-center gap-2">
+                    <button type="submit" class="btn btn-primary">Bild speichern</button>
+                    <button type="button" class="btn btn-ghost" @click="cancel">Abbrechen</button>
+                </div>
+            </form>
+
+            <p x-show="error" x-text="error" x-cloak class="field-error"></p>
+            @error('avatar')<p class="field-error">{{ $message }}</p>@enderror
+        </div>
+
         <form method="POST" action="{{ route('profile.update') }}" class="card space-y-4 p-5">
             @csrf @method('PATCH')
             <p class="card-title">Name</p>

@@ -53,6 +53,22 @@ class User extends Authenticatable
         return $this->role === Role::Admin;
     }
 
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path === null ? null : route('users.avatar', ['user' => $this, 'v' => pathinfo($this->avatar_path, PATHINFO_FILENAME)]);
+    }
+
+    /** Farbton für die Initialen, wie in „unterwegs“ aus der E-Mail-Adresse abgeleitet. */
+    public function avatarHue(): int
+    {
+        $hue = 0;
+        foreach (mb_str_split($this->email ?: $this->name) as $char) {
+            $hue = ($hue * 31 + mb_ord($char)) % 360;
+        }
+
+        return $hue;
+    }
+
     public function initials(): string
     {
         $parts = preg_split('/\s+/', trim($this->name)) ?: [];

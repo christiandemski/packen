@@ -71,7 +71,8 @@ Pro Reise gibt es zusätzlich `owner` (Ersteller) und `member`.
 
 ```
 users             id, name, email, auth_source (bearid|local), bearid_sub (nullable),
-                  role (admin|friend), active (bool), last_login_at, timestamps
+                  role (admin|friend), active (bool), last_login_at, timestamps,
+                  avatar_path (nullable)                  // 256-px-Ausschnitt wie in „unterwegs“, privat ausgeliefert
 
 invitations       id, email, name, invited_by, token_hash, expires_at, accepted_at
 
@@ -98,7 +99,8 @@ items             + default_container_id (nullable)       // Standardplatz, z. B
 
 packlist_entries  id, trip_id, user_id, item_id (nullable), custom_name (nullable),
                   quantity, group (departure_day|clothing|documents|...|custom),
-                  container_id (nullable), packed (bool),
+                  container_id (nullable), packed (bool), packed_at,
+                  quantity_locked (bool), excluded (bool), note (nullable),
                   source (template|outfit|manual|group_item),
                   group_item_id (nullable),
                   review (null|unused|missing), timestamps
@@ -117,6 +119,7 @@ Hinweise:
 
 - `item_id` in `packlist_entries` ist nullable für spontane Freitext-Einträge.
 - `container_id` und `quantity` hängen am Eintrag, nicht am Gegenstand: dasselbe Teil kann je Reise in unterschiedlichen Behältnissen landen. `default_container_id` am Gegenstand ist nur der Vorschlag.
+- Zusammenführen mehrerer Module: pro Gegenstand zählt die **größte** Menge (nicht die Summe); „pro Tag“ = Menge × Reisetage. Von Hand geänderte Mengen setzen `quantity_locked`, entfernte Vorlagen-Einträge werden nur `excluded` – beides übersteht jedes Neuberechnen. Gruppe ergibt sich aus dem Gegenstand (`pack_last` → „Am Abfahrtstag“, Kleidungskategorien → „Kleidung“), nur Freitext speichert `group`.
 - Kleidungsmengen werden aus den Outfits **berechnet** (siehe 5.4) und als Einträge mit `source = outfit` gepflegt. Manuelle Korrekturen dürfen nicht beim nächsten Neuberechnen verloren gehen.
 
 ---

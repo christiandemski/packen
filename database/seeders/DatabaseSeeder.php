@@ -7,6 +7,7 @@ use App\Enums\Transport;
 use App\Enums\TripMode;
 use App\Enums\TripType;
 use App\Models\User;
+use App\Services\PacklistService;
 use App\Services\StarterTemplates;
 use App\Services\TripService;
 use Illuminate\Database\Seeder;
@@ -14,7 +15,7 @@ use Illuminate\Database\Seeder;
 /** Beispieldaten für die Entwicklung. Admin-Login: admin@packen.test / packen-admin */
 class DatabaseSeeder extends Seeder
 {
-    public function run(TripService $trips, StarterTemplates $starters): void
+    public function run(TripService $trips, StarterTemplates $starters, PacklistService $packlists): void
     {
         $admin = User::factory()->admin()->create([
             'name' => 'Christian',
@@ -26,7 +27,7 @@ class DatabaseSeeder extends Seeder
 
         $starters->install($admin, array_keys(StarterTemplates::definitions()));
 
-        $trips->create($admin, [
+        $lisbon = $trips->create($admin, [
             'name' => 'Lissabon',
             'location' => 'Lissabon, Portugal',
             'start_date' => today()->addDays(12)->toDateString(),
@@ -67,5 +68,10 @@ class DatabaseSeeder extends Seeder
             'type' => TripType::Citytrip->value,
             'mode' => TripMode::Solo->value,
         ]);
+
+        // Lissabon wie im Entwurf: Basis + Städtetrip, ein paar Sachen schon gepackt.
+        $packlists->setTemplates($lisbon, $admin, $admin->templates()->whereIn('name', ['Basis', 'Städtetrip'])->pluck('id')->all());
+        $packlists->addEntry($lisbon, $admin, ['custom_name' => 'Pastéis-Rezept für Mama', 'group' => 'misc']);
+        $lisbon->entries()->where('user_id', $admin->id)->inRandomOrder()->limit(8)->get()->each->setPacked(true);
     }
 }

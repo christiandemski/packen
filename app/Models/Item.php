@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\EntrySource;
 use App\Enums\ItemCategory;
+use App\Enums\PacklistGroup;
 use App\Models\Concerns\OwnedByUser;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +34,15 @@ class Item extends Model
         // „Kleidung“ ergibt sich aus der Kategorie – so kann es nie widersprüchlich werden.
         static::saving(function (Item $item) {
             $item->is_clothing = $item->category->isClothing();
+        });
+
+        // Packlisten behalten den Namen, auch wenn der Gegenstand aus dem Katalog verschwindet.
+        static::deleting(function (Item $item) {
+            PacklistEntry::where('item_id', $item->id)->update([
+                'custom_name' => $item->name,
+                'group' => ($item->pack_last ? PacklistGroup::DepartureDay : PacklistGroup::forCategory($item->category))->value,
+                'source' => EntrySource::Manual,
+            ]);
         });
     }
 

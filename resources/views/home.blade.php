@@ -72,13 +72,13 @@
 
                 <div x-show="view === 'tiles'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($trips as $trip)
-                        <x-trip-tile :trip="$trip" />
+                        <x-trip-tile :trip="$trip" :progress="$progress[$trip->id] ?? null" />
                     @endforeach
                 </div>
 
                 <div x-cloak x-show="view === 'list'" class="card divide-y divide-line-soft overflow-hidden">
                     @foreach ($trips as $trip)
-                        <x-trip-row :trip="$trip" />
+                        <x-trip-row :trip="$trip" :progress="$progress[$trip->id] ?? null" />
                     @endforeach
                 </div>
             </section>

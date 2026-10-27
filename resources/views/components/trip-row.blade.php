@@ -1,4 +1,4 @@
-@props(['trip'])
+@props(['trip', 'progress' => null])
 @php($status = $trip->status())
 <a href="{{ route('trips.show', $trip) }}" @class([
     'flex min-h-[72px] items-center gap-3 px-3 py-2.5 transition hover:bg-line-soft',
@@ -15,6 +15,7 @@
             <span class="inline-flex items-center gap-1"><x-icon :name="$trip->mode->icon()" size="13" /> {{ $trip->mode->label() }}</span>
             <span class="inline-flex items-center gap-1"><x-icon :name="$trip->type->icon()" size="13" /> {{ $trip->type->label() }}</span>
             @if ($trip->isGroup())<span>· {{ $trip->members->count() }} Personen</span>@endif
+            @if ($progress && $progress['total'] > 0)<span class="text-accent-ink">· {{ $progress['packed'] }}/{{ $progress['total'] }} gepackt</span>@endif
         </p>
     </div>
 

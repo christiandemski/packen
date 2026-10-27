@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ItemCategory;
 use App\Http\Requests\ItemRequest;
 use App\Models\Item;
+use App\Services\PacklistService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -44,11 +45,15 @@ class ItemController extends Controller
         return view('items.form', ['item' => $item->load('templates')]);
     }
 
-    public function update(ItemRequest $request, Item $item): RedirectResponse
+    public function update(ItemRequest $request, Item $item, PacklistService $packlists): RedirectResponse
     {
         Gate::authorize('update', $item);
 
         $item->update($request->validated());
+
+        if ($item->wasChanged('per_day')) {
+            $item->templates->each(fn ($template) => $packlists->syncTemplate($template));
+        }
 
         return redirect()->route('items.index')->with('status', 'Gespeichert.');
     }
