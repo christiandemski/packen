@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\ContainerController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StarterTemplateController;
@@ -64,6 +65,17 @@ Route::middleware('auth')->group(function () {
         ->parameters(['katalog' => 'item'])
         ->names('items')
         ->except('show');
+
+    // Outfit-Routen ohne scopeBindings: Zugehörigkeit von Tag und Slot prüft der OutfitController.
+    Route::prefix('/reisen/{trip}')->name('outfits.')->group(function () {
+        Route::patch('/outfits/tage/{day}', [OutfitController::class, 'updateDay'])->name('day');
+        Route::post('/outfits/tage/{day}/vortag', [OutfitController::class, 'copyPrevious'])->name('copy');
+        Route::post('/outfits/tage/{day}/slots', [OutfitController::class, 'storeSlot'])->name('slots.store');
+        Route::delete('/outfits/slots/{slot}', [OutfitController::class, 'destroySlot'])->name('slots.destroy');
+        Route::post('/outfits/slots/{slot}/teile', [OutfitController::class, 'storeItem'])->name('items.store');
+        Route::delete('/outfits/slots/{slot}/teile/{item}', [OutfitController::class, 'destroyItem'])->name('items.destroy');
+        Route::post('/outfits/uebernehmen', [OutfitController::class, 'apply'])->name('apply');
+    });
 
     Route::resource('behaeltnisse', ContainerController::class)
         ->parameters(['behaeltnisse' => 'container'])

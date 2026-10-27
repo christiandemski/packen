@@ -8,7 +8,7 @@
     $selectedTemplates = $templates->whereIn('id', $selected);
 @endphp
 <x-layouts.app :title="$trip->name">
-    <div class="mx-auto max-w-2xl" x-data="{ tab: 'packlist' }">
+    <div class="mx-auto max-w-2xl" x-data="{ tab: @js($initialTab) }">
         <x-trip-cover :trip="$trip" :icon-size="120" class="-mx-4 -mt-6 mb-5 h-36 sm:mx-0 sm:mt-0 sm:rounded-card">
             <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10"></div>
             <div class="absolute inset-x-3 top-3 flex items-center justify-between">
@@ -123,6 +123,8 @@
                                     <x-icon :name="$group->icon()" size="18" class="text-accent" /> {{ $group->label() }}
                                     @if ($group === PacklistGroup::DepartureDay)
                                         <span class="chip bg-accent-soft text-accent-ink">Zuletzt</span>
+                                    @elseif ($group === PacklistGroup::Clothing && $hasOutfitEntries)
+                                        <button type="button" @click="tab = 'outfits'; window.scrollTo({ top: 0, behavior: 'smooth' })" class="chip bg-accent-soft text-accent-ink hover:bg-accent hover:text-white">Aus Outfits</button>
                                     @endif
                                 </h2>
                                 <span class="text-xs font-bold text-muted"><span x-text="{{ $ids->count() }} - openIn(@js($ids))"></span>/{{ $ids->count() }}</span>
@@ -219,11 +221,12 @@
             </button>
         </div>
 
-        {{-- ───────────── Outfits / Rückblick (folgen) ───────────── --}}
-        <div class="card mt-4 p-5" role="tabpanel" x-show="tab === 'outfits'" x-cloak>
-            <p class="card-title">Outfits</p>
-            <p class="mt-1 text-sm text-muted">Der Outfit-Planer mit Wochenübersicht kommt mit Meilenstein 4.</p>
+        {{-- ───────────── Outfits ───────────── --}}
+        <div class="mt-4" role="tabpanel" x-show="tab === 'outfits'" @if ($initialTab !== 'outfits') x-cloak @endif>
+            @include('trips._outfits')
         </div>
+
+        {{-- ───────────── Rückblick (folgt) ───────────── --}}
         <div class="card mt-4 p-5" role="tabpanel" x-show="tab === 'review'" x-cloak>
             <p class="card-title">Rückblick</p>
             <p class="mt-1 text-sm text-muted">Nach der Reise markierst du hier, was gefehlt hat oder unnötig war (Meilenstein 6).</p>
@@ -299,6 +302,48 @@
                 </div>
             </form>
         @endif
+    </x-sheet>
+
+    {{-- Kleidungsstück für einen Outfit-Slot --}}
+    <x-sheet name="outfit-item" title="Kleidung hinzufügen">
+        <p class="-mt-2 mb-3 text-sm font-semibold text-muted" x-text="$store.picker.label"></p>
+        <div x-data="{ q: '' }">
+            @if ($clothingItems->isNotEmpty())
+                <form method="POST" :action="$store.picker.url" x-ref="pickForm" data-keep-scroll>
+                    @csrf
+                    <input type="hidden" name="item_id" x-ref="pickId">
+                </form>
+                <div class="relative">
+                    <x-icon name="search" size="18" class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
+                    <input type="search" x-model="q" autofocus placeholder="Kleidung suchen" aria-label="Kleidung suchen" class="input pl-10">
+                </div>
+                <ul class="mt-2 max-h-64 overflow-y-auto">
+                    @foreach ($clothingItems as $item)
+                        <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
+                            <button type="button" @click="$refs.pickId.value = {{ $item->id }}; $refs.pickForm.submit()"
+                                    class="flex min-h-[48px] w-full items-center gap-3 rounded-chip px-2 text-left hover:bg-line-soft">
+                                <x-icon :name="$item->category->icon()" size="16" class="text-muted" />
+                                <span class="flex-1 text-[15px] font-semibold">{{ $item->name }}</span>
+                                @if ($item->per_day)<span class="text-xs font-bold text-accent-ink">pro Tag</span>@endif
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+            <form method="POST" :action="$store.picker.url" data-keep-scroll class="{{ $clothingItems->isNotEmpty() ? 'mt-4 border-t border-line-soft pt-4' : '' }}">
+                @csrf
+                <p class="label">Neues Kleidungsstück</p>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <input name="new_name" required maxlength="120" :value="q" placeholder="z. B. Leinenhemd" aria-label="Name" class="input flex-1">
+                    <select name="new_category" aria-label="Kategorie" class="input sm:w-48">
+                        @foreach (\App\Enums\ItemCategory::clothing() as $case)
+                            <option value="{{ $case->value }}">{{ $case->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary mt-3 w-full"><x-icon name="plus" size="18" /> Anlegen und hinzufügen</button>
+            </form>
+        </div>
     </x-sheet>
 
     {{-- Behältnisse für diese Reise --}}
