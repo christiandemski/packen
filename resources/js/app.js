@@ -156,8 +156,9 @@ Alpine.data('avatarCropper', () => ({
  * Packliste: Abhaken sofort im Browser, gespeichert wird über die Warteschlange –
  * online sofort, offline sobald wieder Netz da ist.
  */
-Alpine.data('packlist', (packed = {}) => ({
+Alpine.data('packlist', (packed = {}, view = 'groups') => ({
     packed,
+    view,
     onlyOpen: storage.get('packen.onlyOpen', '0') === '1',
     init() {
         // Noch nicht übertragene Haken über den (evtl. gecachten) Seitenstand legen.

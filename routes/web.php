@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\ContainerController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PacklistController;
@@ -50,6 +51,8 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('/reisen/{trip}')->name('packlist.')->scopeBindings()->group(function () {
         Route::put('/module', [PacklistController::class, 'templates'])->name('templates');
+        Route::put('/behaeltnisse', [PacklistController::class, 'containers'])->name('containers');
+        Route::patch('/zuordnen', [PacklistController::class, 'assign'])->name('assign');
         Route::post('/kopieren', [PacklistController::class, 'copy'])->name('copy');
         Route::post('/eintraege', [PacklistController::class, 'store'])->name('store');
         Route::patch('/eintraege/{entry}', [PacklistController::class, 'update'])->name('update');
@@ -61,6 +64,11 @@ Route::middleware('auth')->group(function () {
         ->parameters(['katalog' => 'item'])
         ->names('items')
         ->except('show');
+
+    Route::resource('behaeltnisse', ContainerController::class)
+        ->parameters(['behaeltnisse' => 'container'])
+        ->names('containers')
+        ->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('vorlagen', TemplateController::class)
         ->parameters(['vorlagen' => 'template'])

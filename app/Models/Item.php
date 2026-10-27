@@ -9,6 +9,7 @@ use App\Models\Concerns\OwnedByUser;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Item extends Model
@@ -16,7 +17,7 @@ class Item extends Model
     /** @use HasFactory<ItemFactory> */
     use HasFactory, OwnedByUser;
 
-    protected $fillable = ['owner_id', 'name', 'category', 'weight_g', 'per_day', 'pack_last', 'notes'];
+    protected $fillable = ['owner_id', 'name', 'category', 'weight_g', 'per_day', 'pack_last', 'default_container_id', 'notes'];
 
     protected function casts(): array
     {
@@ -44,6 +45,12 @@ class Item extends Model
                 'source' => EntrySource::Manual,
             ]);
         });
+    }
+
+    /** Standardplatz, z. B. Kocher → „Eurobox Küche“ */
+    public function defaultContainer(): BelongsTo
+    {
+        return $this->belongsTo(Container::class, 'default_container_id');
     }
 
     /** @return BelongsToMany<Template, $this> */

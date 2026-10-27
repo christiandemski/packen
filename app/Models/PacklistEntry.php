@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 class PacklistEntry extends Model
 {
     protected $fillable = [
-        'trip_id', 'user_id', 'item_id', 'custom_name', 'group', 'quantity', 'quantity_locked',
+        'trip_id', 'user_id', 'item_id', 'custom_name', 'group', 'container_id', 'quantity', 'quantity_locked',
         'source', 'excluded', 'note', 'packed', 'packed_at', 'packed_changed_at',
     ];
 
@@ -45,6 +45,18 @@ class PacklistEntry extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** @return BelongsTo<Container, $this> */
+    public function container(): BelongsTo
+    {
+        return $this->belongsTo(Container::class);
+    }
+
+    /** Gewicht des Eintrags in Gramm (0, wenn am Gegenstand nichts gepflegt ist). */
+    public function weight(): int
+    {
+        return ($this->item?->weight_g ?? 0) * $this->quantity;
     }
 
     /** Sichtbare Einträge (bewusst entfernte Vorlagen-Einträge bleiben nur als Merker liegen). */

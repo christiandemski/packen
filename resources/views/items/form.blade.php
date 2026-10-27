@@ -67,6 +67,19 @@
                     <input id="weight_g" name="weight_g" type="number" inputmode="numeric" min="0" max="100000" value="{{ old('weight_g', $item->weight_g) }}" class="input max-w-40">
                     @error('weight_g')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
+                @if ($containers->isNotEmpty())
+                    <div>
+                        <label for="default_container_id" class="label">Standardplatz <span class="normal-case tracking-normal">(optional)</span></label>
+                        <select id="default_container_id" name="default_container_id" class="input">
+                            <option value="">Kein fester Platz</option>
+                            @foreach ($containers as $container)
+                                <option value="{{ $container->id }}" @selected((int) old('default_container_id', $item->default_container_id) === $container->id)>{{ $container->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1.5 text-xs font-semibold text-muted">Kommt dieses Behältnis mit, landet der Gegenstand automatisch darin.</p>
+                        @error('default_container_id')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
+                @endif
                 <div>
                     <label for="notes" class="label">Notiz <span class="normal-case tracking-normal">(optional)</span></label>
                     <textarea id="notes" name="notes" rows="2" maxlength="500" class="input py-3" placeholder="z. B. die blaue, nicht die rote">{{ old('notes', $item->notes) }}</textarea>
