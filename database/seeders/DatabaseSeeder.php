@@ -7,13 +7,14 @@ use App\Enums\Transport;
 use App\Enums\TripMode;
 use App\Enums\TripType;
 use App\Models\User;
+use App\Services\StarterTemplates;
 use App\Services\TripService;
 use Illuminate\Database\Seeder;
 
 /** Beispieldaten für die Entwicklung. Admin-Login: admin@packen.test / packen-admin */
 class DatabaseSeeder extends Seeder
 {
-    public function run(TripService $trips): void
+    public function run(TripService $trips, StarterTemplates $starters): void
     {
         $admin = User::factory()->admin()->create([
             'name' => 'Christian',
@@ -22,6 +23,8 @@ class DatabaseSeeder extends Seeder
         ]);
         $anna = User::factory()->create(['name' => 'Anna', 'email' => 'anna@packen.test']);
         $max = User::factory()->create(['name' => 'Max', 'email' => 'max@packen.test']);
+
+        $starters->install($admin, array_keys(StarterTemplates::definitions()));
 
         $trips->create($admin, [
             'name' => 'Lissabon',

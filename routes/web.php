@@ -8,7 +8,11 @@ use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StarterTemplateController;
+use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\TemplateItemController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +42,22 @@ Route::middleware('auth')->group(function () {
         ->names('trips')
         ->except('index');
     Route::get('/reisen/{trip}/bild', [TripController::class, 'cover'])->name('trips.cover');
+
+    Route::resource('katalog', ItemController::class)
+        ->parameters(['katalog' => 'item'])
+        ->names('items')
+        ->except('show');
+
+    Route::resource('vorlagen', TemplateController::class)
+        ->parameters(['vorlagen' => 'template'])
+        ->names('templates')
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::post('/vorlagen/{template}/gegenstaende', [TemplateItemController::class, 'store'])->name('templates.items.store');
+    Route::patch('/vorlagen/{template}/gegenstaende/{item}', [TemplateItemController::class, 'update'])->name('templates.items.update');
+    Route::delete('/vorlagen/{template}/gegenstaende/{item}', [TemplateItemController::class, 'destroy'])->name('templates.items.destroy');
+
+    Route::post('/start-vorlagen', [StarterTemplateController::class, 'store'])->name('starter-templates.store');
+    Route::delete('/start-vorlagen', [StarterTemplateController::class, 'destroy'])->name('starter-templates.dismiss');
 
     Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', AdminController::class)->name('index');

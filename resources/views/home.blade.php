@@ -36,6 +36,23 @@
             </div>
         </div>
 
+        @if (auth()->user()->starter_templates_at === null)
+            <div class="card mb-6 flex flex-col gap-4 border-accent/40 bg-accent-soft/40 p-5 sm:flex-row sm:items-center">
+                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-chip bg-accent text-white"><x-icon name="sparkles" /></span>
+                <div class="flex-1">
+                    <p class="card-title">Start-Vorlagen übernehmen?</p>
+                    <p class="mt-0.5 text-sm text-muted">Basis, Städtetrip, Strand, Wandern und Bikepacking – fertig gefüllt und jederzeit anpassbar.</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ route('templates.index') }}" class="btn btn-primary">Ansehen</a>
+                    <form method="POST" action="{{ route('starter-templates.dismiss') }}">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-ghost">Nein danke</button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         @if ($upcoming->isEmpty() && $past->isEmpty())
             <div class="card flex flex-col items-center px-6 py-14 text-center">
                 <span class="inline-flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent-ink"><x-icon name="luggage" size="30" /></span>

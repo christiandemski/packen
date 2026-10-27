@@ -26,6 +26,7 @@ class User extends Authenticatable
         'active',
         'password',
         'email_notifications',
+        'starter_templates_at',
         'last_login_at',
     ];
 
@@ -42,6 +43,7 @@ class User extends Authenticatable
             'active' => 'boolean',
             'email_notifications' => 'boolean',
             'last_login_at' => 'datetime',
+            'starter_templates_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -70,6 +72,18 @@ class User extends Authenticatable
     public function ownedTrips(): HasMany
     {
         return $this->hasMany(Trip::class, 'owner_id');
+    }
+
+    /** @return HasMany<Item, $this> */
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class, 'owner_id');
+    }
+
+    /** @return HasMany<Template, $this> */
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class, 'owner_id');
     }
 
     /** @return HasMany<LoginToken, $this> */

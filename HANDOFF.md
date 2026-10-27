@@ -75,11 +75,13 @@ users             id, name, email, auth_source (bearid|local), bearid_sub (nulla
 
 invitations       id, email, name, invited_by, token_hash, expires_at, accepted_at
 
-items             id, owner_id, name, category, weight_g (nullable),
-                  is_clothing (bool), per_day (bool),   // per_day z. B. Socken, Unterwäsche
+items             id, owner_id, name, category (feste Liste, siehe App\Enums\ItemCategory),
+                  weight_g (nullable),
+                  is_clothing (bool, aus Kategorie abgeleitet), per_day (bool),   // per_day z. B. Socken, Tageslinsen
+                  pack_last (bool),                       // landet in „Am Abfahrtstag“
                   notes, timestamps
 
-templates         id, owner_id, name                      // z. B. Basis, Städtetrip, Bikepacking
+templates         id, owner_id, name, description (nullable)   // z. B. Basis, Städtetrip, Bikepacking
 template_items    template_id, item_id, quantity
 
 trips             id, owner_id, name, start_date, end_date,
@@ -89,9 +91,14 @@ trip_members      trip_id, user_id, role (owner|member), outfits_shared (bool), 
 trip_templates    trip_id, user_id, template_id           // welche Module jemand gewählt hat
 packlist_grants   trip_id, owner_id, grantee_id           // grantee darf die Packliste von owner sehen/abhaken
 
+containers        id, owner_id, name, kind (suitcase|backpack|box|bag|other),
+                  capacity_l (nullable), max_weight_g (nullable), empty_weight_g (nullable)
+trip_containers   trip_id, user_id, container_id          // was auf diese Reise mitkommt
+items             + default_container_id (nullable)       // Standardplatz, z. B. Kocher → Eurobox Küche
+
 packlist_entries  id, trip_id, user_id, item_id (nullable), custom_name (nullable),
                   quantity, group (departure_day|clothing|documents|...|custom),
-                  bag (nullable), packed (bool),
+                  container_id (nullable), packed (bool),
                   source (template|outfit|manual|group_item),
                   group_item_id (nullable),
                   review (null|unused|missing), timestamps
@@ -109,7 +116,7 @@ group_items       id, trip_id, name, note (nullable),
 Hinweise:
 
 - `item_id` in `packlist_entries` ist nullable für spontane Freitext-Einträge.
-- `bag` und `quantity` hängen am Eintrag, nicht am Gegenstand: dasselbe Teil kann je Reise in unterschiedlichen Taschen landen.
+- `container_id` und `quantity` hängen am Eintrag, nicht am Gegenstand: dasselbe Teil kann je Reise in unterschiedlichen Behältnissen landen. `default_container_id` am Gegenstand ist nur der Vorschlag.
 - Kleidungsmengen werden aus den Outfits **berechnet** (siehe 5.4) und als Einträge mit `source = outfit` gepflegt. Manuelle Korrekturen dürfen nicht beim nächsten Neuberechnen verloren gehen.
 
 ---
@@ -139,6 +146,18 @@ Meilenstein 1–4 ergeben ein vollständig nutzbares Tool für mich allein. Ab M
 - Gruppe **„Am Abfahrtstag“** steht immer oben (Ladekabel, Zahnbürste, Medikamente …).
 - Freitext-Einträge, Mengen ändern, Einträge löschen.
 - Liste von einer früheren Reise kopieren.
+
+### 5.3b Meilenstein 3b: Behältnisse (optional nutzbar)
+
+Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typisch mit dem Auto).
+
+- Eigene Behältnisse pflegen: Name, Art, optional Volumen (l), Maximal- und Leergewicht.
+- Pro Reise auswählen, welche Behältnisse mitkommen; Einträge zuordnen (beim Abhaken oder per Mehrfachauswahl).
+- Packliste umschaltbar: nach Gruppe oder nach Behältnis; pro Behältnis Anzahl Einträge, Gewicht und Hinweis, wenn Grenzen überschritten werden.
+- Standardplatz am Gegenstand übernimmt neue Einträge automatisch ins passende Behältnis, sofern es auf der Reise dabei ist.
+- Übersicht „Du brauchst: 1 Koffer, 1 Rucksack, 2 Euroboxen“ sowie ungeordnete Einträge.
+- Wer nichts zuordnet, sieht davon nichts.
+- Offen: Volumen pro Gegenstand, um den Bedarf automatisch zu schätzen – erst, wenn sich die Zuordnung von Hand als zu mühsam erweist.
 
 ### 5.4 Meilenstein 4: Outfit-Planer
 
@@ -195,7 +214,7 @@ Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person e
 ### 5.7 Später
 
 - Wetter pro Tag im Outfit-Planer (Vorhersage, wenn Reise nah genug).
-- Taschen und Gewicht pro Tasche (vor allem für Bikepacking), Gesamtgewicht.
+- Gesamtgewicht der Reise (Grundlage dafür sind die Behältnisse aus Meilenstein 3b).
 - API für „unterwegs“ (Abschnitt 9).
 - Passkeys als zusätzlicher Login für Freunde.
 - **Haushalt:** Zwei oder mehr Konten dauerhaft verknüpfen, die Katalog und Vorlagen teilen (eine Reiseapotheke, ein Zelt). Neue gemeinsame Reisen setzen die Packlisten-Freigabe innerhalb des Haushalts automatisch. Katalog und Vorlagen deshalb schon in Meilenstein 2 so bauen, dass der Besitz später auch an einem Haushalt hängen kann (Besitzprüfung zentral in den Policies, nicht verstreut über `owner_id = user`).

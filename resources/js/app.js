@@ -43,5 +43,25 @@ Alpine.data('coverPicker', (initialUrl = null) => ({
     },
 }));
 
+/** Formulare mit data-keep-scroll laden die Seite neu, ohne dass man nach oben springt. */
+document.addEventListener('submit', (event) => {
+    if (!event.target.matches('form[data-keep-scroll]')) return;
+    try {
+        sessionStorage.setItem('packen.scroll', JSON.stringify({ path: location.pathname, y: window.scrollY }));
+    } catch {
+        // ignorieren
+    }
+});
+
+try {
+    const saved = JSON.parse(sessionStorage.getItem('packen.scroll') ?? 'null');
+    sessionStorage.removeItem('packen.scroll');
+    if (saved?.path === location.pathname) {
+        window.scrollTo(0, saved.y);
+    }
+} catch {
+    // ignorieren
+}
+
 window.Alpine = Alpine;
 Alpine.start();
