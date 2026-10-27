@@ -62,6 +62,7 @@ Pro Reise gibt es zusätzlich `owner` (Ersteller) und `member`.
 - Katalog, Vorlagen: nur der Besitzer.
 - Reise: nur Mitglieder. Reisedaten ändern, Mitglieder einladen/entfernen, Reise löschen: nur `owner`.
 - Persönliche Packliste und Outfits: nur der Besitzer; Outfits zusätzlich für Mitreisende sichtbar, wenn freigegeben.
+- Packlisten-Freigabe: Jede Person kann in einer Reise einzelnen Mitreisenden erlauben, ihre Packliste zu sehen und abzuhaken (z. B. Partner, Kind, Freundin, die mitpackt). Die Freigabe gilt nur in eine Richtung und nur für diese Reise.
 - Gruppen-Gegenstände und Anfragen: alle Mitglieder der Reise.
 
 ---
@@ -86,6 +87,7 @@ trips             id, owner_id, name, start_date, end_date,
                   accommodation, transport, location (nullable), timestamps
 trip_members      trip_id, user_id, role (owner|member), outfits_shared (bool), joined_at
 trip_templates    trip_id, user_id, template_id           // welche Module jemand gewählt hat
+packlist_grants   trip_id, owner_id, grantee_id           // grantee darf die Packliste von owner sehen/abhaken
 
 packlist_entries  id, trip_id, user_id, item_id (nullable), custom_name (nullable),
                   quantity, group (departure_day|clothing|documents|...|custom),
@@ -180,6 +182,10 @@ Ablauf:
 
 Benachrichtigung: in der App (Badge „1 neue Anfrage“). E-Mail-Benachrichtigung optional pro Person einstellbar, standardmäßig aus.
 
+#### Packlisten-Freigabe („Für jemanden mitpacken“)
+
+Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person einzelnen Mitreisenden ihre Packliste freigeben (`packlist_grants`). Die freigegebene Person sieht die Liste lesend und darf abhaken; Einträge anlegen oder löschen bleibt beim Besitzer. Die Freigabe gilt nur in eine Richtung und lässt sich jederzeit zurücknehmen. Beim Abhaken wird gespeichert, wer es war („gepackt von Max“).
+
 ### 5.6 Meilenstein 6: Rückblick
 
 - Nach Reiseende pro Eintrag markieren: „nicht gebraucht“ / „hat gefehlt“; für Outfits „nicht getragen“.
@@ -192,6 +198,7 @@ Benachrichtigung: in der App (Badge „1 neue Anfrage“). E-Mail-Benachrichtigu
 - Taschen und Gewicht pro Tasche (vor allem für Bikepacking), Gesamtgewicht.
 - API für „unterwegs“ (Abschnitt 9).
 - Passkeys als zusätzlicher Login für Freunde.
+- **Haushalt:** Zwei oder mehr Konten dauerhaft verknüpfen, die Katalog und Vorlagen teilen (eine Reiseapotheke, ein Zelt). Neue gemeinsame Reisen setzen die Packlisten-Freigabe innerhalb des Haushalts automatisch. Katalog und Vorlagen deshalb schon in Meilenstein 2 so bauen, dass der Besitz später auch an einem Haushalt hängen kann (Besitzprüfung zentral in den Policies, nicht verstreut über `owner_id = user`).
 
 ---
 
