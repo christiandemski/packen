@@ -57,6 +57,13 @@
                 <input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="100" class="input">
                 @error('name')<p class="field-error">{{ $message }}</p>@enderror
             </div>
+            <label class="flex cursor-pointer items-start gap-3">
+                <input type="checkbox" name="email_notifications" value="1" @checked(old('email_notifications', $user->email_notifications)) class="mt-0.5 size-5 accent-[var(--accent)]">
+                <span>
+                    <span class="block text-[15px] font-bold">Benachrichtigungen auch per E-Mail</span>
+                    <span class="block text-sm text-muted">z. B. wenn jemand in der Gruppe fragt oder etwas für dich mitbringt. In der App siehst du sie immer.</span>
+                </span>
+            </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>
 

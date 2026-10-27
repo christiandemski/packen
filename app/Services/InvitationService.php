@@ -6,6 +6,7 @@ use App\Enums\AuthSource;
 use App\Enums\Role;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
+use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +16,7 @@ class InvitationService
 {
     public const VALID_DAYS = 7;
 
-    public function invite(User $inviter, string $name, string $email): Invitation
+    public function invite(User $inviter, string $name, string $email, ?Trip $trip = null): Invitation
     {
         $email = MagicLinkService::normalize($email);
 
@@ -26,6 +27,7 @@ class InvitationService
             'email' => $email,
             'name' => trim($name),
             'invited_by' => $inviter->id,
+            'trip_id' => $trip?->id,
             'token_hash' => hash('sha256', $token),
             'expires_at' => now()->addDays(self::VALID_DAYS),
         ]);
@@ -74,6 +76,11 @@ class InvitationService
             ]);
 
             $invitation->update(['accepted_at' => now()]);
+
+            // Eingeladen in eine bestimmte Reise: gleich als Mitglied aufnehmen.
+            if ($invitation->trip?->isGroup()) {
+                $invitation->trip->addMember($user);
+            }
 
             return $user;
         });

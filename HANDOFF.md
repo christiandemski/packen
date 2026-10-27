@@ -182,7 +182,7 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Zusätzlich: „Wie am Vortag“ kopiert Slots und Teile des vorigen Tages; im Auswahlblatt lässt sich ein neues Kleidungsstück direkt anlegen.
 - Temperatur in den Tageskacheln folgt mit dem Wetter (siehe „Später“).
 
-### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände
+### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände – umgesetzt (Browser-Test steht noch aus)
 
 - Owner lädt Mitglieder ein (aus bestehenden Freunden der App; Admin kann neue Freunde einladen, die nach Registrierung direkt in der Reise landen).
 - Jedes Mitglied hat **eigene** Packliste und **eigene** Outfits; Zeitraum, Ort und Reisedaten sind gemeinsam.
@@ -211,7 +211,7 @@ Ablauf:
 
 Benachrichtigung: in der App (Badge „1 neue Anfrage“). E-Mail-Benachrichtigung optional pro Person einstellbar, standardmäßig aus.
 
-#### Packlisten-Freigabe („Für jemanden mitpacken“)
+#### Packlisten-Freigabe („Für jemanden mitpacken“) – umgesetzt
 
 Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person einzelnen Mitreisenden ihre Packliste freigeben (`packlist_grants`). Die freigegebene Person sieht die Liste lesend und darf abhaken; Einträge anlegen oder löschen bleibt beim Besitzer. Die Freigabe gilt nur in eine Richtung und lässt sich jederzeit zurücknehmen. Beim Abhaken wird gespeichert, wer es war („gepackt von Max“).
 

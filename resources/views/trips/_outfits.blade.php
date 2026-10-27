@@ -5,7 +5,36 @@
     $itemsById = $outfitDays->flatMap(fn ($d) => $d->slots->flatMap->items)->keyBy('id');
     $scroll = $outfitDays->count() > 7;
 @endphp
-<div x-data="{ day: @js($selectedDay) }" class="space-y-4">
+<div x-data="{ day: @js($selectedDay), person: 'me' }" class="space-y-4">
+    @if ($trip->isGroup())
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            @if ($sharedOutfits->isNotEmpty())
+                <div class="segment" role="group" aria-label="Wessen Outfits">
+                    <button type="button" class="segment-item" :aria-pressed="person === 'me'" @click="person = 'me'">Meine</button>
+                    @foreach ($sharedOutfits as $shared)
+                        <button type="button" class="segment-item" :aria-pressed="person === {{ $shared['user']->id }}" @click="person = {{ $shared['user']->id }}">{{ $shared['user']->name }}</button>
+                    @endforeach
+                </div>
+            @else
+                <span></span>
+            @endif
+            <form method="POST" action="{{ route('sharing.outfits', $trip) }}">
+                @csrf @method('PUT')
+                <input type="hidden" name="shared" value="{{ $myOutfitsShared ? 0 : 1 }}">
+                <button type="submit" role="switch" aria-checked="{{ $myOutfitsShared ? 'true' : 'false' }}" class="chip min-h-9 {{ $myOutfitsShared ? 'bg-accent text-white' : 'bg-line-soft text-muted hover:text-ink' }}">
+                    <x-icon :name="$myOutfitsShared ? 'users' : 'lock'" size="14" /> {{ $myOutfitsShared ? 'Für Mitreisende sichtbar' : 'Meine Outfits sind privat' }}
+                </button>
+            </form>
+        </div>
+
+        @foreach ($sharedOutfits as $shared)
+            <div x-show="person === {{ $shared['user']->id }}" x-cloak>
+                @include('trips._outfits-readonly', ['days' => $shared['days'], 'owner' => $shared['user']])
+            </div>
+        @endforeach
+    @endif
+
+    <div x-show="person === 'me'" class="space-y-4">
     {{-- Wochenübersicht --}}
     <section class="card overflow-hidden">
         <div class="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
@@ -154,4 +183,5 @@
             <button type="submit" class="btn btn-primary w-full sm:w-auto" @disabled(! $outfitQuantities)><x-icon name="list-checks" size="18" /> In die Packliste übernehmen</button>
         </form>
     </section>
+    </div>
 </div>

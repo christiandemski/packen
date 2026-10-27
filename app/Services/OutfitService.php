@@ -59,6 +59,21 @@ class OutfitService
             ->get();
     }
 
+    /**
+     * Nur lesen, ohne Tage anzulegen – für freigegebene Outfits anderer Personen.
+     *
+     * @return Collection<int, OutfitDay>
+     */
+    public function existingDays(Trip $trip, User $user): Collection
+    {
+        return OutfitDay::with('slots.items')
+            ->where(['trip_id' => $trip->id, 'user_id' => $user->id])
+            ->whereDate('date', '>=', $trip->start_date->toDateString())
+            ->whereDate('date', '<=', $trip->end_date->toDateString())
+            ->orderBy('date')
+            ->get();
+    }
+
     public function addSlot(OutfitDay $day, string $name): OutfitSlot
     {
         return $day->slots()->create([

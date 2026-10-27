@@ -7,10 +7,12 @@ use App\Enums\PacklistGroup;
 use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
 use App\Models\Container;
+use App\Models\GroupItem;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Policies\PacklistEntryPolicy;
 use App\Services\ContainerService;
 use App\Services\OutfitService;
 use App\Services\PacklistService;
@@ -18,6 +20,7 @@ use App\Services\TripService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -57,7 +60,15 @@ class TripController extends Controller
         Gate::authorize('view', $trip);
         $user = $request->user();
 
-        $entries = $trip->entries()->with('item')->where('user_id', $user->id)->visible()->get();
+        // Liste einer mitreisenden Person, die ihre Packliste für mich freigegeben hat
+        $listOwner = $user;
+        if ($request->filled('liste') && (int) $request->query('liste') !== $user->id) {
+            $listOwner = $trip->members()->whereKey((int) $request->query('liste'))->first();
+            abort_unless($listOwner && PacklistEntryPolicy::hasGrant($trip->id, $listOwner->id, $user->id), 403);
+        }
+        $canEdit = $listOwner->is($user);
+
+        $entries = $trip->entries()->with(['item', 'packer', 'groupItem'])->where('user_id', $listOwner->id)->visible()->get();
         $groups = $entries
             ->sortBy(fn (PacklistEntry $entry) => mb_strtolower($entry->name()))
             ->groupBy(fn (PacklistEntry $entry) => $entry->packlistGroup()->value)
@@ -78,13 +89,21 @@ class TripController extends Controller
             ?? $outfitDays->first(fn ($day) => $day->date->isToday())
             ?? $outfitDays->first();
 
-        $tripContainers = $trip->containersFor($user)->orderBy('name')->get();
-        $summary = $containers->summary($trip, $user, $entries);
+        $tripContainers = $trip->containersFor($listOwner)->orderBy('name')->get();
+        $summary = $containers->summary($trip, $listOwner, $entries);
+        $members = $trip->members()->get();
 
         return view('trips.show', [
             'trip' => $trip->load('members'),
             'groups' => $groups,
-            'userContainers' => Container::accessibleBy($user)->orderBy('name')->get(),
+            'listOwner' => $listOwner,
+            'canEdit' => $canEdit,
+            'grantedToMe' => $members->whereIn('id', DB::table('packlist_grants')->where(['trip_id' => $trip->id, 'grantee_id' => $user->id])->pluck('owner_id'))->values(),
+            'myGrantees' => DB::table('packlist_grants')->where(['trip_id' => $trip->id, 'owner_id' => $user->id])->pluck('grantee_id'),
+            'groupItems' => $trip->isGroup() ? GroupItem::with(['requester', 'assignee', 'creator'])->where('trip_id', $trip->id)->active()->orderBy('status')->orderBy('name')->get() : collect(),
+            'sharedOutfits' => $members->filter(fn ($m) => $m->pivot->outfits_shared && $m->isNot($user))->map(fn ($m) => ['user' => $m, 'days' => $outfits->existingDays($trip, $m)])->values(),
+            'myOutfitsShared' => (bool) $members->firstWhere('id', $user->id)?->pivot->outfits_shared,
+            'userContainers' => $canEdit ? Container::accessibleBy($user)->orderBy('name')->get() : collect(),
             'tripContainers' => $tripContainers,
             'containerSummary' => $summary,
             'neededLabel' => ContainerService::neededLabel($summary),
@@ -97,7 +116,7 @@ class TripController extends Controller
             'outfitQuantities' => $outfits->quantities($outfitDays),
             'clothingItems' => $outfits->clothingItems($user),
             'hasOutfitEntries' => $entries->contains(fn (PacklistEntry $e) => $e->source === EntrySource::Outfit),
-            'progress' => $packlists->progress($trip, $user),
+            'progress' => $packlists->progress($trip, $listOwner),
             'templates' => $templates,
             'selected' => $selected,
             'suggested' => $suggested,

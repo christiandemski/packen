@@ -9,6 +9,7 @@ namespace App\Enums;
 enum PacklistGroup: string
 {
     case DepartureDay = 'departure_day';
+    case Shared = 'shared';
     case Clothing = 'clothing';
     case Toiletries = 'toiletries';
     case Health = 'health';
@@ -23,6 +24,7 @@ enum PacklistGroup: string
     {
         return match ($this) {
             self::DepartureDay => 'Am Abfahrtstag',
+            self::Shared => 'Für die Gruppe',
             self::Clothing => 'Kleidung',
             default => ItemCategory::from($this->value)->label(),
         };
@@ -32,6 +34,7 @@ enum PacklistGroup: string
     {
         return match ($this) {
             self::DepartureDay => 'clock',
+            self::Shared => 'users',
             self::Clothing => 'shirt',
             default => ItemCategory::from($this->value)->icon(),
         };

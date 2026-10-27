@@ -8,15 +8,19 @@ use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\ContainerController;
+use App\Http\Controllers\GroupItemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SharingController;
 use App\Http\Controllers\StarterTemplateController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TemplateItemController;
 use App\Http\Controllers\TripController;
+use App\Http\Controllers\TripInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -65,6 +69,18 @@ Route::middleware('auth')->group(function () {
         ->parameters(['katalog' => 'item'])
         ->names('items')
         ->except('show');
+
+    Route::get('/benachrichtigungen', [NotificationController::class, 'index'])->name('notifications.index');
+
+    Route::prefix('/reisen/{trip}')->group(function () {
+        Route::post('/gemeinsam', [GroupItemController::class, 'store'])->name('group-items.store');
+        Route::post('/gemeinsam/{groupItem}/annehmen', [GroupItemController::class, 'claim'])->name('group-items.claim');
+        Route::post('/gemeinsam/{groupItem}/abgeben', [GroupItemController::class, 'release'])->name('group-items.release');
+        Route::post('/gemeinsam/{groupItem}/zurueckziehen', [GroupItemController::class, 'withdraw'])->name('group-items.withdraw');
+        Route::put('/freigabe/packliste', [SharingController::class, 'packlist'])->name('sharing.packlist');
+        Route::put('/freigabe/outfits', [SharingController::class, 'outfits'])->name('sharing.outfits');
+        Route::post('/einladen', [TripInvitationController::class, 'store'])->name('trips.invite');
+    });
 
     // Outfit-Routen ohne scopeBindings: Zugehörigkeit von Tag und Slot prüft der OutfitController.
     Route::prefix('/reisen/{trip}')->name('outfits.')->group(function () {

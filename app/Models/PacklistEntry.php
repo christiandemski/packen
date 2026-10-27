@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 class PacklistEntry extends Model
 {
     protected $fillable = [
-        'trip_id', 'user_id', 'item_id', 'custom_name', 'group', 'container_id', 'quantity', 'quantity_locked',
+        'trip_id', 'user_id', 'item_id', 'group_item_id', 'packed_by', 'custom_name', 'group', 'container_id', 'quantity', 'quantity_locked',
         'source', 'excluded', 'note', 'packed', 'packed_at', 'packed_changed_at',
     ];
 
@@ -48,6 +48,18 @@ class PacklistEntry extends Model
     }
 
     /** @return BelongsTo<Container, $this> */
+    public function groupItem(): BelongsTo
+    {
+        return $this->belongsTo(GroupItem::class);
+    }
+
+    /** Wer (wenn nicht die Person selbst) den Eintrag abgehakt hat. */
+    public function packer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packed_by');
+    }
+
+    /** @return BelongsTo<Container, $this> */
     public function container(): BelongsTo
     {
         return $this->belongsTo(Container::class);
@@ -72,6 +84,10 @@ class PacklistEntry extends Model
 
     public function packlistGroup(): PacklistGroup
     {
+        if ($this->group_item_id !== null) {
+            return PacklistGroup::Shared;
+        }
+
         if ($this->item === null) {
             return PacklistGroup::tryFrom((string) $this->group) ?? PacklistGroup::Misc;
         }
@@ -85,7 +101,7 @@ class PacklistEntry extends Model
      *
      * @return bool ob die Änderung übernommen wurde
      */
-    public function setPacked(bool $packed, ?Carbon $changedAt = null): bool
+    public function setPacked(bool $packed, ?Carbon $changedAt = null, ?User $by = null): bool
     {
         // Gerätezeit nie in der Zukunft akzeptieren, sonst blockiert eine falsch gehende Uhr spätere Änderungen.
         $changedAt = $changedAt === null ? now() : $changedAt->copy()->min(now());
@@ -98,6 +114,8 @@ class PacklistEntry extends Model
             'packed' => $packed,
             'packed_at' => $packed ? ($this->packed ? $this->packed_at : $changedAt) : null,
             'packed_changed_at' => $changedAt,
+            // Nur merken, wenn jemand anderes gepackt hat („gepackt von Max“)
+            'packed_by' => $packed && $by !== null && $by->id !== $this->user_id ? $by->id : null,
         ]);
 
         return true;

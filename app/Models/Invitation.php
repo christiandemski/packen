@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Invitation extends Model
 {
-    protected $fillable = ['email', 'name', 'invited_by', 'token_hash', 'expires_at', 'accepted_at'];
+    protected $fillable = ['email', 'name', 'invited_by', 'trip_id', 'token_hash', 'expires_at', 'accepted_at'];
 
     protected $hidden = ['token_hash'];
 
@@ -24,6 +24,12 @@ class Invitation extends Model
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
+    }
+
+    /** @return BelongsTo<Trip, $this> */
+    public function trip(): BelongsTo
+    {
+        return $this->belongsTo(Trip::class);
     }
 
     public function isExpired(): bool

@@ -35,7 +35,21 @@
 
         {{-- ───────────── Packliste ───────────── --}}
         <div role="tabpanel" x-show="tab === 'packlist'" class="mt-4" x-data="packlist(@js((object) $packedState->all()), @js($initialView))">
-            @if ($isEmpty)
+            @if ($grantedToMe->isNotEmpty())
+                <div class="segment mb-4" role="group" aria-label="Wessen Packliste">
+                    <a href="{{ route('trips.show', $trip) }}" class="segment-item" aria-pressed="{{ $canEdit ? 'true' : 'false' }}">Meine Liste</a>
+                    @foreach ($grantedToMe as $owner)
+                        <a href="{{ route('trips.show', ['trip' => $trip, 'liste' => $owner->id]) }}" class="segment-item" aria-pressed="{{ $listOwner->is($owner) ? 'true' : 'false' }}">{{ $owner->name }}</a>
+                    @endforeach
+                </div>
+            @endif
+            @unless ($canEdit)
+                <p class="mb-4 flex items-center gap-2 rounded-chip bg-accent-soft px-4 py-3 text-sm font-bold text-accent-ink">
+                    <x-icon name="users" size="16" /> Du packst für {{ $listOwner->name }} mit – abhaken geht, ändern nur {{ $listOwner->name }}.
+                </p>
+            @endunless
+            @include('trips._group-requests')
+            @if ($isEmpty && $canEdit)
                 <div class="card p-5">
                     <p class="card-title">Stell deine Packliste zusammen</p>
                     <p class="mt-1 text-sm text-muted">Wähle Module – doppelte Gegenstände werden zusammengeführt, „pro Tag“ wird mit {{ $trip->days() }} Tagen gerechnet.</p>
@@ -74,6 +88,8 @@
                         </form>
                     @endif
                 </div>
+            @elseif ($isEmpty)
+                <div class="card p-5 text-sm text-muted">Diese Liste ist noch leer.</div>
             @else
                 {{-- Fortschritt --}}
                 <div class="card p-5">
@@ -86,7 +102,7 @@
                     </div>
 
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
-                        <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <div class="flex min-w-0 flex-wrap items-center gap-1.5 {{ $canEdit ? '' : 'invisible' }}">
                             <span class="mr-1 text-xs font-bold text-muted">Zusammengesetzt aus</span>
                             @foreach ($selectedTemplates as $template)
                                 <span class="chip bg-ink text-white">{{ $template->name }}</span>
@@ -131,7 +147,7 @@
                             </div>
                             <ul class="divide-y divide-line-soft">
                                 @foreach ($entries as $entry)
-                                    <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="groups" />
+                                    <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" :can-edit="$canEdit" view="groups" />
                                 @endforeach
                             </ul>
                         </section>
@@ -182,7 +198,7 @@
                                 @else
                                     <ul class="divide-y divide-line-soft">
                                         @foreach ($row['entries'] as $entry)
-                                            <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="containers" />
+                                            <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" :can-edit="$canEdit" view="containers" />
                                         @endforeach
                                     </ul>
                                 @endif
@@ -200,7 +216,7 @@
                                 </div>
                                 <ul class="divide-y divide-line-soft">
                                     @foreach ($unassigned as $entry)
-                                        <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" view="containers" />
+                                        <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" :can-edit="$canEdit" view="containers" />
                                     @endforeach
                                 </ul>
                             </section>
@@ -215,10 +231,16 @@
                 </div>
             @endif
 
+            @if ($trip->isGroup() && $canEdit)
+                @include('trips._group-items')
+            @endif
+
+            @if ($canEdit)
             <button type="button" @click="$dispatch('open-sheet', 'add-entry')"
                     class="btn btn-primary fixed right-4 bottom-20 z-20 shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] sm:bottom-6">
                 <x-icon name="plus" size="18" /> Gegenstand
             </button>
+            @endif
         </div>
 
         {{-- ───────────── Outfits ───────────── --}}
@@ -263,6 +285,23 @@
                             </li>
                         @endforeach
                     </ul>
+                @endif
+                @if ($trip->isGroup() && $trip->members->count() > 1)
+                    <form method="POST" action="{{ route('sharing.packlist', $trip) }}" class="px-5 py-4">
+                        @csrf @method('PUT')
+                        <p class="text-[15px] font-bold">Für mich mitpacken dürfen</p>
+                        <p class="mt-0.5 text-sm text-muted">Wer hier ausgewählt ist, sieht deine Packliste und darf abhaken – z. B. wenn ihr gemeinsam packt. Ändern kannst nur du.</p>
+                        <div class="mt-2 space-y-1">
+                            @foreach ($trip->members->where('id', '!=', auth()->id()) as $member)
+                                <label class="flex min-h-11 cursor-pointer items-center gap-3">
+                                    <input type="checkbox" name="grantee_ids[]" value="{{ $member->id }}" @checked($myGrantees->contains($member->id)) class="size-5 accent-[var(--accent)]">
+                                    <x-avatar :user="$member" size="sm" />
+                                    <span class="text-[15px] font-semibold">{{ $member->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <button type="submit" class="btn btn-secondary mt-2 min-h-10 text-sm">Freigabe speichern</button>
+                    </form>
                 @endif
             </div>
         </details>
