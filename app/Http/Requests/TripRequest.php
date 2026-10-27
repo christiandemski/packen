@@ -18,6 +18,12 @@ class TripRequest extends FormRequest
         return true; // Rechte prüft der Controller über die TripPolicy.
     }
 
+    /** Nicht angekreuzte Checkboxen werden gar nicht gesendet – „nichts gewählt“ heißt leere Liste. */
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['transports' => array_values(array_unique((array) $this->input('transports', [])))]);
+    }
+
     public function rules(): array
     {
         return [
@@ -28,7 +34,8 @@ class TripRequest extends FormRequest
             'type' => ['required', Rule::enum(TripType::class)],
             'mode' => ['required', Rule::enum(TripMode::class)],
             'accommodation' => ['nullable', Rule::enum(Accommodation::class)],
-            'transport' => ['nullable', Rule::enum(Transport::class)],
+            'transports' => ['array'],
+            'transports.*' => [Rule::enum(Transport::class)],
             'members' => ['array'],
             'members.*' => ['integer', Rule::exists('users', 'id')->where('active', true)],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
@@ -46,7 +53,8 @@ class TripRequest extends FormRequest
             'type' => 'Reiseart',
             'mode' => 'Art der Liste',
             'accommodation' => 'Unterkunft',
-            'transport' => 'Anreise mit',
+            'transports' => 'Anreise mit',
+            'transports.*' => 'Anreise mit',
             'members' => 'Mitreisende',
             'cover' => 'Bild',
         ];

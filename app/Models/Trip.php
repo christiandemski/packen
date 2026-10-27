@@ -8,6 +8,7 @@ use App\Enums\TripMemberRole;
 use App\Enums\TripMode;
 use App\Enums\TripType;
 use Database\Factories\TripFactory;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +23,7 @@ class Trip extends Model
 
     protected $fillable = [
         'owner_id', 'name', 'start_date', 'end_date', 'type', 'mode',
-        'accommodation', 'transport', 'location', 'cover_path',
+        'accommodation', 'transports', 'location', 'cover_path',
     ];
 
     protected function casts(): array
@@ -33,7 +34,7 @@ class Trip extends Model
             'type' => TripType::class,
             'mode' => TripMode::class,
             'accommodation' => Accommodation::class,
-            'transport' => Transport::class,
+            'transports' => AsEnumCollection::of(Transport::class),
         ];
     }
 

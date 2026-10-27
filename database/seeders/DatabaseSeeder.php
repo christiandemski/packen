@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
             'type' => TripType::Citytrip->value,
             'mode' => TripMode::Group->value,
             'accommodation' => Accommodation::Apartment->value,
-            'transport' => Transport::Plane->value,
+            'transports' => [Transport::Plane->value, Transport::RentalCar->value],
         ], memberIds: [$anna->id, $max->id]);
 
         $trips->create($admin, [
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             'type' => TripType::Bikepacking->value,
             'mode' => TripMode::Solo->value,
             'accommodation' => Accommodation::Camping->value,
-            'transport' => Transport::Bike->value,
+            'transports' => [Transport::Train->value, Transport::Bike->value],
         ]);
 
         $trips->create($admin, [
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
             'type' => TripType::RunningEvent->value,
             'mode' => TripMode::Solo->value,
             'accommodation' => Accommodation::Hotel->value,
-            'transport' => Transport::Train->value,
+            'transports' => [Transport::Train->value],
         ]);
 
         $trips->create($anna, [

@@ -59,9 +59,9 @@
 
         <div class="mt-auto flex items-center justify-between gap-3 border-t border-line-soft pt-3">
             <div class="flex min-w-0 flex-wrap items-center gap-1.5">
-                @if ($trip->transport)
-                    <span class="chip bg-line-soft text-muted"><x-icon :name="$trip->transport->icon()" size="14" /> {{ $trip->transport->label() }}</span>
-                @endif
+                @foreach ($trip->transports ?? [] as $transport)
+                    <span class="chip bg-line-soft text-muted"><x-icon :name="$transport->icon()" size="14" /> {{ $transport->label() }}</span>
+                @endforeach
                 @if ($trip->accommodation)
                     <span class="chip bg-line-soft text-muted"><x-icon :name="$trip->accommodation->icon()" size="14" /> {{ $trip->accommodation->label() }}</span>
                 @endif

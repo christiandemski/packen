@@ -239,7 +239,7 @@
                 @foreach (array_filter([
                     ['map-pin', 'Reiseziel', $trip->location],
                     ['calendar', 'Zeitraum', $trip->dateRangeLabel().' ('.$trip->countdownLabel().')'],
-                    [$trip->transport?->icon() ?? 'compass', 'Anreise mit', $trip->transport?->label()],
+                    [$trip->transports?->first()?->icon() ?? 'compass', 'Anreise mit', $trip->transports?->map->label()->join(' + ')],
                     [$trip->accommodation?->icon() ?? 'bed', 'Unterkunft', $trip->accommodation?->label()],
                 ], fn ($row) => filled($row[2])) as [$icon, $label, $value])
                     <div class="flex min-h-[52px] items-center gap-3 px-5 py-3">

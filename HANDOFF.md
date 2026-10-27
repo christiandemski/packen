@@ -87,7 +87,7 @@ template_items    template_id, item_id, quantity
 
 trips             id, owner_id, name, start_date, end_date,
                   type (citytrip|beach|hiking|bikepacking|running_event|winter|other),
-                  accommodation, transport, location (nullable), timestamps
+                  accommodation, transports (JSON-Liste, z. B. Flugzeug + Mietwagen), location (nullable), timestamps
 trip_members      trip_id, user_id, role (owner|member), outfits_shared (bool), joined_at
 trip_templates    trip_id, user_id, template_id           // welche Module jemand gewählt hat
 packlist_grants   trip_id, owner_id, grantee_id           // grantee darf die Packliste von owner sehen/abhaken

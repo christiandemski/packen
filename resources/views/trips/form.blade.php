@@ -100,7 +100,20 @@
             {{-- Unterwegs --}}
             <div class="card space-y-4 p-5">
                 <p class="card-title">Unterwegs</p>
-                @foreach ([['transport', 'Anreise mit', Transport::cases(), $trip->transport], ['accommodation', 'Unterkunft', Accommodation::cases(), $trip->accommodation]] as [$field, $label, $cases, $current])
+                @php($selectedTransports = collect(old('transports', $trip->transports?->map->value->all() ?? [])))
+                <fieldset>
+                    <legend class="label">Anreise mit <span class="normal-case tracking-normal">(mehrere möglich, z. B. Flugzeug + Mietwagen)</span></legend>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (Transport::cases() as $case)
+                            <label class="choice">
+                                <input type="checkbox" name="transports[]" value="{{ $case->value }}" class="sr-only" @checked($selectedTransports->contains($case->value))>
+                                <x-icon :name="$case->icon()" size="16" /> {{ $case->label() }}
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('transports.*')<p class="field-error">{{ $message }}</p>@enderror
+                </fieldset>
+                @foreach ([['accommodation', 'Unterkunft', Accommodation::cases(), $trip->accommodation]] as [$field, $label, $cases, $current])
                     <fieldset>
                         <legend class="label">{{ $label }}</legend>
                         <div class="flex flex-wrap gap-2">

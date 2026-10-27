@@ -22,7 +22,7 @@ function tripInput(array $overrides = []): array
         'end_date' => '2027-05-16',
         'type' => 'citytrip',
         'mode' => 'solo',
-        'transport' => 'plane',
+        'transports' => ['plane', 'rental_car'],
         'accommodation' => 'apartment',
         ...$overrides,
     ];
@@ -159,4 +159,20 @@ it('zeigt Formular und Detailseite an', function () {
 
     $this->actingAs($this->anna)->get(route('trips.show', $trip))->assertOk()->assertSee('Lissabon');
     $this->actingAs($this->anna)->get(route('trips.edit', $trip))->assertOk();
+});
+
+it('erlaubt mehrere Verkehrsmittel und kann sie wieder abwählen', function () {
+    $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['transports' => ['plane', 'rental_car', 'plane']]));
+    $trip = Trip::sole();
+
+    expect($trip->transports->map->value->all())->toBe(['plane', 'rental_car']);
+    $this->actingAs($this->anna)->get(route('trips.show', $trip))->assertSee('Flugzeug + Mietwagen');
+    $this->actingAs($this->anna)->get(route('home'))->assertSee('Mietwagen');
+
+    $input = tripInput();
+    unset($input['transports']); // nichts angekreuzt: Feld wird gar nicht gesendet
+    $this->actingAs($this->anna)->put(route('trips.update', $trip), $input);
+    expect($trip->fresh()->transports->all())->toBe([]);
+
+    $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['transports' => ['zeppelin']]))->assertSessionHasErrors('transports.0');
 });
