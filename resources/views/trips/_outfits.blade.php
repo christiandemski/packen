@@ -41,6 +41,11 @@
             <h2 class="card-title">Übersicht</h2>
             <span class="text-xs font-bold text-muted">{{ $outfitDays->count() }} Tage</span>
         </div>
+        @if ($weather['place'] || $weather['hint'])
+            <p class="-mt-1 px-5 pb-3 text-xs font-semibold text-muted">
+                @if ($weather['days'])Wetter für {{ $weather['place'] }}.@endif {{ $weather['hint'] }}
+            </p>
+        @endif
         <div class="{{ $scroll ? 'overflow-x-auto' : '' }}">
             <table class="w-full border-collapse text-sm">
                 <thead>
@@ -48,13 +53,17 @@
                         <th class="sticky left-0 z-10 bg-surface px-3 text-left"><span class="sr-only">Kleidungsstück</span></th>
                         @foreach ($outfitDays as $outfitDay)
                             @php($date = $outfitDay->date->toDateString())
+                            @php($dayWeather = $weather['days'][$date] ?? null)
                             <th class="px-0.5 pb-2">
                                 <button type="button" @click="day = @js($date)" :aria-pressed="day === @js($date)"
-                                        class="flex min-h-12 w-10 flex-col items-center justify-center rounded-chip text-xs font-bold transition"
+                                        class="flex {{ $weather['days'] ? 'min-h-15' : 'min-h-12' }} w-10 flex-col items-center justify-center rounded-chip text-xs font-bold transition"
                                         :class="day === @js($date) ? 'bg-ink text-white' : '{{ $outfitDay->laundry_day ? 'bg-accent-soft text-accent-ink' : 'bg-line-soft text-muted hover:text-ink' }}'"
-                                        aria-label="{{ $outfitDay->label() }}{{ $outfitDay->laundry_day ? ', Waschtag' : '' }}">
+                                        aria-label="{{ $outfitDay->label() }}{{ $dayWeather ? ', '.$dayWeather->label().', bis '.$dayWeather->max.' °C' : '' }}{{ $outfitDay->laundry_day ? ', Waschtag' : '' }}">
                                     <span>{{ $outfitDay->date->locale('de')->minDayName }}</span>
                                     <span class="text-[15px] font-extrabold">{{ $outfitDay->date->day }}</span>
+                                    @if ($weather['days'])
+                                        <span class="text-[11px] font-bold">{{ $dayWeather ? $dayWeather->max.'°' : '–' }}</span>
+                                    @endif
                                 </button>
                             </th>
                         @endforeach
@@ -94,6 +103,7 @@
     {{-- Tagesdetails --}}
     @foreach ($outfitDays as $outfitDay)
         @php($date = $outfitDay->date->toDateString())
+        @php($dayWeather = $weather['days'][$date] ?? null)
         <section class="card p-5" x-show="day === @js($date)" @if ($date !== $selectedDay) x-cloak @endif>
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <form method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll class="min-w-0 flex-1" x-data="{ editing: false }">
@@ -104,6 +114,11 @@
                     <button type="button" x-show="!editing" @click="editing = true; $nextTick(() => $refs.title.focus())" class="text-sm font-bold text-muted hover:text-ink">
                         {{ $outfitDay->title ? 'Titel ändern' : '+ Titel, z. B. Alfama & Belém' }}
                     </button>
+                    @if ($dayWeather)
+                        <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted">
+                            <x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}
+                        </p>
+                    @endif
                     <div x-show="editing" x-cloak class="mt-2 flex gap-2">
                         <input x-ref="title" name="title" value="{{ $outfitDay->title }}" maxlength="120" placeholder="Was steht an?" aria-label="Titel des Tages" class="input">
                         <button type="submit" class="btn btn-primary">OK</button>

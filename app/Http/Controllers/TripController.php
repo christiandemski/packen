@@ -17,6 +17,7 @@ use App\Services\ContainerService;
 use App\Services\OutfitService;
 use App\Services\PacklistService;
 use App\Services\TripService;
+use App\Services\WeatherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -55,7 +56,7 @@ class TripController extends Controller
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
     }
 
-    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits): View
+    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits, WeatherService $weather): View
     {
         Gate::authorize('view', $trip);
         $user = $request->user();
@@ -111,6 +112,7 @@ class TripController extends Controller
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
             'outfitDays' => $outfitDays,
+            'weather' => $weather->forTrip($trip),
             'selectedDay' => $selectedDay?->date->toDateString(),
             'outfitOverview' => $outfits->overview($outfitDays),
             'outfitQuantities' => $outfits->quantities($outfitDays),

@@ -180,7 +180,7 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Ein Waschtag beendet einen Abschnitt (gewaschen wird abends); „pro Tag“ zählt die **Einsätze** im Abschnitt – Socken in „Tag“ und „Sport“ am selben Tag = 2.
 - „In die Packliste übernehmen“ setzt die Kleidungseinträge auf `source = outfit`. Von Hand geänderte Mengen (`quantity_locked`) bleiben; Teile, die in keinem Outfit mehr vorkommen, fallen an die Vorlagen zurück (oder weg, wenn keine Vorlage sie enthält).
 - Zusätzlich: „Wie am Vortag“ kopiert Slots und Teile des vorigen Tages; im Auswahlblatt lässt sich ein neues Kleidungsstück direkt anlegen.
-- Temperatur in den Tageskacheln folgt mit dem Wetter (siehe „Später“).
+- **Wetter** (Open-Meteo, ohne Schlüssel; `WeatherService`): Das Reiseziel wird per Ortssuche in Koordinaten umgesetzt (nur der Teil vor dem ersten Komma, 30 Tage zwischengespeichert), die Vorhersage für die Reisetage im 16-Tage-Fenster 3 Stunden. Tageskacheln zeigen die Höchsttemperatur, die Tageskarte Wetterlage, Min/Max und Regenwahrscheinlichkeit ab 20 %. Fällt der Dienst aus, fehlt nur das Wetter. Übertragen werden nur Ortsname und Koordinaten.
 
 ### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände – umgesetzt
 
@@ -224,7 +224,6 @@ Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person e
 
 ### 5.7 Später
 
-- Wetter pro Tag im Outfit-Planer (Vorhersage, wenn Reise nah genug).
 - Gesamtgewicht der Reise (Grundlage dafür sind die Behältnisse aus Meilenstein 3b).
 - API für „unterwegs“ (Abschnitt 9).
 - Passkeys als zusätzlicher Login für Freunde.
@@ -329,7 +328,7 @@ Bei der Umsetzung jetzt nur darauf achten, dass Reisen sauber über einen Servic
 - Welches Protokoll bietet BearID (OIDC? eigenes Token?) und welche Daten liefert es?
 - ~~Name der App und der Subdomain~~ → Packen, packen.allpixx.de
 - SMTP-Zugang für den Mailversand.
-- Wetterdienst für später (frei nutzbar, ohne personenbezogene Daten).
+- ~~Wetterdienst~~ → Open-Meteo (frei für nicht-kommerzielle Nutzung, ohne personenbezogene Daten)
 
 ---
 
