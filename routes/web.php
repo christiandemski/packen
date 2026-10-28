@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\InvitationController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -47,6 +48,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profil', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('/profil/bild', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::post('/profil/zugaenge', [ApiTokenController::class, 'store'])->name('api-tokens.store');
+    Route::delete('/profil/zugaenge/{apiToken}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
     Route::get('/benutzer/{user}/bild', [ProfileController::class, 'showAvatar'])->name('users.avatar');
 
     Route::resource('reisen', TripController::class)

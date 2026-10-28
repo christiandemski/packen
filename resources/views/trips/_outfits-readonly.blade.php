@@ -10,6 +10,9 @@
                     {{ $day->label() }}@if ($day->title)<span class="font-semibold text-muted">· {{ $day->title }}</span>@endif
                     @if ($day->laundry_day)<span class="chip bg-accent-soft text-accent-ink"><x-icon name="droplet" size="12" /> Waschtag</span>@endif
                 </p>
+                @if ($stageLocation = $stageLocations[$day->date->toDateString()] ?? null)
+                    <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted"><x-icon name="map-pin" size="16" /> {{ $stageLocation }}</p>
+                @endif
                 @if ($dayWeather = $weather['days'][$day->date->toDateString()] ?? null)
                     <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted"><x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}</p>
                 @endif

@@ -22,7 +22,7 @@ class Trip extends Model
     use HasFactory;
 
     protected $fillable = [
-        'owner_id', 'name', 'start_date', 'end_date', 'type', 'mode',
+        'owner_id', 'external_id', 'name', 'start_date', 'end_date', 'type', 'mode',
         'accommodation', 'transports', 'location', 'cover_path',
     ];
 
@@ -50,6 +50,29 @@ class Trip extends Model
         return $this->belongsToMany(User::class, 'trip_members')
             ->using(TripMember::class)
             ->withPivot(['role', 'outfits_shared', 'joined_at']);
+    }
+
+    /** @return HasMany<TripStage, $this> */
+    public function stages(): HasMany
+    {
+        return $this->hasMany(TripStage::class)->orderBy('date');
+    }
+
+    /**
+     * Ort je Tag: Etappe, sonst Reiseziel.
+     *
+     * @return array<string, ?string> Datum (Y-m-d) => Ort
+     */
+    public function locationsByDate(): array
+    {
+        $stages = $this->stages->mapWithKeys(fn (TripStage $stage) => [$stage->date->toDateString() => $stage->location]);
+
+        $locations = [];
+        for ($date = $this->start_date->copy(); $date->lte($this->end_date); $date->addDay()) {
+            $locations[$date->toDateString()] = $stages[$date->toDateString()] ?? $this->location;
+        }
+
+        return $locations;
     }
 
     /** @return HasMany<PacklistEntry, $this> */

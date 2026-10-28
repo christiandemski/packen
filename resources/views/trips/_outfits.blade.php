@@ -114,6 +114,9 @@
                     <button type="button" x-show="!editing" @click="editing = true; $nextTick(() => $refs.title.focus())" class="text-sm font-bold text-muted hover:text-ink">
                         {{ $outfitDay->title ? 'Titel ändern' : '+ Titel, z. B. Alfama & Belém' }}
                     </button>
+                    @if ($stageLocations[$date] ?? null)
+                        <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted"><x-icon name="map-pin" size="16" /> {{ $stageLocations[$date] }}</p>
+                    @endif
                     @if ($dayWeather)
                         <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted">
                             <x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}

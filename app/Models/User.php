@@ -113,4 +113,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(LoginToken::class);
     }
+
+    /** @return HasMany<ApiToken, $this> */
+    public function apiTokens(): HasMany
+    {
+        return $this->hasMany(ApiToken::class);
+    }
 }

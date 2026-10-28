@@ -114,6 +114,7 @@ class TripController extends Controller
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
             'outfitDays' => $outfitDays,
             'weather' => $weather->forTrip($trip),
+            'stageLocations' => $trip->stages->mapWithKeys(fn ($stage) => [$stage->date->toDateString() => $stage->location])->all(),
             'selectedDay' => $selectedDay?->date->toDateString(),
             'outfitOverview' => $outfits->overview($outfitDays),
             'outfitQuantities' => $outfits->quantities($outfitDays),

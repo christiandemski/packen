@@ -23,7 +23,8 @@ class TripService
 
     /**
      * @param  array{name: string, start_date: string, end_date: string, type: string, mode?: string,
-     *     accommodation?: ?string, transports?: list<string>, location?: ?string}  $data
+     *     accommodation?: ?string, transports?: list<string>, location?: ?string, external_id?: ?string,
+     *     stages?: list<array{date: string, location: string}>}  $data
      * @param  list<int>  $memberIds
      */
     public function create(User $owner, array $data, ?UploadedFile $cover = null, array $memberIds = []): Trip
@@ -37,6 +38,7 @@ class TripService
 
             $trip->addMember($owner, TripMemberRole::Owner);
             $this->syncMembers($trip, $memberIds);
+            $this->syncStages($trip, $data['stages'] ?? []);
 
             return $trip;
         });
@@ -59,6 +61,14 @@ class TripService
             }
 
             $trip->update($attributes);
+
+            if (array_key_exists('stages', $data)) {
+                $this->syncStages($trip, $data['stages'] ?? []);
+            } elseif ($trip->wasChanged(['start_date', 'end_date'])) {
+                // Etappen außerhalb des neuen Zeitraums fallen weg.
+                $trip->stages()->where(fn ($q) => $q->whereDate('date', '<', $trip->start_date->toDateString())
+                    ->orWhereDate('date', '>', $trip->end_date->toDateString()))->delete();
+            }
 
             if ($trip->wasChanged(['start_date', 'end_date'])) {
                 $this->packlists->syncTrip($trip); // „pro Tag“-Mengen hängen an der Reisedauer
@@ -109,10 +119,20 @@ class TripService
         }
     }
 
+    /** @param list<array{date: string, location: string}> $stages ersetzt alle Etappen */
+    private function syncStages(Trip $trip, array $stages): void
+    {
+        $trip->stages()->delete();
+        foreach ($stages as $stage) {
+            $trip->stages()->create(['date' => $stage['date'], 'location' => trim($stage['location'])]);
+        }
+        $trip->unsetRelation('stages');
+    }
+
     private function attributes(array $data): array
     {
         return collect($data)->only([
-            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location',
+            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id',
         ])->all();
     }
 

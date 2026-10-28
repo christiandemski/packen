@@ -3,6 +3,7 @@
 use App\Models\Trip;
 use App\Models\User;
 use App\Services\WeatherService;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -15,15 +16,24 @@ beforeEach(function () {
 
 function fakeWeather(): void
 {
+    $codes = [0, 61, 95];
+    $min = [14.4, 13.6, 12.0];
+    $max = [21.4, 18.5, 17.0];
+
     Http::fake([
         'geocoding-api.open-meteo.com/*' => Http::response(['results' => [['name' => 'Lissabon', 'country' => 'Portugal', 'latitude' => 38.71667, 'longitude' => -9.13333]]]),
-        'api.open-meteo.com/*' => Http::response(['daily' => [
-            'time' => ['2027-05-12', '2027-05-13', '2027-05-14'],
-            'weather_code' => [0, 61, 95],
-            'temperature_2m_min' => [14.4, 13.6, 12.0],
-            'temperature_2m_max' => [21.4, 18.5, 17.0],
-            'precipitation_probability_max' => [5, 70, 90],
-        ]]),
+        // Liefert für jeden abgefragten Tag Werte (reihum aus den drei Mustertagen).
+        'https://api.open-meteo.com/*' => function ($request) use ($codes, $min, $max) {
+            $dates = collect(CarbonPeriod::create($request['start_date'], $request['end_date']))->map->toDateString();
+
+            return Http::response(['daily' => [
+                'time' => $dates->all(),
+                'weather_code' => $dates->keys()->map(fn ($i) => $codes[$i % 3])->all(),
+                'temperature_2m_min' => $dates->keys()->map(fn ($i) => $min[$i % 3])->all(),
+                'temperature_2m_max' => $dates->keys()->map(fn ($i) => $max[$i % 3])->all(),
+                'precipitation_probability_max' => $dates->keys()->map(fn ($i) => [5, 70, 90][$i % 3])->all(),
+            ]]);
+        },
     ]);
 }
 
