@@ -321,6 +321,8 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 
 **Umgesetzt** (`routes/api.php`, `Api\TripController`):
 
+Gegenstück in „unterwegs“: `src/Packen.php` (Zugang je Benutzer unter „Einstellungen“, Verbinden je Tour unter „Listen“, Abgleich nach jeder Änderung an Tour, Etappen und Tourbuch; Kennung `unterwegs-<id>`). Beschrieben in der README von „unterwegs“ unter „Packliste in Packen“.
+
 - **Zugang:** Im Profil unter „Zugänge für andere Apps“ einen Token anlegen (`packen_…`, nur einmal sichtbar, gespeichert als SHA-256-Hash in `api_tokens`). Jede Anfrage mit `Authorization: Bearer <token>` und `Accept: application/json`. Widerrufen im Profil; gesperrte Konten verlieren ihre Tokens. Limit 60 Anfragen pro Minute.
 - `GET /api/me` – `{data: {name}}` der Token-Person, zum Prüfen eines eingetragenen Tokens. Der Token wird vor dem Laden einer Reise geprüft (Middleware-Priorität), ohne gültigen Token gibt es also immer 401.
 - `POST /api/trips` – legt eine private Reise der Token-Person an (201). Felder: `name`, `start_date`, `end_date` (Pflicht, `YYYY-MM-DD`), `type` (Standard `other`), `accommodation`, `transports[]`, `location`, `external_id` (Kennung in „unterwegs“), `external_url` (Link zurück, http/https), `stages[]` mit `{date, location}`. Gibt es die `external_id` bei dieser Person schon, wird die Reise aktualisiert (200) – wiederholtes Senden verdoppelt nichts.
