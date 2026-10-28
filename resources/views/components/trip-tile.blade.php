@@ -37,7 +37,11 @@
         <div class="space-y-1.5 text-sm font-semibold">
             <p class="flex items-center gap-2">
                 <x-icon name="calendar" size="16" class="text-muted" />
-                {{ $trip->dateRangeLabel() }} <span class="text-muted">· {{ $trip->durationLabel() }}</span>
+                {{ $trip->dateRangeLabel() }}
+            </p>
+            <p class="flex items-center gap-2 text-muted">
+                <x-icon name="clock" size="16" />
+                {{ $trip->durationLabel() }}
             </p>
             @if ($trip->location)
                 <p class="flex items-center gap-2"><x-icon name="map-pin" size="16" class="text-muted" /> <span class="truncate">{{ $trip->location }}</span></p>
