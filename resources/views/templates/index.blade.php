@@ -18,10 +18,10 @@
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
                 @foreach ($starters as $name => $starter)
                     <label class="flex cursor-pointer items-start gap-3 rounded-chip border border-line bg-surface p-3 has-checked:border-accent">
-                        <input type="checkbox" name="templates[]" value="{{ $name }}" checked class="mt-0.5 size-5 accent-[var(--accent)]">
+                        <input type="checkbox" name="templates[]" value="{{ $name }}" @checked(! in_array($name, $existingNames, true)) class="mt-0.5 size-5 accent-[var(--accent)]">
                         <span>
                             <span class="block text-[15px] font-bold">{{ $name }}</span>
-                            <span class="block text-xs font-semibold text-muted">{{ $starter['description'] }} · {{ count($starter['items']) }} Gegenstände</span>
+                            <span class="block text-xs font-semibold text-muted">{{ $starter['description'] }} · {{ count($starter['items']) }} Gegenstände{{ in_array($name, $existingNames, true) ? ' · hast du schon' : '' }}</span>
                         </span>
                     </label>
                 @endforeach
@@ -29,10 +29,16 @@
             @error('templates')<p class="field-error">{{ $message }}</p>@enderror
             <div class="mt-4 flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-primary"><x-icon name="check" size="18" /> Ausgewählte übernehmen</button>
-                <button type="submit" form="dismiss-starters" class="btn btn-ghost">Nein danke</button>
+                @if ($undecided)
+                    <button type="submit" form="dismiss-starters" class="btn btn-ghost">Nein danke</button>
+                @else
+                    <a href="{{ route('templates.index') }}" class="btn btn-ghost">Schließen</a>
+                @endif
             </div>
         </form>
-        <form id="dismiss-starters" method="POST" action="{{ route('starter-templates.dismiss') }}" class="hidden">@csrf @method('DELETE')</form>
+        @if ($undecided)
+            <form id="dismiss-starters" method="POST" action="{{ route('starter-templates.dismiss') }}" class="hidden">@csrf @method('DELETE')</form>
+        @endif
     @endif
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -84,4 +90,12 @@
             </div>
         </form>
     </div>
+
+    @unless ($starters)
+        <p class="mt-6 text-center">
+            <a href="{{ route('templates.index', ['start' => 1]) }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-muted hover:text-ink">
+                <x-icon name="sparkles" size="16" /> Start-Vorlagen anzeigen
+            </a>
+        </p>
+    @endunless
 </x-layouts.app>
