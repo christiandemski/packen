@@ -22,6 +22,15 @@ fi
 # Laravel braucht diese Verzeichnisse beschreibbar; Git legt leere Ordner nicht an.
 mkdir -p storage/framework/{cache/data,sessions,views} storage/logs storage/app/private bootstrap/cache
 
+# Doppelte Schlüssel in der .env sind eine häufige Fehlerquelle (es gilt die letzte Zeile).
+dupes=$(grep -oE '^[A-Z_]+=' .env | sort | uniq -d | tr -d '=' | tr '\n' ' ')
+[ -z "$dupes" ] || echo "WARNUNG: Doppelt in der .env: $dupes" >&2
+echo "Datenbank laut .env: $(grep -E '^DB_(CONNECTION|HOST|DATABASE)=' .env | tr '\n' ' ')" >&2
+
+# Zwischengespeicherte Konfiguration verwerfen, sonst greifen Änderungen an der .env nicht
+# (nur Dateien – „optimize:clear“ bräuchte für den Cache schon die Datenbank).
+"$PHP_BIN" artisan config:clear
+
 "$PHP_BIN" artisan down --retry=15 || true
 trap '"$PHP_BIN" artisan up' EXIT   # auch wenn eine Migration scheitert, nicht im Wartungsmodus hängen bleiben
 
