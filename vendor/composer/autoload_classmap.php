@@ -79,6 +79,8 @@ return array(
     'App\\Services\\SessionLogin' => $baseDir . '/app/Services/SessionLogin.php',
     'App\\Services\\StarterTemplates' => $baseDir . '/app/Services/StarterTemplates.php',
     'App\\Services\\TripService' => $baseDir . '/app/Services/TripService.php',
+    'App\\Services\\WeatherService' => $baseDir . '/app/Services/WeatherService.php',
+    'App\\Support\\DayWeather' => $baseDir . '/app/Support/DayWeather.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',

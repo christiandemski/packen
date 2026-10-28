@@ -557,6 +557,8 @@ class ComposerStaticInit644982d61768dde4b68efe594e5b406d
         'App\\Services\\SessionLogin' => __DIR__ . '/../..' . '/app/Services/SessionLogin.php',
         'App\\Services\\StarterTemplates' => __DIR__ . '/../..' . '/app/Services/StarterTemplates.php',
         'App\\Services\\TripService' => __DIR__ . '/../..' . '/app/Services/TripService.php',
+        'App\\Services\\WeatherService' => __DIR__ . '/../..' . '/app/Services/WeatherService.php',
+        'App\\Support\\DayWeather' => __DIR__ . '/../..' . '/app/Support/DayWeather.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Brick\\Math\\BigDecimal' => __DIR__ . '/..' . '/brick/math/src/BigDecimal.php',
         'Brick\\Math\\BigInteger' => __DIR__ . '/..' . '/brick/math/src/BigInteger.php',

@@ -10,6 +10,9 @@
                     {{ $day->label() }}@if ($day->title)<span class="font-semibold text-muted">· {{ $day->title }}</span>@endif
                     @if ($day->laundry_day)<span class="chip bg-accent-soft text-accent-ink"><x-icon name="droplet" size="12" /> Waschtag</span>@endif
                 </p>
+                @if ($dayWeather = $weather['days'][$day->date->toDateString()] ?? null)
+                    <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted"><x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}</p>
+                @endif
                 @foreach ($day->slots as $slot)
                     @continue($slot->items->isEmpty())
                     <p class="mt-2 text-xs font-bold tracking-[0.06em] text-muted uppercase">{{ $slot->name }}</p>
