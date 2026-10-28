@@ -182,7 +182,7 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Zusätzlich: „Wie am Vortag“ kopiert Slots und Teile des vorigen Tages; im Auswahlblatt lässt sich ein neues Kleidungsstück direkt anlegen.
 - Temperatur in den Tageskacheln folgt mit dem Wetter (siehe „Später“).
 
-### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände – umgesetzt (Browser-Test steht noch aus)
+### 5.5 Meilenstein 5: Gemeinsame Reisen und Gruppen-Gegenstände – umgesetzt
 
 - Owner lädt Mitglieder ein (aus bestehenden Freunden der App; Admin kann neue Freunde einladen, die nach Registrierung direkt in der Reise landen).
 - Jedes Mitglied hat **eigene** Packliste und **eigene** Outfits; Zeitraum, Ort und Reisedaten sind gemeinsam.

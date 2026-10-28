@@ -9,7 +9,7 @@
  *
  * Beim Abmelden löscht die Seite die Caches (siehe resources/js/offline.js).
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC = `packen-static-${VERSION}`;
 const PAGES = 'packen-pages';
 const IMAGES = 'packen-images';
@@ -56,7 +56,9 @@ async function networkFirstPage(request, url) {
         response = null;
     }
 
-    if (response && fromApp(response)) {
+    // Weiterleitungen (z. B. zur Anmeldung) kommen bei Navigationen als „opaqueredirect“
+    // ohne lesbare Header an – die gibt der Browser selbst weiter, sie sind kein Netzausfall.
+    if (response && (response.type === 'opaqueredirect' || fromApp(response))) {
         // Nur echte Seiten der angemeldeten Person merken, keine Weiterleitungen zur Anmeldung.
         if (response.ok && !response.redirected && CACHEABLE_PAGE.test(url.pathname)) {
             (await caches.open(PAGES)).put(url.pathname, response.clone());
