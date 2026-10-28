@@ -220,3 +220,14 @@ it('lehnt das Löschen gemeinsamer Reisen mit Mitreisenden ab', function () {
     $trip->members()->detach($this->max->id);
     ($this->api)()->deleteJson(route('api.trips.destroy', $id))->assertNoContent();
 });
+
+it('prüft den Token, bevor es Reisen nachschlägt', function () {
+    $this->getJson(route('api.trips.show', 999999))->assertUnauthorized();
+    $this->withToken('packen_falsch')->getJson(route('api.trips.show', 999999))->assertUnauthorized();
+    ($this->api)()->getJson(route('api.trips.show', 999999))->assertNotFound();
+});
+
+it('nennt, wem der Token gehört', function () {
+    $this->getJson(route('api.me'))->assertUnauthorized();
+    ($this->api)()->getJson(route('api.me'))->assertOk()->assertJsonPath('data.name', $this->anna->name);
+});

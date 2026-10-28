@@ -322,6 +322,7 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 **Umgesetzt** (`routes/api.php`, `Api\TripController`):
 
 - **Zugang:** Im Profil unter „Zugänge für andere Apps“ einen Token anlegen (`packen_…`, nur einmal sichtbar, gespeichert als SHA-256-Hash in `api_tokens`). Jede Anfrage mit `Authorization: Bearer <token>` und `Accept: application/json`. Widerrufen im Profil; gesperrte Konten verlieren ihre Tokens. Limit 60 Anfragen pro Minute.
+- `GET /api/me` – `{data: {name}}` der Token-Person, zum Prüfen eines eingetragenen Tokens. Der Token wird vor dem Laden einer Reise geprüft (Middleware-Priorität), ohne gültigen Token gibt es also immer 401.
 - `POST /api/trips` – legt eine private Reise der Token-Person an (201). Felder: `name`, `start_date`, `end_date` (Pflicht, `YYYY-MM-DD`), `type` (Standard `other`), `accommodation`, `transports[]`, `location`, `external_id` (Kennung in „unterwegs“), `external_url` (Link zurück, http/https), `stages[]` mit `{date, location}`. Gibt es die `external_id` bei dieser Person schon, wird die Reise aktualisiert (200) – wiederholtes Senden verdoppelt nichts.
 - `PATCH /api/trips/{id}` – nur mitgeschickte Felder; `stages` ersetzt alle Etappen. Wird der Zeitraum ohne `stages` verkürzt, fallen Etappen außerhalb weg. Nur der Owner darf ändern.
 - `DELETE /api/trips/{id}` – löscht die Reise samt Packlisten, Outfits und Etappen (204). Nur der Owner; danach 404. Gemeinsame Reisen mit Mitreisenden lehnt die API mit 409 ab (`message`, `url`) – die lassen sich nur in Packen löschen.

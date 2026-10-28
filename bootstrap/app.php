@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\MarkAppResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(MarkAppResponse::class);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
+        // Erst den API-Token prüfen, dann Reisen laden: sonst verrät 404 statt 401 ohne Token, welche IDs es gibt.
+        $middleware->prependToPriorityList(SubstituteBindings::class, AuthenticateApiToken::class);
 
         // Nur bekannten Proxies vertrauen, sonst lässt sich die IP für das Rate-Limit per
         // X-Forwarded-For fälschen. Lokal sitzt der DDEV-Router davor, bei Plesk ein nginx
