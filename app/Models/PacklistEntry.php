@@ -13,7 +13,7 @@ class PacklistEntry extends Model
 {
     protected $fillable = [
         'trip_id', 'user_id', 'item_id', 'group_item_id', 'packed_by', 'custom_name', 'group', 'container_id', 'quantity', 'quantity_locked',
-        'source', 'excluded', 'note', 'packed', 'packed_at', 'packed_changed_at',
+        'source', 'excluded', 'note', 'packed', 'packed_at', 'packed_changed_at', 'review',
     ];
 
     protected function casts(): array
