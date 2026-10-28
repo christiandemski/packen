@@ -170,7 +170,7 @@ it('holt das Wetter je Etappenort', function () {
     $weather = app(WeatherService::class)->forTrip(Trip::find($id));
 
     // 1.6. Basel (Etappe), 2.6. Straßburg (Etappe), 3./4.6. Basel (Reiseziel)
-    expect($weather['place'])->toBe('die Etappenorte')
+    expect($weather['place'])->toBe('die jeweiligen Tagesorte')
         ->and(collect($weather['days'])->map->max->all())->toBe(['2027-06-01' => 20, '2027-06-02' => 25, '2027-06-03' => 20, '2027-06-04' => 20]);
 
     $this->actingAs($this->anna)->get(route('trips.show', $id))->assertSee('Straßburg');

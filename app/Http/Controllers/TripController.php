@@ -8,6 +8,7 @@ use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
 use App\Models\Container;
 use App\Models\GroupItem;
+use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
@@ -18,6 +19,7 @@ use App\Services\OutfitService;
 use App\Services\PacklistService;
 use App\Services\TripService;
 use App\Services\WeatherService;
+use App\Support\RainGear;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -94,6 +96,14 @@ class TripController extends Controller
         $worn = $outfits->wornOnArrival($trip, $listOwner);
         $summary = $containers->summary($trip, $listOwner, $entries, $worn);
         $members = $trip->members()->get();
+        $dayLocations = fn ($days) => $days->mapWithKeys(fn ($day) => [$day->date->toDateString() => $day->location])->all();
+        $tripWeather = $weather->forTrip($trip, $dayLocations($outfitDays));
+
+        // Regen angesagt, aber kein Regenschutz auf der Liste oder im Outfit?
+        $rainDays = $canEdit && $entries->isNotEmpty() ? RainGear::missingFor(
+            $tripWeather['days'],
+            $entries->map->name()->merge($outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items)->pluck('name')),
+        ) : [];
 
         return view('trips.show', [
             'trip' => $trip->load('members'),
@@ -103,7 +113,11 @@ class TripController extends Controller
             'grantedToMe' => $members->whereIn('id', DB::table('packlist_grants')->where(['trip_id' => $trip->id, 'grantee_id' => $user->id])->pluck('owner_id'))->values(),
             'myGrantees' => DB::table('packlist_grants')->where(['trip_id' => $trip->id, 'owner_id' => $user->id])->pluck('grantee_id'),
             'groupItems' => $trip->isGroup() ? GroupItem::with(['requester', 'assignee', 'creator'])->where('trip_id', $trip->id)->active()->orderBy('status')->orderBy('name')->get() : collect(),
-            'sharedOutfits' => $members->filter(fn ($m) => $m->pivot->outfits_shared && $m->isNot($user))->map(fn ($m) => ['user' => $m, 'days' => $outfits->existingDays($trip, $m)])->values(),
+            'sharedOutfits' => $members->filter(fn ($m) => $m->pivot->outfits_shared && $m->isNot($user))->map(function ($m) use ($trip, $outfits, $weather, $dayLocations) {
+                $days = $outfits->existingDays($trip, $m);
+
+                return ['user' => $m, 'days' => $days, 'weather' => $weather->forTrip($trip, $dayLocations($days))];
+            })->values(),
             'myOutfitsShared' => (bool) $members->firstWhere('id', $user->id)?->pivot->outfits_shared,
             'userContainers' => $canEdit ? Container::accessibleBy($user)->orderBy('name')->get() : collect(),
             'tripContainers' => $tripContainers,
@@ -114,7 +128,9 @@ class TripController extends Controller
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
             'outfitDays' => $outfitDays,
-            'weather' => $weather->forTrip($trip),
+            'weather' => $tripWeather,
+            'rainDays' => $rainDays,
+            'rainGear' => $rainDays ? Item::accessibleBy($user)->orderBy('name')->get()->first(fn (Item $item) => RainGear::matches($item->name)) : null,
             'stageLocations' => $trip->stages->mapWithKeys(fn ($stage) => [$stage->date->toDateString() => $stage->location])->all(),
             'selectedDay' => $selectedDay?->date->toDateString(),
             'outfitOverview' => $outfits->overview($outfitDays),

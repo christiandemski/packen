@@ -29,12 +29,15 @@
 
         @foreach ($sharedOutfits as $shared)
             <div x-show="person === {{ $shared['user']->id }}" x-cloak>
-                @include('trips._outfits-readonly', ['days' => $shared['days'], 'owner' => $shared['user']])
+                @include('trips._outfits-readonly', ['days' => $shared['days'], 'owner' => $shared['user'], 'weather' => $shared['weather']])
             </div>
         @endforeach
     @endif
 
     <div x-show="person === 'me'" class="space-y-4">
+    @if ($rainDays)
+        <div class="-mb-4">@include('trips._rain-warning')</div>
+    @endif
     {{-- Wochenübersicht --}}
     <section class="card overflow-hidden">
         <div class="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
@@ -111,7 +114,8 @@
         @php($dayWeather = $weather['days'][$date] ?? null)
         <section class="card p-5" x-show="day === @js($date)" @if ($date !== $selectedDay) x-cloak @endif>
             <div class="flex flex-wrap items-start justify-between gap-3">
-                <form method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll class="min-w-0 flex-1" x-data="{ editing: false }">
+                <div class="min-w-0 flex-1">
+                <form method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll x-data="{ editing: false }">
                     @csrf @method('PATCH')
                     <p class="text-lg font-extrabold">
                         {{ $outfitDay->label() }}@if ($outfitDay->title)<span x-show="!editing"> · {{ $outfitDay->title }}</span>@endif
@@ -119,19 +123,44 @@
                     <button type="button" x-show="!editing" @click="editing = true; $nextTick(() => $refs.title.focus())" class="text-sm font-bold text-muted hover:text-ink">
                         {{ $outfitDay->title ? 'Titel ändern' : '+ Titel, z. B. Alfama & Belém' }}
                     </button>
-                    @if ($stageLocations[$date] ?? null)
-                        <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted"><x-icon name="map-pin" size="16" /> {{ $stageLocations[$date] }}</p>
-                    @endif
-                    @if ($dayWeather)
-                        <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted">
-                            <x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}
-                        </p>
-                    @endif
                     <div x-show="editing" x-cloak class="mt-2 flex gap-2">
                         <input x-ref="title" name="title" value="{{ $outfitDay->title }}" maxlength="120" placeholder="Was steht an?" aria-label="Titel des Tages" class="input">
                         <button type="submit" class="btn btn-primary">OK</button>
                     </div>
                 </form>
+
+                {{-- Ort des Tages: eigener Ort (z. B. Tagesausflug) vor Etappe vor Reiseziel --}}
+                @php($baseLocation = $stageLocations[$date] ?? $trip->location)
+                <div x-data="{ editing: false }" class="mt-1">
+                    <div x-show="!editing" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-semibold text-muted">
+                        @if ($outfitDay->location)
+                            <span class="flex min-w-0 items-center gap-1.5 text-ink"><x-icon name="map-pin" size="16" class="shrink-0" /> <span class="truncate">{{ $outfitDay->location }}</span></span>
+                            @if ($baseLocation)<span class="text-xs">statt {{ $baseLocation }}</span>@endif
+                            <form method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll>
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="location" value="">
+                                <button type="submit" class="text-xs font-bold text-muted underline hover:text-ink">zurücksetzen</button>
+                            </form>
+                        @elseif ($stageLocations[$date] ?? null)
+                            <span class="flex items-center gap-1.5"><x-icon name="map-pin" size="16" /> {{ $stageLocations[$date] }}</span>
+                        @endif
+                        <button type="button" @click="editing = true; $nextTick(() => $refs.location.focus())" class="font-bold hover:text-ink">
+                            {{ $outfitDay->location ? 'Ort ändern' : '+ Anderer Ort, z. B. Tagesausflug' }}
+                        </button>
+                    </div>
+                    <form x-show="editing" x-cloak method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll class="mt-1 flex gap-2">
+                        @csrf @method('PATCH')
+                        <input x-ref="location" name="location" value="{{ $outfitDay->location }}" maxlength="120" placeholder="{{ $baseLocation ? 'statt '.$baseLocation : 'z. B. Sintra' }}" aria-label="Ort an diesem Tag" class="input">
+                        <button type="submit" class="btn btn-primary">OK</button>
+                    </form>
+                </div>
+
+                @if ($dayWeather)
+                    <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold {{ $dayWeather->isRainy() && $rainDays ? 'text-warn-ink' : 'text-muted' }}">
+                        <x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}
+                    </p>
+                @endif
+                </div>
                 <form method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll>
                     @csrf @method('PATCH')
                     <input type="hidden" name="laundry_day" value="{{ $outfitDay->laundry_day ? 0 : 1 }}">

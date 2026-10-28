@@ -5,6 +5,8 @@ namespace App\Support;
 /** Wetter eines Tages, Werte in °C bzw. Prozent. */
 final readonly class DayWeather
 {
+    public const RAIN_THRESHOLD = 50;
+
     public function __construct(
         public int $code,
         public int $min,
@@ -33,6 +35,16 @@ final readonly class DayWeather
         }
 
         return $text;
+    }
+
+    /** Regen lohnt einen Hinweis: ab 50 % Wahrscheinlichkeit, ohne Angabe nach Wettercode. */
+    public function isRainy(): bool
+    {
+        if ($this->rainChance !== null) {
+            return $this->rainChance >= self::RAIN_THRESHOLD;
+        }
+
+        return in_array($this->icon(), ['cloud-drizzle', 'cloud-rain', 'cloud-lightning'], true);
     }
 
     /** @return array{string, string} */

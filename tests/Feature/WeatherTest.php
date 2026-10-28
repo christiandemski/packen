@@ -2,7 +2,10 @@
 
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\OutfitService;
+use App\Services\PacklistService;
 use App\Services\WeatherService;
+use App\Support\RainGear;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Http;
 
@@ -103,3 +106,51 @@ it('meldet unbekannte Orte', function () {
         ->place->toBeNull()
         ->hint->toContain('nicht gefunden');
 });
+
+it('nimmt für einen Tag mit eigenem Ort dessen Wetter', function () {
+    fakeWeather();
+    $day = app(OutfitService::class)->days($this->trip, $this->anna)->firstWhere(fn ($d) => $d->date->toDateString() === '2027-05-13');
+
+    $this->actingAs($this->anna)->patch(route('outfits.day', [$this->trip, $day]), ['location' => ' Sintra '])
+        ->assertRedirect(route('trips.show', ['trip' => $this->trip, 'tab' => 'outfits', 'tag' => '2027-05-13']));
+    expect($day->fresh()->location)->toBe('Sintra');
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertOk()
+        ->assertSee('statt Lissabon, Portugal');
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'geocoding') && $request['name'] === 'Sintra');
+
+    $this->actingAs($this->anna)->patch(route('outfits.day', [$this->trip, $day]), ['location' => '']);
+    expect($day->fresh()->location)->toBeNull();
+});
+
+it('überschreibt Etappen mit dem eigenen Ort und ignoriert Tage außerhalb der Reise', function () {
+    fakeWeather();
+    $this->trip->stages()->create(['date' => '2027-05-13', 'location' => 'Porto']);
+
+    app(WeatherService::class)->forTrip($this->trip->fresh(), ['2027-05-13' => 'Sintra', '2027-06-01' => 'Faro']);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'geocoding') && $request['name'] === 'Sintra');
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'geocoding') && in_array($request['name'], ['Porto', 'Faro'], true));
+});
+
+it('warnt bei Regen, wenn kein Regenschutz auf der Liste steht', function () {
+    fakeWeather();
+    $packlists = app(PacklistService::class);
+    $packlists->addEntry($this->trip, $this->anna, ['custom_name' => 'Trainingshose']);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSee('Regen angesagt: Do, 13. Mai, Fr, 14. Mai')
+        ->assertSee('Auf deiner Liste steht noch nichts gegen Regen');
+
+    $this->actingAs($this->anna)->post(route('packlist.store', $this->trip), ['custom_name' => 'Regenjacke', 'group' => 'clothing']);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertDontSee('Regen angesagt');
+});
+
+it('erkennt Regenschutz am Namen', function (string $name, bool $expected) {
+    expect(RainGear::matches($name))->toBe($expected);
+})->with([
+    ['Regenjacke', true], ['Taschenschirm', true], ['Poncho', true], ['Hardshell', true], ['Rain Jacket', true],
+    ['Trainingshose', false], ['Regenerationsgel', false], ['Sonnenhut', false],
+]);
