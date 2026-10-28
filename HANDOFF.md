@@ -160,7 +160,7 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Standardplatz am Gegenstand übernimmt neue Einträge automatisch ins passende Behältnis, sofern es auf der Reise dabei ist.
 - Übersicht „Du brauchst: 1 Koffer, 1 Rucksack, 2 Euroboxen“ sowie ungeordnete Einträge.
 - Wer nichts zuordnet, sieht davon nichts.
-- **Gesamtgewicht** (`ContainerService::totalWeight`) in der Fortschrittskarte: alle sichtbaren Einträge × Menge plus Leergewicht der gewählten Behältnisse. Fehlt bei Einträgen das Gewicht, steht „mind.“ davor und die Anzahl dahinter; ohne jedes Gewicht bleibt die Zeile weg.
+- **Gesamtgewicht** (`ContainerService::totalWeight`) in der Fortschrittskarte: alle sichtbaren Einträge × Menge plus Leergewicht der gewählten Behältnisse. Kleidung aus dem Outfit-Slot „Anreise“ am ersten Tag (sonst dessen Slot „Tag“) trägt man am Körper: je Teil ein Stück zählt weder zum Gesamtgewicht noch zum Behältnis („ohne 1,2 kg Anreise-Kleidung“; API: `worn_g`). Fehlt bei Einträgen das Gewicht, steht „mind.“ davor und die Anzahl dahinter; ohne jedes Gewicht bleibt die Zeile weg.
 - Offen: Volumen pro Gegenstand, um den Bedarf automatisch zu schätzen – erst, wenn sich die Zuordnung von Hand als zu mühsam erweist.
 
 ### 5.4 Meilenstein 4: Outfit-Planer
@@ -326,7 +326,7 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 - `PATCH /api/trips/{id}` – nur mitgeschickte Felder; `stages` ersetzt alle Etappen. Wird der Zeitraum ohne `stages` verkürzt, fallen Etappen außerhalb weg. Nur der Owner darf ändern.
 - `DELETE /api/trips/{id}` – löscht die Reise samt Packlisten, Outfits und Etappen (204). Nur der Owner; danach 404. Gemeinsame Reisen mit Mitreisenden lehnt die API mit 409 ab (`message`, `url`) – die lassen sich nur in Packen löschen.
 - `GET /api/trips/{id}` – Reise wie in den Antworten oben: `id, external_id, name, start_date, end_date, days, nights, type, mode, accommodation, transports, location, stages, url`.
-- `GET /api/trips/{id}/summary` – Packstand der eigenen Liste: `packed, total, progress` („18/42“), `weight_g`, `weight_complete` (false, wenn Einträgen das Gewicht fehlt), `url`.
+- `GET /api/trips/{id}/summary` – Packstand der eigenen Liste: `packed, total, progress` („18/42“), `weight_g` (ohne Anreise-Kleidung), `worn_g`, `weight_complete` (false, wenn Einträgen das Gewicht fehlt), `url`.
 - Erlaubte Werte: `type` citytrip, beach, hiking, bikepacking, running_event, winter, other · `accommodation` hotel, apartment, hostel, camping, hut, friends, other · `transports` plane, train, car, rental_car, bus, ferry, bike, on_foot, other.
 - Antworten stecken in `data`; Fehler als JSON (401 ohne gültigen Token, 403 fremde Reise, 422 mit `errors` je Feld).
 - **Etappen** (`trip_stages`, Ort je Tag) stehen im Outfit-Planer am Tag; das Wetter kommt pro Tag vom Etappenort, sonst vom Reiseziel. Bearbeitet werden sie in „unterwegs“: Mit `external_url` (Link auf die Aktivität) zeigt Packen im Outfit-Planer, in den Reisedetails und im Bearbeiten-Formular einen Link dorthin.

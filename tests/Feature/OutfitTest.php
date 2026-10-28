@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\EntrySource;
+use App\Models\Container;
 use App\Models\Item;
 use App\Models\OutfitDay;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\ContainerService;
 use App\Services\OutfitService;
 use App\Services\PacklistService;
 
@@ -185,4 +187,38 @@ it('hält Outfits privat – auch in Gruppenreisen', function () {
 
     expect($annasDay->fresh()->title)->toBeNull()
         ->and(OutfitDay::where('trip_id', $group->id)->where('user_id', $this->max->id)->count())->toBe(0);
+});
+
+it('rechnet die Anreise-Kleidung aus dem Gepäckgewicht heraus', function () {
+    $this->jeans->update(['weight_g' => 600]);
+    $this->shirt->update(['weight_g' => 200]);
+    $this->socks->update(['weight_g' => 50]);
+    wear($this->jeans, [0, 1, 2]);
+    wear($this->shirt, [0]);
+    wear($this->socks, [0, 1, 2, 3, 4]);
+    $this->service->applyToPacklist($this->trip, $this->anna); // 1 Jeans, 1 Hemd, 5 Socken = 1050 g
+
+    $suitcase = Container::factory()->for($this->anna, 'owner')->create(['empty_weight_g' => null]);
+    $containers = app(ContainerService::class);
+    $containers->setForTrip($this->trip, $this->anna, [$suitcase->id]);
+    $containers->assign($this->trip, $this->anna, PacklistEntry::where('trip_id', $this->trip->id)->pluck('id')->all(), $suitcase->id);
+
+    $weigh = function () use ($containers) {
+        $entries = PacklistEntry::with('item')->where('trip_id', $this->trip->id)->visible()->get();
+        $worn = $this->service->wornOnArrival($this->trip, $this->anna);
+        $summary = $containers->summary($this->trip, $this->anna, $entries, $worn);
+
+        return [ContainerService::totalWeight($entries, $summary, $worn), $summary->first()['weight']];
+    };
+
+    // Ohne Slot „Anreise“ zählt das Outfit „Tag“ des ersten Tages: Jeans, Hemd, 1 Paar Socken.
+    [$total, $inSuitcase] = $weigh();
+    expect($total)->worn->toBe(850)->total->toBe(200)->and($inSuitcase)->toBe(200);
+
+    // Mit Slot „Anreise“ zählt nur der.
+    wear($this->jeans, [0], 'Anreise');
+    [$total] = $weigh();
+    expect($total)->worn->toBe(600)->total->toBe(450);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSeeText('ohne 600 g Anreise-Kleidung');
 });

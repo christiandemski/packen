@@ -91,7 +91,8 @@ class TripController extends Controller
             ?? $outfitDays->first();
 
         $tripContainers = $trip->containersFor($listOwner)->orderBy('name')->get();
-        $summary = $containers->summary($trip, $listOwner, $entries);
+        $worn = $outfits->wornOnArrival($trip, $listOwner);
+        $summary = $containers->summary($trip, $listOwner, $entries, $worn);
         $members = $trip->members()->get();
 
         return view('trips.show', [
@@ -108,7 +109,7 @@ class TripController extends Controller
             'tripContainers' => $tripContainers,
             'containerSummary' => $summary,
             'neededLabel' => ContainerService::neededLabel($summary),
-            'weight' => ContainerService::totalWeight($entries, $summary),
+            'weight' => ContainerService::totalWeight($entries, $summary, $worn),
             'unassigned' => $entries->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',

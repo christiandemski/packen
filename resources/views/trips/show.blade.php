@@ -105,6 +105,7 @@
                             <x-icon name="scale" size="16" />
                             <span>Gesamtgewicht <span class="font-extrabold text-ink">{{ $weight['missing'] ? 'mind. ' : '' }}{{ Container::kg($weight['total']) }}</span></span>
                             @if ($weight['containers'])<span>· davon {{ Container::kg($weight['containers']) }} Behältnisse</span>@endif
+                            @if ($weight['worn'])<span title="Das Outfit für die Anreise trägst du am Körper.">· ohne {{ Container::kg($weight['worn']) }} Anreise-Kleidung</span>@endif
                             @if ($weight['missing'])<span>· {{ $weight['missing'] }} {{ $weight['missing'] === 1 ? 'Eintrag' : 'Einträge' }} ohne Gewicht</span>@endif
                         </p>
                     @endif

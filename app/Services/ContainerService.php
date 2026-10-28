@@ -74,13 +74,14 @@ class ContainerService
      * Inhalt und Gewicht je Behältnis für die Ansicht „nach Behältnis“.
      *
      * @param  Collection<int, PacklistEntry>  $entries  sichtbare Einträge mit geladenem item
+     * @param  array<int, int>  $worn  bei der Anreise getragen (item_id => Stück), zählt nicht mit
      * @return Collection<int, array{container: Container, entries: Collection, weight: int, over: bool}>
      */
-    public function summary(Trip $trip, User $user, Collection $entries): Collection
+    public function summary(Trip $trip, User $user, Collection $entries, array $worn = []): Collection
     {
-        return $trip->containersFor($user)->orderBy('name')->get()->map(function (Container $container) use ($entries) {
+        return $trip->containersFor($user)->orderBy('name')->get()->map(function (Container $container) use ($entries, $worn) {
             $inside = $entries->where('container_id', $container->id)->values();
-            $weight = ($container->empty_weight_g ?? 0) + $inside->sum(fn (PacklistEntry $e) => $e->weight());
+            $weight = ($container->empty_weight_g ?? 0) + $inside->sum(fn (PacklistEntry $e) => $e->weight() - self::wornWeight($e, $worn));
 
             return [
                 'container' => $container,
@@ -92,23 +93,34 @@ class ContainerService
     }
 
     /**
-     * Gesamtgewicht der Reise: alle sichtbaren Einträge plus Leergewicht der gewählten
-     * Behältnisse. „missing“ zählt Einträge ohne gepflegtes Gewicht – die Summe ist dann
-     * eine Untergrenze.
+     * Gesamtgewicht des Gepäcks: alle sichtbaren Einträge plus Leergewicht der gewählten
+     * Behältnisse, abzüglich der Kleidung, die man bei der Anreise trägt („worn“).
+     * „missing“ zählt Einträge ohne gepflegtes Gewicht – die Summe ist dann eine Untergrenze.
      *
      * @param  Collection<int, PacklistEntry>  $entries  sichtbare Einträge mit geladenem item
      * @param  Collection<int, array{container: Container}>  $summary
-     * @return array{total: int, containers: int, missing: int}
+     * @param  array<int, int>  $worn  item_id => getragene Stückzahl
+     * @return array{total: int, containers: int, worn: int, missing: int}
      */
-    public static function totalWeight(Collection $entries, Collection $summary): array
+    public static function totalWeight(Collection $entries, Collection $summary, array $worn = []): array
     {
         $containers = (int) $summary->sum(fn ($row) => $row['container']->empty_weight_g ?? 0);
+        $wornWeight = (int) $entries->sum(fn (PacklistEntry $e) => self::wornWeight($e, $worn));
 
         return [
-            'total' => (int) $entries->sum(fn (PacklistEntry $e) => $e->weight()) + $containers,
+            'total' => (int) $entries->sum(fn (PacklistEntry $e) => $e->weight()) - $wornWeight + $containers,
             'containers' => $containers,
+            'worn' => $wornWeight,
             'missing' => $entries->filter(fn (PacklistEntry $e) => $e->item?->weight_g === null)->count(),
         ];
+    }
+
+    /** Gewicht der Stücke eines Eintrags, die man bei der Anreise trägt. */
+    private static function wornWeight(PacklistEntry $entry, array $worn): int
+    {
+        $pieces = $worn[$entry->item_id] ?? 0;
+
+        return $pieces > 0 ? min($pieces, $entry->quantity) * ($entry->item?->weight_g ?? 0) : 0;
     }
 
     /**

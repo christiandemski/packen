@@ -74,6 +74,25 @@ class OutfitService
             ->get();
     }
 
+    /**
+     * Was man bei der Anreise am Körper trägt und deshalb nicht ins Gepäckgewicht zählt:
+     * der Slot „Anreise“ am ersten Tag, sonst dessen Slot „Tag“.
+     *
+     * @return array<int, int> item_id => getragene Stückzahl
+     */
+    public function wornOnArrival(Trip $trip, User $user): array
+    {
+        $first = OutfitDay::with('slots.items')
+            ->where(['trip_id' => $trip->id, 'user_id' => $user->id])
+            ->whereDate('date', $trip->start_date->toDateString())
+            ->first();
+
+        $slot = $first?->slots->firstWhere('name', OutfitSlot::ARRIVAL_NAME)
+            ?? $first?->slots->firstWhere('name', OutfitSlot::DEFAULT_NAME);
+
+        return $slot ? $slot->items->mapWithKeys(fn (Item $item) => [$item->id => 1])->all() : [];
+    }
+
     public function addSlot(OutfitDay $day, string $name): OutfitSlot
     {
         return $day->slots()->create([

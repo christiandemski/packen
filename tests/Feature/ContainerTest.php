@@ -114,7 +114,7 @@ it('rechnet das Gesamtgewicht der Reise samt Behältnissen', function () {
     $entries = PacklistEntry::with('item')->where('trip_id', $this->trip->id)->visible()->get();
     $summary = app(ContainerService::class)->summary($this->trip, $this->anna, $entries);
 
-    expect(ContainerService::totalWeight($entries, $summary))->toBe(['total' => 2300, 'containers' => 300, 'missing' => 1]);
+    expect(ContainerService::totalWeight($entries, $summary))->toBe(['total' => 2300, 'containers' => 300, 'worn' => 0, 'missing' => 1]);
 
     $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
         ->assertSeeText('Gesamtgewicht mind. 2,3 kg')
