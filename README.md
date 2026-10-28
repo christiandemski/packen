@@ -38,11 +38,12 @@ Einmalig in Plesk (Netcup Webhosting, PHP 8.5):
 1. **Git:** Branch auf `production` stellen. Unter „Weitere Bereitstellungsaktionen“: `bash deploy.sh`
 2. **Hosting:** Dokumentenstamm `…/public` (ist gesetzt).
 3. **Datenbank:** MariaDB-Datenbank und Benutzer anlegen.
-4. **`.env`** im Deploy-Verzeichnis anlegen (wird von Git nie überschrieben), Vorlage `.env.example`, abweichend:
+4. **`.env`** im Deploy-Verzeichnis anlegen, z. B. im Plesk-Dateimanager (wird von Git nie überschrieben). Vorlage `.env.example`, abweichend:
 
    ```dotenv
    APP_ENV=production
    APP_DEBUG=false
+   APP_KEY=                      # leer lassen – deploy.sh erzeugt ihn beim ersten Lauf
    APP_URL=https://packen.allpixx.de
    DB_HOST=localhost
    DB_DATABASE=…
@@ -50,20 +51,20 @@ Einmalig in Plesk (Netcup Webhosting, PHP 8.5):
    DB_PASSWORD=…
    SESSION_SECURE_COOKIE=true
    MAIL_MAILER=smtp
-   MAIL_HOST=…            # SMTP des Hostings
+   MAIL_HOST=…                   # SMTP des Hostings
    MAIL_PORT=587
    MAIL_USERNAME=…
    MAIL_PASSWORD=…
    MAIL_FROM_ADDRESS=packen@allpixx.de
+
+   # Erster Admin – wird beim nächsten Deployment einmalig angelegt
+   PACKEN_ADMIN_EMAIL=…
+   PACKEN_ADMIN_NAME=…
+   PACKEN_ADMIN_PASSWORD=…       # mindestens 12 Zeichen
    ```
 
-5. Per SSH im Deploy-Verzeichnis einmalig (`/opt/plesk/php/8.5/bin/php` statt `php`, falls nötig):
-
-   ```bash
-   php artisan key:generate
-   bash deploy.sh
-   php artisan packen:admin      # lokalen Admin anlegen bzw. Passwort setzen
-   ```
+5. In Plesk unter **Git → „Jetzt bereitstellen“** klicken (oder auf `main` pushen). `deploy.sh` erzeugt den `APP_KEY`, migriert und legt den Admin an. Anmeldung danach unter `/admin-anmeldung`.
+6. **`PACKEN_ADMIN_PASSWORD` wieder aus der `.env` löschen.** Ein bestehender Benutzer wird nie überschrieben; das Passwort ändern geht per SSH mit `php artisan packen:admin`.
 
 Eine Queue oder einen Cronjob braucht die App derzeit nicht.
 
