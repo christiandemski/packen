@@ -40,6 +40,10 @@ trap '"$PHP_BIN" artisan up' EXIT   # auch wenn eine Migration scheitert, nicht 
 # Chroot-Pfade für Log und Views – die Seite antwortet dann nur noch mit leerer 500.
 "$PHP_BIN" artisan config:clear
 "$PHP_BIN" artisan view:clear
+# Auch Routen- und Event-Cache verwerfen: Ein früheres „optimize“ hat sie angelegt, und ein
+# veralteter Routen-Cache kennt neue Routen nicht (→ 500 „Route [...] not defined“).
+"$PHP_BIN" artisan route:clear
+"$PHP_BIN" artisan event:clear
 
 # Ersten Admin aus PACKEN_ADMIN_* anlegen (tut nichts, wenn nicht gesetzt oder schon vorhanden).
 "$PHP_BIN" artisan packen:admin --from-env
