@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invitation;
 use App\Services\InvitationService;
 use App\Services\SessionLogin;
 use Illuminate\Http\RedirectResponse;
@@ -15,9 +16,18 @@ class InvitationAcceptanceController extends Controller
 
     public function show(string $token): View
     {
+        $invitation = Invitation::findByToken($token);
+
         return view('auth.invitation', [
             'token' => $token,
-            'invitation' => $this->invitations->find($token),
+            'invitation' => $invitation?->isPending() ? $invitation : null,
+            // Warum ungültig? Unbekannter Token heißt meist: inzwischen neu verschickt oder zurückgezogen.
+            'reason' => match (true) {
+                $invitation === null => 'replaced',
+                $invitation->accepted_at !== null => 'accepted',
+                $invitation->isExpired() => 'expired',
+                default => null,
+            },
         ]);
     }
 

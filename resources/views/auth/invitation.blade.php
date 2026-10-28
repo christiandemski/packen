@@ -20,8 +20,17 @@
         @else
             <h1 class="page-title">Einladung ungültig</h1>
             <p class="mt-3 text-[15px] leading-relaxed text-muted">
-                Die Einladung ist abgelaufen oder wurde schon angenommen. Hast du bereits ein Konto, melde dich einfach an –
-                sonst bitte um eine neue Einladung.
+                @switch($reason)
+                    @case('accepted')
+                        Diese Einladung wurde schon angenommen. Melde dich einfach mit deiner E-Mail-Adresse an.
+                        @break
+                    @case('expired')
+                        Diese Einladung ist abgelaufen (sie gilt {{ \App\Services\InvitationService::VALID_DAYS }} Tage). Bitte um eine neue.
+                        @break
+                    @default
+                        Dieser Link gilt nicht mehr. Wurde die Einladung erneut verschickt, funktioniert nur der Link aus der
+                        <strong class="text-ink">neuesten</strong> E-Mail. Hast du schon ein Konto, melde dich einfach an.
+                @endswitch
             </p>
             <a href="{{ route('login') }}" class="btn btn-primary mt-6 w-full">Zur Anmeldung</a>
         @endif
