@@ -3,6 +3,7 @@
 use App\Models\ApiToken;
 use App\Models\Item;
 use App\Models\Trip;
+use App\Models\TripStage;
 use App\Models\User;
 use App\Services\AccountService;
 use App\Services\ApiTokenService;
@@ -187,4 +188,19 @@ it('verlinkt zurück zu „unterwegs“, um Etappen dort zu ändern', function (
         ->assertSeeText('Basel → Straßburg')
         ->assertSeeText('dort ändern');
     $this->actingAs($this->anna)->get(route('trips.edit', $id))->assertSeeText('Diese Reise kommt aus „unterwegs“');
+});
+
+it('löscht eigene Reisen, aber keine fremden', function () {
+    $id = ($this->api)()->postJson(route('api.trips.store'), tripPayload())->json('data.id');
+    $foreign = Trip::factory()->for($this->max, 'owner')->create();
+    $foreign->addMember($this->max);
+    $foreign->addMember($this->anna); // Mitreisende darf trotzdem nicht löschen
+
+    ($this->api)()->deleteJson(route('api.trips.destroy', $foreign))->assertForbidden();
+    ($this->api)()->deleteJson(route('api.trips.destroy', $id))->assertNoContent();
+
+    expect(Trip::find($id))->toBeNull()
+        ->and(Trip::find($foreign->id))->not->toBeNull()
+        ->and(TripStage::where('trip_id', $id)->count())->toBe(0);
+    ($this->api)()->deleteJson(route('api.trips.destroy', $id))->assertNotFound();
 });
