@@ -49,14 +49,6 @@ class InvitationService
         Mail::to($invitation->email)->send(new InvitationMail($invitation, $token));
     }
 
-    /** Liefert die Einladung, wenn sie noch angenommen werden kann. */
-    public function find(string $token): ?Invitation
-    {
-        $invitation = Invitation::findByToken($token);
-
-        return $invitation?->isPending() ? $invitation : null;
-    }
-
     /** Legt das Konto an; null, wenn die Einladung nicht (mehr) gültig ist. */
     public function accept(string $token, string $name): ?User
     {

@@ -67,6 +67,7 @@ it('lässt sich nur einmal annehmen', function () {
 
     $this->post(route('invitation.accept', $token), ['name' => 'Nochmal'])->assertRedirect(route('invitation.show', $token));
     expect(User::where('email', 'neu@example.com')->count())->toBe(1);
+    $this->get(route('invitation.show', $token))->assertSee('schon angenommen');
 });
 
 it('läuft nach 7 Tagen ab', function () {
@@ -74,7 +75,7 @@ it('läuft nach 7 Tagen ab', function () {
 
     $this->travel(8)->days();
 
-    $this->get(route('invitation.show', $token))->assertSee('Einladung ungültig');
+    $this->get(route('invitation.show', $token))->assertSee('Einladung ungültig')->assertSee('abgelaufen');
     $this->post(route('invitation.accept', $token), ['name' => 'Neu']);
     $this->assertGuest();
 });
@@ -86,6 +87,8 @@ it('macht beim erneuten Senden den alten Link ungültig', function () {
     $this->actingAs($this->admin)->post(route('admin.invitations.resend', $invitation));
     $this->post(route('logout'));
     $new = Mail::sent(InvitationMail::class)->last()->token;
+
+    $this->get(route('invitation.show', $old))->assertSee('neuesten', false);
 
     $this->post(route('invitation.accept', $old), ['name' => 'Neu']);
     $this->assertGuest();
