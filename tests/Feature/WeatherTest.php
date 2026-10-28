@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Item;
 use App\Models\Trip;
 use App\Models\User;
 use App\Services\OutfitService;
@@ -154,3 +155,33 @@ it('erkennt Regenschutz am Namen', function (string $name, bool $expected) {
     ['Regenjacke', true], ['Taschenschirm', true], ['Poncho', true], ['Hardshell', true], ['Rain Jacket', true],
     ['Trainingshose', false], ['Regenerationsgel', false], ['Sonnenhut', false],
 ]);
+
+it('zählt Gegenstände mit dem Häkchen „schützt vor Regen“, egal wie sie heißen', function () {
+    fakeWeather();
+    $packlists = app(PacklistService::class);
+    $softshell = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Softshell', 'category' => 'outerwear']);
+    $umbrella = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Regenjacke', 'category' => 'outerwear', 'rain_protection' => false]);
+    $entry = $packlists->addEntry($this->trip, $this->anna, ['item_id' => $umbrella->id]);
+
+    // Name allein zählt bei Katalog-Gegenständen nicht – das Häkchen entscheidet.
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSee('Regen angesagt');
+
+    $softshell->update(['rain_protection' => true]);
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSee('Regen angesagt')
+        ->assertSee('Softshell'); // als Vorschlag zum Hinzufügen
+
+    $packlists->addEntry($this->trip, $this->anna, ['item_id' => $softshell->id]);
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertDontSee('Regen angesagt');
+});
+
+it('belegt das Häkchen bei neuen Gegenständen nach dem Namen vor', function () {
+    expect(Item::factory()->create(['name' => 'Taschenschirm'])->rain_protection)->toBeTrue()
+        ->and(Item::factory()->create(['name' => 'Sonnenhut'])->rain_protection)->toBeFalse();
+
+    $this->actingAs($this->anna)->post(route('items.store'), ['name' => 'Softshell', 'category' => 'outerwear', 'rain_protection' => '1']);
+    $this->actingAs($this->anna)->post(route('items.store'), ['name' => 'Regenhose', 'category' => 'bottoms']);
+
+    expect(Item::where('name', 'Softshell')->value('rain_protection'))->toBeTruthy()
+        ->and(Item::where('name', 'Regenhose')->value('rain_protection'))->toBeFalsy(); // im Formular abgewählt
+});
