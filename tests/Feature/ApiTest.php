@@ -174,3 +174,17 @@ it('holt das Wetter je Etappenort', function () {
 
     $this->actingAs($this->anna)->get(route('trips.show', $id))->assertSee('Straßburg');
 });
+
+it('verlinkt zurück zu „unterwegs“, um Etappen dort zu ändern', function () {
+    ($this->api)()->postJson(route('api.trips.store'), tripPayload(['external_url' => 'javascript:alert(1)']))->assertJsonValidationErrors('external_url');
+
+    $id = ($this->api)()->postJson(route('api.trips.store'), tripPayload(['external_url' => 'https://unterwegs.example/aktivitaeten/42']))
+        ->assertJsonPath('data.external_url', 'https://unterwegs.example/aktivitaeten/42')
+        ->json('data.id');
+
+    $this->actingAs($this->anna)->get(route('trips.show', $id))
+        ->assertSee('https://unterwegs.example/aktivitaeten/42')
+        ->assertSeeText('Basel → Straßburg')
+        ->assertSeeText('dort ändern');
+    $this->actingAs($this->anna)->get(route('trips.edit', $id))->assertSeeText('Diese Reise kommt aus „unterwegs“');
+});

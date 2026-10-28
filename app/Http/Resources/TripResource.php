@@ -16,6 +16,7 @@ class TripResource extends JsonResource
         return [
             'id' => $this->id,
             'external_id' => $this->external_id,
+            'external_url' => $this->external_url,
             'name' => $this->name,
             'start_date' => $this->start_date->toDateString(),
             'end_date' => $this->end_date->toDateString(),

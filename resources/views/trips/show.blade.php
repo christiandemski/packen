@@ -284,6 +284,16 @@
                         <span class="text-[15px] font-semibold">{{ $value }}</span>
                     </div>
                 @endforeach
+                @if ($stageLocations || $trip->external_url)
+                    <div class="flex min-h-[52px] flex-wrap items-center gap-3 px-5 py-3">
+                        <x-icon name="bike" size="18" class="text-muted" />
+                        <span class="w-28 shrink-0 text-xs font-bold tracking-[0.06em] text-muted uppercase">{{ $stageLocations ? 'Etappen' : 'Geplant in' }}</span>
+                        <span class="text-[15px] font-semibold">{{ $stageLocations ? collect($stageLocations)->unique()->join(' → ') : '„unterwegs“' }}</span>
+                        @if ($trip->external_url)
+                            <a href="{{ $trip->external_url }}" class="btn btn-ghost ml-auto min-h-10 px-3 text-sm" rel="noopener">In „unterwegs“ öffnen</a>
+                        @endif
+                    </div>
+                @endif
                 @if ($trip->isGroup())
                     <ul class="px-5 py-2">
                         @foreach ($trip->members->sortBy(fn ($m) => $m->pivot->role->value === 'owner' ? 0 : 1) as $member)

@@ -61,6 +61,12 @@
             {{-- Reisedaten --}}
             <div class="card space-y-4 p-5">
                 <p class="card-title">Reise</p>
+                @if ($trip->external_url)
+                    <p class="rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
+                        Diese Reise kommt aus „unterwegs“. Etappen und Zeitraum änderst du am besten dort – sonst überschreibt die nächste Übertragung deine Änderung.
+                        <a href="{{ $trip->external_url }}" class="font-bold underline" rel="noopener">In „unterwegs“ öffnen</a>
+                    </p>
+                @endif
                 <div>
                     <label for="name" class="label">Name</label>
                     <input id="name" name="name" value="{{ old('name', $trip->name) }}" required maxlength="120" placeholder="z. B. Lissabon im Mai" class="input">

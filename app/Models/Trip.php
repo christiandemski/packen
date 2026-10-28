@@ -22,7 +22,7 @@ class Trip extends Model
     use HasFactory;
 
     protected $fillable = [
-        'owner_id', 'external_id', 'name', 'start_date', 'end_date', 'type', 'mode',
+        'owner_id', 'external_id', 'external_url', 'name', 'start_date', 'end_date', 'type', 'mode',
         'accommodation', 'transports', 'location', 'cover_path',
     ];
 

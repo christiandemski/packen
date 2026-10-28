@@ -132,7 +132,7 @@ class TripService
     private function attributes(array $data): array
     {
         return collect($data)->only([
-            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id',
+            'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id', 'external_url',
         ])->all();
     }
 

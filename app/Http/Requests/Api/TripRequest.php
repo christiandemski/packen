@@ -28,6 +28,7 @@ class TripRequest extends FormRequest
 
         return [
             'external_id' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'external_url' => ['sometimes', 'nullable', 'url:https,http', 'max:255'],
             'name' => [$required, 'string', 'max:120'],
             'start_date' => [$required, 'date_format:Y-m-d'],
             'end_date' => [$required, 'date_format:Y-m-d'],

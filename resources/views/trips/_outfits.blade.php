@@ -41,6 +41,11 @@
             <h2 class="card-title">Übersicht</h2>
             <span class="text-xs font-bold text-muted">{{ $outfitDays->count() }} Tage</span>
         </div>
+        @if ($stageLocations && $trip->external_url)
+            <p class="-mt-1 px-5 pb-2 text-xs font-semibold text-muted">
+                Etappen kommen aus „unterwegs“ – <a href="{{ $trip->external_url }}" class="font-bold text-accent-ink underline" rel="noopener">dort ändern</a>.
+            </p>
+        @endif
         @if ($weather['place'] || $weather['hint'])
             <p class="-mt-1 px-5 pb-3 text-xs font-semibold text-muted">
                 @if ($weather['days'])Wetter für {{ $weather['place'] }}.@endif {{ $weather['hint'] }}
