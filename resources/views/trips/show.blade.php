@@ -119,12 +119,15 @@
                                 <x-icon name="plus" size="12" /> Modul
                             </button>
                         </div>
+                        <div class="flex items-center gap-1">
+                        <button type="button" class="btn btn-ghost min-h-11 px-3 text-sm" @click="$dispatch('open-sheet', 'export')"><x-icon name="share" size="16" /> Exportieren</button>
                         <button type="button" role="switch" :aria-checked="onlyOpen" @click="toggleOnlyOpen" class="flex min-h-11 items-center gap-2 text-sm font-bold">
                             Nur offene
                             <span class="relative inline-flex h-6 w-10 rounded-full transition" :class="onlyOpen ? 'bg-accent' : 'bg-line'">
                                 <span class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition" :class="onlyOpen && 'translate-x-4'"></span>
                             </span>
                         </button>
+                        </div>
                     </div>
                 </div>
 
@@ -403,6 +406,58 @@
                 </div>
                 <button type="submit" class="btn btn-secondary mt-3 w-full"><x-icon name="plus" size="18" /> Anlegen und hinzufügen</button>
             </form>
+        </div>
+    </x-sheet>
+
+    {{-- Packliste exportieren --}}
+    @php($exportBase = ['trip' => $trip] + ($listOwner->is(auth()->user()) ? [] : ['liste' => $listOwner->id]))
+    <x-sheet name="export" title="Packliste exportieren">
+        <div x-data="{
+                onlyOpen: false, byContainer: false, text: '', notice: '',
+                url(base, extra = {}) {
+                    const query = new URLSearchParams({ ...(this.onlyOpen ? { offen: 1 } : {}), ...(this.byContainer ? { behaeltnisse: 1 } : {}), ...extra }).toString();
+                    return query ? base + (base.includes('?') ? '&' : '?') + query : base;
+                },
+                async load() {
+                    this.text = ''; this.notice = '';
+                    try { this.text = await (await fetch(this.url(@js(route('packlist.export', $exportBase)), { format: 'txt' }))).text(); }
+                    catch { this.notice = 'Offline – Teilen und Kopieren brauchen Verbindung.'; }
+                },
+                async share() {
+                    try { await navigator.share({ title: @js(\App\Services\PacklistExport::title($trip, $listOwner, $listOwner->isNot(auth()->user()))), text: this.text }); }
+                    catch (e) { if (e.name !== 'AbortError') this.copy(); }
+                },
+                async copy() {
+                    try { await navigator.clipboard.writeText(this.text); this.notice = 'Kopiert – jetzt in einer Notiz einfügen.'; }
+                    catch { this.notice = 'Kopieren ging nicht. Lade die Liste stattdessen als Datei.'; }
+                },
+             }"
+             @open-sheet.window="if ($event.detail === 'export') load()">
+            <div class="space-y-2">
+                <label class="flex min-h-11 cursor-pointer items-center gap-3 text-[15px] font-bold">
+                    <input type="checkbox" x-model="onlyOpen" @change="load()" class="size-5 accent-[var(--accent)]"> Nur offene Einträge
+                </label>
+                @if ($tripContainers->isNotEmpty())
+                    <label class="flex min-h-11 cursor-pointer items-center gap-3 text-[15px] font-bold">
+                        <input type="checkbox" x-model="byContainer" @change="load()" class="size-5 accent-[var(--accent)]"> Nach Behältnis ordnen
+                    </label>
+                @endif
+            </div>
+
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                <a :href="url(@js(route('packlist.print', $exportBase)))" target="_blank" class="btn btn-primary"><x-icon name="printer" size="18" /> Drucken / PDF</a>
+                <button type="button" x-show="navigator.share" @click="share()" :disabled="!text" class="btn btn-secondary"><x-icon name="share" size="18" /> An Notiz-App teilen</button>
+                <button type="button" @click="copy()" :disabled="!text" class="btn btn-secondary"><x-icon name="copy" size="18" /> Als Text kopieren</button>
+                <a :href="url(@js(route('packlist.export', $exportBase)), { format: 'txt', download: 1 })" class="btn btn-secondary"><x-icon name="download" size="18" /> Textdatei (.txt)</a>
+                <a :href="url(@js(route('packlist.export', $exportBase)), { format: 'md', download: 1 })" class="btn btn-secondary"><x-icon name="download" size="18" /> Markdown (.md)</a>
+            </div>
+
+            <p x-show="notice" x-text="notice" x-cloak class="mt-3 text-sm font-bold text-accent-ink"></p>
+            <p class="mt-4 text-sm text-muted">
+                <strong>Drucken / PDF</strong> öffnet eine Druckansicht – dort „Als PDF sichern“ wählen.
+                <strong>Teilen</strong> schickt die Liste z. B. an Apple Notizen oder Google Notizen.
+                <strong>Markdown</strong> mit abhakbaren Kästchen passt zu Obsidian, Bear, Notion &amp; Co.
+            </p>
         </div>
     </x-sheet>
 

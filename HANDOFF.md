@@ -223,6 +223,13 @@ Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person e
 - Kleine Auswertung pro Reise.
 - Umgesetzt zusätzlich: „nicht gebraucht“ lässt sich per Klick aus Vorlagen streichen (wirkt nur auf kommende Reisen); bei Kleidung heißt die Markierung „nicht getragen“; „Was hat gefehlt?“ nimmt auch Dinge auf, die gar nicht auf der Liste standen.
 
+### Export der Packliste – umgesetzt
+
+Button „Exportieren“ in der Fortschrittskarte (`PacklistExport`, `PacklistExportController`); Optionen „nur offene“ und „nach Behältnis“, auch für freigegebene Listen (`?liste=`).
+
+- **Drucken / PDF:** eigene Druckansicht `/reisen/{id}/drucken` (A4, zweispaltig, Kästchen); PDF über „Als PDF sichern“ im Druckdialog – bewusst ohne PDF-Bibliothek.
+- **Notiz-Apps:** `/reisen/{id}/export` liefert Text mit ☐/☑ (Teilen-Menü bzw. Kopieren → Apple Notizen, Google Notizen) oder mit `format=md` Markdown mit `- [ ]` (Obsidian, Bear, Notion); `download=1` als Datei.
+
 ### 5.7 Später
 
 - Passkeys als zusätzlicher Login für Freunde.
