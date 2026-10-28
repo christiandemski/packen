@@ -128,6 +128,22 @@ it('lässt Start-Vorlagen ablehnen und nimmt keine erfundenen', function () {
         ->and($this->anna->templates()->count())->toBe(0);
 });
 
+it('bietet abgelehnte Start-Vorlagen auf Wunsch erneut an', function () {
+    $this->actingAs($this->anna)->delete(route('starter-templates.dismiss'));
+    $this->actingAs($this->anna)->get(route('templates.index'))
+        ->assertDontSee('Mit Start-Vorlagen loslegen?')
+        ->assertSee('Start-Vorlagen anzeigen');
+
+    $this->actingAs($this->anna)->get(route('templates.index', ['start' => 1]))
+        ->assertSee('Mit Start-Vorlagen loslegen?')
+        ->assertDontSee('Nein danke');
+
+    $this->actingAs($this->anna)->post(route('starter-templates.store'), ['templates' => ['Basis']]);
+    expect($this->anna->templates()->pluck('name')->all())->toBe(['Basis']);
+
+    $this->actingAs($this->anna)->get(route('templates.index', ['start' => 1]))->assertSee('hast du schon');
+});
+
 it('zeigt Übersicht und Detailseite an', function () {
     app(StarterTemplates::class)->install($this->anna, ['Basis']);
     $template = $this->anna->templates()->first();

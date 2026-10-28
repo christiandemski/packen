@@ -16,9 +16,15 @@ class TemplateController extends Controller
 {
     public function index(Request $request): View
     {
+        $undecided = $request->user()->starter_templates_at === null;
+        $templates = Template::accessibleBy($request->user())->with('items')->orderBy('name')->get();
+
         return view('templates.index', [
-            'templates' => Template::accessibleBy($request->user())->with('items')->orderBy('name')->get(),
-            'starters' => $request->user()->starter_templates_at === null ? StarterTemplates::definitions() : null,
+            'templates' => $templates,
+            // Nach „Nein danke“ lässt sich das Angebot über ?start=1 jederzeit wieder öffnen.
+            'starters' => $undecided || $request->boolean('start') ? StarterTemplates::definitions() : null,
+            'undecided' => $undecided,
+            'existingNames' => $templates->pluck('name')->all(),
         ]);
     }
 
