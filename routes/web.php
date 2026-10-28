@@ -15,6 +15,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
+use App\Http\Controllers\PacklistExportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SharingController;
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/behaeltnisse', [PacklistController::class, 'containers'])->name('containers');
         Route::patch('/zuordnen', [PacklistController::class, 'assign'])->name('assign');
         Route::post('/kopieren', [PacklistController::class, 'copy'])->name('copy');
+        Route::get('/drucken', [PacklistExportController::class, 'print'])->name('print');
+        Route::get('/export', [PacklistExportController::class, 'text'])->name('export');
         Route::post('/eintraege', [PacklistController::class, 'store'])->name('store');
         Route::patch('/eintraege/{entry}', [PacklistController::class, 'update'])->name('update');
         Route::patch('/eintraege/{entry}/gepackt', [PacklistController::class, 'toggle'])->name('toggle');
