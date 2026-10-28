@@ -26,43 +26,72 @@ class WeatherService
     private const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
     /**
-     * days: Datum (Y-m-d) => Wetter; hint erklärt, warum (manche) Tage ohne Wetter sind.
+     * Wetter je Reisetag – am Etappenort des Tages, sonst am Reiseziel.
+     * place: Ortsname, bei mehreren Etappenorten „die Etappenorte“;
+     * hint erklärt, warum (manche) Tage ohne Wetter sind.
      *
      * @return array{place: ?string, days: array<string, DayWeather>, hint: ?string}
      */
     public function forTrip(Trip $trip): array
     {
         $result = ['place' => null, 'days' => [], 'hint' => null];
+        $locations = $trip->locationsByDate();
 
-        if (blank($trip->location)) {
+        if (collect($locations)->filter()->isEmpty()) {
             return [...$result, 'hint' => 'Mit einem Reiseziel zeigen wir hier das Wetter.'];
         }
 
-        $place = $this->geocode($trip->location);
-        if ($place === null) {
-            return [...$result, 'hint' => 'Das Wetter ist gerade nicht abrufbar.'];
-        }
-        if ($place === false) {
-            return [...$result, 'hint' => "„{$trip->location}“ haben wir nicht gefunden – mit einem Ortsnamen klappt das Wetter."];
-        }
-        $result['place'] = $place['name'];
-
         $today = today();
         $last = $today->copy()->addDays(self::FORECAST_DAYS - 1);
-        $from = $trip->start_date->max($today->copy()->subDays(30));
-        $to = $trip->end_date->min($last);
+        $from = $trip->start_date->max($today->copy()->subDays(30))->toDateString();
+        $to = $trip->end_date->min($last)->toDateString();
 
-        if ($from->gt($to)) {
+        if ($from > $to) {
             return [...$result, 'hint' => $trip->end_date->lt($today) ? null : 'Die Vorhersage gibt es ab '.self::FORECAST_DAYS.' Tagen vor der Reise.'];
         }
 
-        $result['days'] = $this->forecast($place['lat'], $place['lon'], $from, $to);
+        // Tage im Vorhersagezeitraum nach Ort gruppieren: eine Abfrage je Ort.
+        $byLocation = collect($locations)
+            ->filter(fn (?string $location, string $date) => filled($location) && $date >= $from && $date <= $to)
+            ->groupBy(fn (string $location) => $location, preserveKeys: true)
+            ->map(fn ($dates) => $dates->keys()->all());
 
-        if ($result['days'] === []) {
-            $result['hint'] = 'Das Wetter ist gerade nicht abrufbar.';
-        } elseif ($trip->end_date->gt($last)) {
-            $result['hint'] = 'Für spätere Tage gibt es noch keine Vorhersage.';
+        $places = [];
+        $notFound = null;
+        $unavailable = false;
+        foreach ($byLocation as $location => $dates) {
+            $place = $this->geocode($location);
+            if ($place === false) {
+                $notFound ??= $location;
+
+                continue;
+            }
+            if ($place === null) {
+                $unavailable = true;
+
+                continue;
+            }
+            $places[] = $place['name'];
+
+            $forecast = $this->forecast($place['lat'], $place['lon'], Carbon::parse(min($dates)), Carbon::parse(max($dates)));
+            $unavailable = $unavailable || $forecast === [];
+            $result['days'] += array_intersect_key($forecast, array_flip($dates));
         }
+        ksort($result['days']);
+
+        $places = array_values(array_unique($places));
+        $result['place'] = match (count($places)) {
+            0 => null,
+            1 => $places[0],
+            default => 'die Etappenorte',
+        };
+
+        $result['hint'] = match (true) {
+            $notFound !== null => "„{$notFound}“ haben wir nicht gefunden – mit einem Ortsnamen klappt das Wetter.",
+            $unavailable => 'Das Wetter ist gerade nicht abrufbar.',
+            $result['days'] !== [] && $trip->end_date->gt($last) => 'Für spätere Tage gibt es noch keine Vorhersage.',
+            default => null,
+        };
 
         return $result;
     }

@@ -25,6 +25,7 @@ class AccountService
 
         $this->endSessions($user);
         $user->loginTokens()->delete();
+        $user->apiTokens()->delete();
     }
 
     public function unblock(User $user): void

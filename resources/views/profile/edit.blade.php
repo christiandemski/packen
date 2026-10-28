@@ -67,6 +67,52 @@
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>
 
+        <div class="card p-5" x-data="{ open: {{ $errors->apiToken->any() ? 'true' : 'false' }} }">
+            <p class="card-title">Zugänge für andere Apps</p>
+            <p class="mt-1 text-sm text-muted">Damit kann z. B. „unterwegs“ Reisen in deinem Namen anlegen und den Packstand abfragen. Widerrufen geht jederzeit.</p>
+
+            @if (session('api_token'))
+                <div class="mt-4 rounded-chip bg-accent-soft p-4 text-accent-ink" x-data="{ copied: false }">
+                    <p class="text-sm font-bold">Neuer Token – nur jetzt sichtbar, bitte gleich in der anderen App eintragen:</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <code x-ref="token" class="min-w-0 flex-1 rounded-[8px] bg-surface px-3 py-2 font-mono text-[13px] break-all text-ink">{{ session('api_token') }}</code>
+                        <button type="button" class="btn btn-secondary min-h-10" @click="navigator.clipboard.writeText($refs.token.textContent); copied = true" x-text="copied ? 'Kopiert' : 'Kopieren'">Kopieren</button>
+                    </div>
+                </div>
+            @endif
+
+            @if ($apiTokens->isNotEmpty())
+                <ul class="mt-4 divide-y divide-line-soft">
+                    @foreach ($apiTokens as $apiToken)
+                        <li class="flex items-center justify-between gap-3 py-3">
+                            <div class="min-w-0">
+                                <p class="truncate text-[15px] font-bold">{{ $apiToken->name }}</p>
+                                <p class="text-xs font-semibold text-muted">
+                                    angelegt {{ $apiToken->created_at->translatedFormat('j. F Y') }} ·
+                                    {{ $apiToken->last_used_at ? 'zuletzt genutzt '.$apiToken->last_used_at->diffForHumans() : 'noch nie genutzt' }}
+                                </p>
+                            </div>
+                            <form method="POST" action="{{ route('api-tokens.destroy', $apiToken) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-ghost min-h-10 px-3 text-sm" aria-label="Zugang {{ $apiToken->name }} widerrufen">Widerrufen</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            <button type="button" class="btn btn-secondary mt-4" x-show="!open" @click="open = true; $nextTick(() => $refs.tokenName.focus())"><x-icon name="plus" size="18" /> Zugang anlegen</button>
+            <form method="POST" action="{{ route('api-tokens.store') }}" x-show="open" x-cloak class="mt-4 flex flex-wrap items-end gap-2">
+                @csrf
+                <div class="min-w-0 flex-1">
+                    <label for="token-name" class="label">Wofür?</label>
+                    <input id="token-name" x-ref="tokenName" name="name" value="{{ $errors->apiToken->any() ? old('name') : '' }}" required maxlength="60" placeholder="z. B. unterwegs" class="input">
+                </div>
+                <button type="submit" class="btn btn-primary">Anlegen</button>
+            </form>
+            @error('name', 'apiToken')<p class="field-error">{{ $message }}</p>@enderror
+        </div>
+
         <form method="POST" action="{{ route('logout') }}" class="card flex items-center justify-between gap-4 p-5">
             @csrf
             <div>

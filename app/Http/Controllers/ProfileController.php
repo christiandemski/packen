@@ -17,7 +17,10 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
-        return view('profile.edit', ['user' => $request->user()]);
+        return view('profile.edit', [
+            'user' => $request->user(),
+            'apiTokens' => $request->user()->apiTokens()->latest()->get(),
+        ]);
     }
 
     public function update(Request $request): RedirectResponse

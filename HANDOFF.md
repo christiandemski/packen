@@ -225,7 +225,6 @@ Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person e
 
 ### 5.7 Später
 
-- API für „unterwegs“ (Abschnitt 9).
 - Passkeys als zusätzlicher Login für Freunde.
 - **Haushalt:** Zwei oder mehr Konten dauerhaft verknüpfen, die Katalog und Vorlagen teilen (eine Reiseapotheke, ein Zelt). Neue gemeinsame Reisen setzen die Packlisten-Freigabe innerhalb des Haushalts automatisch. Katalog und Vorlagen deshalb schon in Meilenstein 2 so bauen, dass der Besitz später auch an einem Haushalt hängen kann (Besitzprüfung zentral in den Policies, nicht verstreut über `owner_id = user`).
 
@@ -309,17 +308,20 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 
 ---
 
-## 9. Spätere Anbindung an „unterwegs“
+## 9. Anbindung an „unterwegs“
 
 „unterwegs“ ist mein separater Planer für sportliche Aktivitäten (Strecke, Unterkünfte, Kosten, Livetracking). Er soll beim Anlegen einer Aktivität automatisch eine Reise in dieser App erzeugen.
 
-Vorgesehene Schnittstelle (REST, Token-geschützt):
+**Umgesetzt** (`routes/api.php`, `Api\TripController`):
 
-- `POST /api/trips` mit Name, Zeitraum, Reiseart, Unterkunft, Transport, Ort, optional Etappen (Datum + Ort je Tag).
-- `PATCH /api/trips/{id}` bei Änderungen.
-- `GET /api/trips/{id}/summary` → Fortschritt („18/42“), später Gesamtgewicht.
-
-Bei der Umsetzung jetzt nur darauf achten, dass Reisen sauber über einen Service erzeugt werden, den später auch die API nutzt. Die API selbst ist kein Teil von Meilenstein 1–6.
+- **Zugang:** Im Profil unter „Zugänge für andere Apps“ einen Token anlegen (`packen_…`, nur einmal sichtbar, gespeichert als SHA-256-Hash in `api_tokens`). Jede Anfrage mit `Authorization: Bearer <token>` und `Accept: application/json`. Widerrufen im Profil; gesperrte Konten verlieren ihre Tokens. Limit 60 Anfragen pro Minute.
+- `POST /api/trips` – legt eine private Reise der Token-Person an (201). Felder: `name`, `start_date`, `end_date` (Pflicht, `YYYY-MM-DD`), `type` (Standard `other`), `accommodation`, `transports[]`, `location`, `external_id` (Kennung in „unterwegs“), `stages[]` mit `{date, location}`. Gibt es die `external_id` bei dieser Person schon, wird die Reise aktualisiert (200) – wiederholtes Senden verdoppelt nichts.
+- `PATCH /api/trips/{id}` – nur mitgeschickte Felder; `stages` ersetzt alle Etappen. Wird der Zeitraum ohne `stages` verkürzt, fallen Etappen außerhalb weg. Nur der Owner darf ändern.
+- `GET /api/trips/{id}` – Reise wie in den Antworten oben: `id, external_id, name, start_date, end_date, days, nights, type, mode, accommodation, transports, location, stages, url`.
+- `GET /api/trips/{id}/summary` – Packstand der eigenen Liste: `packed, total, progress` („18/42“), `weight_g`, `weight_complete` (false, wenn Einträgen das Gewicht fehlt), `url`.
+- Erlaubte Werte: `type` citytrip, beach, hiking, bikepacking, running_event, winter, other · `accommodation` hotel, apartment, hostel, camping, hut, friends, other · `transports` plane, train, car, rental_car, bus, ferry, bike, on_foot, other.
+- Antworten stecken in `data`; Fehler als JSON (401 ohne gültigen Token, 403 fremde Reise, 422 mit `errors` je Feld).
+- **Etappen** (`trip_stages`, Ort je Tag) stehen im Outfit-Planer am Tag; das Wetter kommt pro Tag vom Etappenort, sonst vom Reiseziel. In der Oberfläche lassen sie sich (noch) nicht bearbeiten.
 
 ---
 
