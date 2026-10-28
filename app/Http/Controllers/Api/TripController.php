@@ -64,10 +64,18 @@ class TripController extends Controller
         return new TripResource($this->trips->update($trip, $request->tripData())->load('stages'));
     }
 
-    /** Löscht die Reise samt Packlisten, Outfits und Etappen – auch für Mitreisende. Nur der Owner. */
-    public function destroy(Trip $trip): Response
+    /**
+     * Löscht die Reise samt Packlisten, Outfits und Etappen. Nur der Owner.
+     * Gemeinsame Reisen mit Mitreisenden lehnt die API ab (409) – deren Listen sollen
+     * nicht still verschwinden, weil in „unterwegs“ eine Aktivität gelöscht wurde.
+     */
+    public function destroy(Trip $trip): Response|JsonResponse
     {
         Gate::authorize('delete', $trip);
+
+        if ($trip->isGroup() && $trip->members()->count() > 1) {
+            return response()->json(['message' => 'Die Reise hat Mitreisende und lässt sich nur in Packen selbst löschen.', 'url' => route('trips.show', $trip)], 409);
+        }
 
         $this->trips->delete($trip);
 

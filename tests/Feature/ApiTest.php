@@ -204,3 +204,19 @@ it('löscht eigene Reisen, aber keine fremden', function () {
         ->and(TripStage::where('trip_id', $id)->count())->toBe(0);
     ($this->api)()->deleteJson(route('api.trips.destroy', $id))->assertNotFound();
 });
+
+it('lehnt das Löschen gemeinsamer Reisen mit Mitreisenden ab', function () {
+    $id = ($this->api)()->postJson(route('api.trips.store'), tripPayload())->json('data.id');
+    $trip = Trip::find($id);
+    $trip->update(['mode' => 'group']);
+    $trip->addMember($this->max);
+
+    ($this->api)()->deleteJson(route('api.trips.destroy', $id))
+        ->assertStatus(409)
+        ->assertJsonPath('url', route('trips.show', $trip));
+    expect(Trip::find($id))->not->toBeNull();
+
+    // Ohne Mitreisende geht es wieder.
+    $trip->members()->detach($this->max->id);
+    ($this->api)()->deleteJson(route('api.trips.destroy', $id))->assertNoContent();
+});
