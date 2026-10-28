@@ -26,16 +26,19 @@ class WeatherService
     private const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
     /**
-     * Wetter je Reisetag – am Etappenort des Tages, sonst am Reiseziel.
-     * place: Ortsname, bei mehreren Etappenorten „die Etappenorte“;
+     * Wetter je Reisetag – am eigenen Ort des Tages (z. B. Tagesausflug), sonst am
+     * Etappenort, sonst am Reiseziel.
+     * place: Ortsname, bei mehreren Orten „die jeweiligen Tagesorte“;
      * hint erklärt, warum (manche) Tage ohne Wetter sind.
      *
+     * @param  array<string, ?string>  $overrides  Datum (Y-m-d) => eigener Ort des Tages
      * @return array{place: ?string, days: array<string, DayWeather>, hint: ?string}
      */
-    public function forTrip(Trip $trip): array
+    public function forTrip(Trip $trip, array $overrides = []): array
     {
         $result = ['place' => null, 'days' => [], 'hint' => null];
         $locations = $trip->locationsByDate();
+        $locations = array_replace($locations, array_intersect_key(array_filter($overrides, 'filled'), $locations));
 
         if (collect($locations)->filter()->isEmpty()) {
             return [...$result, 'hint' => 'Mit einem Reiseziel zeigen wir hier das Wetter.'];
@@ -83,7 +86,7 @@ class WeatherService
         $result['place'] = match (count($places)) {
             0 => null,
             1 => $places[0],
-            default => 'die Etappenorte',
+            default => 'die jeweiligen Tagesorte',
         };
 
         $result['hint'] = match (true) {

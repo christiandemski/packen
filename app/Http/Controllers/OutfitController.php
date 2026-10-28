@@ -23,9 +23,14 @@ class OutfitController extends Controller
     {
         $this->authorizeDay($request, $trip, $day);
 
-        $data = $request->validate(['title' => ['nullable', 'string', 'max:120'], 'laundry_day' => ['boolean']]);
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:120'],
+            'location' => ['nullable', 'string', 'max:120'],
+            'laundry_day' => ['boolean'],
+        ], attributes: ['location' => 'Ort']);
         $day->update([
             'title' => $request->has('title') ? (trim((string) $data['title']) ?: null) : $day->title,
+            'location' => $request->has('location') ? (trim((string) $data['location']) ?: null) : $day->location,
             'laundry_day' => $request->has('laundry_day') ? $request->boolean('laundry_day') : $day->laundry_day,
         ]);
 

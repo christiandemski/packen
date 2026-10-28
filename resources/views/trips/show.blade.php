@@ -49,6 +49,7 @@
                 </p>
             @endunless
             @include('trips._group-requests')
+            @include('trips._rain-warning')
             @if ($isEmpty && $canEdit)
                 <div class="card p-5">
                     <p class="card-title">Stell deine Packliste zusammen</p>

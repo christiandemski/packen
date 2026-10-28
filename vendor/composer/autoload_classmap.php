@@ -91,6 +91,7 @@ return array(
     'App\\Services\\TripService' => $baseDir . '/app/Services/TripService.php',
     'App\\Services\\WeatherService' => $baseDir . '/app/Services/WeatherService.php',
     'App\\Support\\DayWeather' => $baseDir . '/app/Support/DayWeather.php',
+    'App\\Support\\RainGear' => $baseDir . '/app/Support/RainGear.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',
