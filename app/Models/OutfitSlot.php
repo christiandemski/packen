@@ -13,6 +13,9 @@ class OutfitSlot extends Model
 
     public const DEFAULT_NAME = 'Tag';
 
+    /** Was in diesem Slot am ersten Tag liegt, trägt man bei der Anreise (zählt nicht zum Gepäck). */
+    public const ARRIVAL_NAME = 'Anreise';
+
     protected $fillable = ['outfit_day_id', 'name', 'position'];
 
     /** @return BelongsTo<OutfitDay, $this> */

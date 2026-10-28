@@ -9,6 +9,7 @@ use App\Http\Requests\Api\TripRequest;
 use App\Http\Resources\TripResource;
 use App\Models\Trip;
 use App\Services\ContainerService;
+use App\Services\OutfitService;
 use App\Services\PacklistService;
 use App\Services\TripService;
 use Illuminate\Http\JsonResponse;
@@ -83,20 +84,22 @@ class TripController extends Controller
     }
 
     /** Packstand der eigenen Liste, z. B. „18/42“, und Gesamtgewicht. */
-    public function summary(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers): JsonResponse
+    public function summary(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits): JsonResponse
     {
         Gate::authorize('view', $trip);
         $user = $request->user();
 
         $progress = $packlists->progress($trip, $user);
         $entries = $trip->entries()->with('item')->where('user_id', $user->id)->visible()->get();
-        $weight = ContainerService::totalWeight($entries, $containers->summary($trip, $user, $entries));
+        $worn = $outfits->wornOnArrival($trip, $user);
+        $weight = ContainerService::totalWeight($entries, $containers->summary($trip, $user, $entries, $worn), $worn);
 
         return response()->json(['data' => [
             'packed' => $progress['packed'],
             'total' => $progress['total'],
             'progress' => $progress['packed'].'/'.$progress['total'],
             'weight_g' => $weight['total'],
+            'worn_g' => $weight['worn'],
             'weight_complete' => $weight['missing'] === 0,
             'url' => route('trips.show', $trip),
         ]]);
