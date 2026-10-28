@@ -105,6 +105,29 @@ it('rechnet Gewicht und warnt bei Überladung', function () {
         ->and(ContainerService::neededLabel($summary))->toBe('1 Box und 1 Koffer');
 });
 
+it('rechnet das Gesamtgewicht der Reise samt Behältnissen', function () {
+    $this->jacket->update(['weight_g' => 800]);
+    entryOf($this->jacket)->update(['quantity' => 2]);
+    app(PacklistService::class)->addEntry($this->trip, $this->anna, ['custom_name' => 'Ladekabel']);
+    app(ContainerService::class)->setForTrip($this->trip, $this->anna, [$this->suitcase->id, $this->box->id]);
+
+    $entries = PacklistEntry::with('item')->where('trip_id', $this->trip->id)->visible()->get();
+    $summary = app(ContainerService::class)->summary($this->trip, $this->anna, $entries);
+
+    expect(ContainerService::totalWeight($entries, $summary))->toBe(['total' => 2300, 'containers' => 300, 'missing' => 1]);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSeeText('Gesamtgewicht mind. 2,3 kg')
+        ->assertSeeText('davon 300 g Behältnisse')
+        ->assertSeeText('1 Eintrag ohne Gewicht');
+});
+
+it('zeigt kein Gesamtgewicht, solange nirgends Gewichte gepflegt sind', function () {
+    Item::query()->update(['weight_g' => null]);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertOk()->assertDontSee('Gesamtgewicht');
+});
+
 it('zeigt die Ansicht nach Behältnis', function () {
     app(ContainerService::class)->setForTrip($this->trip, $this->anna, [$this->box->id]);
 
