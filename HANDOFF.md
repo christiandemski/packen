@@ -160,6 +160,7 @@ Für Reisen, bei denen auf Koffer, Rucksäcke und Euroboxen verteilt wird (typis
 - Standardplatz am Gegenstand übernimmt neue Einträge automatisch ins passende Behältnis, sofern es auf der Reise dabei ist.
 - Übersicht „Du brauchst: 1 Koffer, 1 Rucksack, 2 Euroboxen“ sowie ungeordnete Einträge.
 - Wer nichts zuordnet, sieht davon nichts.
+- **Gesamtgewicht** (`ContainerService::totalWeight`) in der Fortschrittskarte: alle sichtbaren Einträge × Menge plus Leergewicht der gewählten Behältnisse. Fehlt bei Einträgen das Gewicht, steht „mind.“ davor und die Anzahl dahinter; ohne jedes Gewicht bleibt die Zeile weg.
 - Offen: Volumen pro Gegenstand, um den Bedarf automatisch zu schätzen – erst, wenn sich die Zuordnung von Hand als zu mühsam erweist.
 
 ### 5.4 Meilenstein 4: Outfit-Planer
@@ -224,7 +225,6 @@ Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person e
 
 ### 5.7 Später
 
-- Gesamtgewicht der Reise (Grundlage dafür sind die Behältnisse aus Meilenstein 3b).
 - API für „unterwegs“ (Abschnitt 9).
 - Passkeys als zusätzlicher Login für Freunde.
 - **Haushalt:** Zwei oder mehr Konten dauerhaft verknüpfen, die Katalog und Vorlagen teilen (eine Reiseapotheke, ein Zelt). Neue gemeinsame Reisen setzen die Packlisten-Freigabe innerhalb des Haushalts automatisch. Katalog und Vorlagen deshalb schon in Meilenstein 2 so bauen, dass der Besitz später auch an einem Haushalt hängen kann (Besitzprüfung zentral in den Policies, nicht verstreut über `owner_id = user`).

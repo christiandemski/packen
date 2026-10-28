@@ -92,6 +92,26 @@ class ContainerService
     }
 
     /**
+     * Gesamtgewicht der Reise: alle sichtbaren Einträge plus Leergewicht der gewählten
+     * Behältnisse. „missing“ zählt Einträge ohne gepflegtes Gewicht – die Summe ist dann
+     * eine Untergrenze.
+     *
+     * @param  Collection<int, PacklistEntry>  $entries  sichtbare Einträge mit geladenem item
+     * @param  Collection<int, array{container: Container}>  $summary
+     * @return array{total: int, containers: int, missing: int}
+     */
+    public static function totalWeight(Collection $entries, Collection $summary): array
+    {
+        $containers = (int) $summary->sum(fn ($row) => $row['container']->empty_weight_g ?? 0);
+
+        return [
+            'total' => (int) $entries->sum(fn (PacklistEntry $e) => $e->weight()) + $containers,
+            'containers' => $containers,
+            'missing' => $entries->filter(fn (PacklistEntry $e) => $e->item?->weight_g === null)->count(),
+        ];
+    }
+
+    /**
      * „Du brauchst: 1 Koffer, 2 Boxen“ – nur Behältnisse, in denen auch etwas liegt.
      *
      * @param  Collection<int, array{container: Container, entries: Collection}>  $summary

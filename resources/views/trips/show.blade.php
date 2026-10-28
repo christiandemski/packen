@@ -100,6 +100,14 @@
                     <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-line-soft" role="progressbar" aria-label="Packfortschritt" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100">
                         <div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="`width: ${percent}%`" style="width: {{ $progress['total'] ? round($progress['packed'] / $progress['total'] * 100) : 0 }}%"></div>
                     </div>
+                    @if ($weight['total'] > 0)
+                        <p class="mt-3 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-muted">
+                            <x-icon name="scale" size="16" />
+                            <span>Gesamtgewicht <span class="font-extrabold text-ink">{{ $weight['missing'] ? 'mind. ' : '' }}{{ Container::kg($weight['total']) }}</span></span>
+                            @if ($weight['containers'])<span>· davon {{ Container::kg($weight['containers']) }} Behältnisse</span>@endif
+                            @if ($weight['missing'])<span>· {{ $weight['missing'] }} {{ $weight['missing'] === 1 ? 'Eintrag' : 'Einträge' }} ohne Gewicht</span>@endif
+                        </p>
+                    @endif
 
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
                         <div class="flex min-w-0 flex-wrap items-center gap-1.5 {{ $canEdit ? '' : 'invisible' }}">

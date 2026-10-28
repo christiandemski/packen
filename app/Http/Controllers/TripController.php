@@ -108,6 +108,7 @@ class TripController extends Controller
             'tripContainers' => $tripContainers,
             'containerSummary' => $summary,
             'neededLabel' => ContainerService::neededLabel($summary),
+            'weight' => ContainerService::totalWeight($entries, $summary),
             'unassigned' => $entries->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
