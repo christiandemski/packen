@@ -329,7 +329,7 @@ Die Entwürfe aus der Konzeptphase sind die gestalterische Basis. Mobile-first, 
 - `GET /api/trips/{id}/summary` – Packstand der eigenen Liste: `packed, total, progress` („18/42“), `weight_g` (ohne Anreise-Kleidung), `worn_g`, `weight_complete` (false, wenn Einträgen das Gewicht fehlt), `url`.
 - Erlaubte Werte: `type` citytrip, beach, hiking, bikepacking, running_event, winter, other · `accommodation` hotel, apartment, hostel, camping, hut, friends, other · `transports` plane, train, car, rental_car, bus, ferry, bike, on_foot, other.
 - Antworten stecken in `data`; Fehler als JSON (401 ohne gültigen Token, 403 fremde Reise, 422 mit `errors` je Feld).
-- **Etappen** (`trip_stages`, Ort je Tag) stehen im Outfit-Planer am Tag; das Wetter kommt pro Tag vom Etappenort, sonst vom Reiseziel. Bearbeitet werden sie in „unterwegs“: Mit `external_url` (Link auf die Aktivität) zeigt Packen im Outfit-Planer, in den Reisedetails und im Bearbeiten-Formular einen Link dorthin.
+- **Etappen** (`trip_stages`, Ort je Tag) stehen im Outfit-Planer am Tag; das Wetter kommt pro Tag vom Etappenort, sonst vom Reiseziel. Bearbeitet werden sie **bewusst nur in „unterwegs“** – Packen bekommt keine eigene Etappen-Bearbeitung. Mit `external_url` (Link auf die Aktivität) zeigt Packen im Outfit-Planer, in den Reisedetails und im Bearbeiten-Formular einen Link dorthin.
 
 ---
 
