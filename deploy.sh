@@ -35,7 +35,11 @@ echo "Datenbank laut .env: $(grep -E '^DB_(CONNECTION|HOST|DATABASE)=' .env | tr
 trap '"$PHP_BIN" artisan up' EXIT   # auch wenn eine Migration scheitert, nicht im Wartungsmodus hängen bleiben
 
 "$PHP_BIN" artisan migrate --force
-"$PHP_BIN" artisan optimize
+# Bewusst kein „artisan optimize“: Plesk führt dieses Skript chrooted aus (/packen.allpixx.de/…),
+# der Webserver sieht aber /var/www/vhosts/…. Zwischengespeicherte Konfiguration enthielte die
+# Chroot-Pfade für Log und Views – die Seite antwortet dann nur noch mit leerer 500.
+"$PHP_BIN" artisan config:clear
+"$PHP_BIN" artisan view:clear
 
 # Ersten Admin aus PACKEN_ADMIN_* anlegen (tut nichts, wenn nicht gesetzt oder schon vorhanden).
 "$PHP_BIN" artisan packen:admin --from-env
