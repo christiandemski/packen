@@ -9,11 +9,11 @@
  *
  * Beim Abmelden löscht die Seite die Caches (siehe resources/js/offline.js).
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC = `packen-static-${VERSION}`;
 const PAGES = 'packen-pages';
 const IMAGES = 'packen-images';
-const PRECACHE = ['/offline.html', '/manifest.webmanifest', '/icons/icon-192.png'];
+const PRECACHE = ['/offline.html', '/manifest.webmanifest', '/app-icons/icon-192.png'];
 
 const CACHEABLE_PAGE = /^\/(reisen\/\d+)?$/;
 const IMAGE = /^\/(reisen\/\d+\/bild|benutzer\/\d+\/bild)$/;
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (event) => {
 
     if (request.mode === 'navigate') {
         event.respondWith(networkFirstPage(request, url));
-    } else if (url.pathname.startsWith('/build/') || url.pathname.startsWith('/icons/')) {
+    } else if (url.pathname.startsWith('/build/') || url.pathname.startsWith('/app-icons/')) {
         event.respondWith(cacheFirst(request, STATIC));
     } else if (IMAGE.test(url.pathname)) {
         event.respondWith(staleWhileRevalidate(request, IMAGES));
