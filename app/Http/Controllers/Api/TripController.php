@@ -13,9 +13,10 @@ use App\Services\PacklistService;
 use App\Services\TripService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
-/** Schnittstelle für „unterwegs“: Reisen anlegen, ändern, Stand abfragen. */
+/** Schnittstelle für „unterwegs“: Reisen anlegen, ändern, löschen, Stand abfragen. */
 class TripController extends Controller
 {
     public function __construct(private readonly TripService $trips) {}
@@ -61,6 +62,16 @@ class TripController extends Controller
         Gate::authorize('update', $trip);
 
         return new TripResource($this->trips->update($trip, $request->tripData())->load('stages'));
+    }
+
+    /** Löscht die Reise samt Packlisten, Outfits und Etappen – auch für Mitreisende. Nur der Owner. */
+    public function destroy(Trip $trip): Response
+    {
+        Gate::authorize('delete', $trip);
+
+        $this->trips->delete($trip);
+
+        return response()->noContent();
     }
 
     /** Packstand der eigenen Liste, z. B. „18/42“, und Gesamtgewicht. */
