@@ -13,6 +13,12 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+# Erster Lauf ohne SSH: App-Schlüssel selbst erzeugen, falls APP_KEY in der .env fehlt oder leer ist.
+if ! grep -qE '^APP_KEY=.+' .env; then
+    grep -q '^APP_KEY=' .env || echo 'APP_KEY=' >> .env
+    "$PHP_BIN" artisan key:generate --force
+fi
+
 # Laravel braucht diese Verzeichnisse beschreibbar; Git legt leere Ordner nicht an.
 mkdir -p storage/framework/{cache/data,sessions,views} storage/logs storage/app/private bootstrap/cache
 
@@ -21,5 +27,8 @@ trap '"$PHP_BIN" artisan up' EXIT   # auch wenn eine Migration scheitert, nicht 
 
 "$PHP_BIN" artisan migrate --force
 "$PHP_BIN" artisan optimize
+
+# Ersten Admin aus PACKEN_ADMIN_* anlegen (tut nichts, wenn nicht gesetzt oder schon vorhanden).
+"$PHP_BIN" artisan packen:admin --from-env
 
 echo "Deployment fertig: $(git log -1 --pretty='%h %s' 2>/dev/null || echo 'unbekannter Stand')"

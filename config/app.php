@@ -123,4 +123,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    | Erster Admin ohne SSH: deploy.sh ruft „packen:admin --from-env“ auf. Angelegt wird nur,
+    | wenn es die E-Mail-Adresse noch nicht gibt – danach das Passwort aus der .env löschen.
+    */
+    'bootstrap_admin' => [
+        'email' => env('PACKEN_ADMIN_EMAIL'),
+        'name' => env('PACKEN_ADMIN_NAME', 'Admin'),
+        'password' => env('PACKEN_ADMIN_PASSWORD'),
+    ],
+
 ];
