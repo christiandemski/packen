@@ -28,10 +28,11 @@
                                     <a href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
                                         <div class="min-w-0 flex-1">
                                             <p class="truncate text-[15px] font-semibold">{{ $item->name }}</p>
-                                            @if ($item->per_day || $item->pack_last || $item->templates_count)
+                                            @if ($item->per_day || $item->pack_last || $item->rain_protection || $item->templates_count)
                                                 <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
                                                     @if ($item->per_day)<span class="text-accent-ink">pro Tag</span>@endif
                                                     @if ($item->pack_last)<span>Am Abfahrtstag</span>@endif
+                                                    @if ($item->rain_protection)<span class="inline-flex items-center gap-1"><x-icon name="umbrella" size="12" /> Regenschutz</span>@endif
                                                     @if ($item->templates_count)<span>in {{ $item->templates_count }} {{ $item->templates_count === 1 ? 'Vorlage' : 'Vorlagen' }}</span>@endif
                                                 </p>
                                             @endif

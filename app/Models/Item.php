@@ -6,6 +6,7 @@ use App\Enums\EntrySource;
 use App\Enums\ItemCategory;
 use App\Enums\PacklistGroup;
 use App\Models\Concerns\OwnedByUser;
+use App\Support\RainGear;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ class Item extends Model
     /** @use HasFactory<ItemFactory> */
     use HasFactory, OwnedByUser;
 
-    protected $fillable = ['owner_id', 'name', 'category', 'weight_g', 'per_day', 'pack_last', 'default_container_id', 'notes'];
+    protected $fillable = ['owner_id', 'name', 'category', 'weight_g', 'per_day', 'pack_last', 'rain_protection', 'default_container_id', 'notes'];
 
     protected function casts(): array
     {
@@ -27,11 +28,19 @@ class Item extends Model
             'is_clothing' => 'boolean',
             'per_day' => 'boolean',
             'pack_last' => 'boolean',
+            'rain_protection' => 'boolean',
         ];
     }
 
     protected static function booted(): void
     {
+        // Ohne ausdrückliche Angabe (Outfit-Planer, Start-Vorlagen) nach dem Namen vorbelegen.
+        static::creating(function (Item $item) {
+            if (! array_key_exists('rain_protection', $item->getAttributes())) {
+                $item->rain_protection = RainGear::matches($item->name);
+            }
+        });
+
         // „Kleidung“ ergibt sich aus der Kategorie – so kann es nie widersprüchlich werden.
         static::saving(function (Item $item) {
             $item->is_clothing = $item->category->isClothing();

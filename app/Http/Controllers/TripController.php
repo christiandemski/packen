@@ -100,10 +100,9 @@ class TripController extends Controller
         $tripWeather = $weather->forTrip($trip, $dayLocations($outfitDays));
 
         // Regen angesagt, aber kein Regenschutz auf der Liste oder im Outfit?
-        $rainDays = $canEdit && $entries->isNotEmpty() ? RainGear::missingFor(
-            $tripWeather['days'],
-            $entries->map->name()->merge($outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items)->pluck('name')),
-        ) : [];
+        $rainDays = $canEdit && $entries->isNotEmpty() && ! RainGear::covered($entries, $outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items))
+            ? RainGear::rainyDays($tripWeather['days'])
+            : [];
 
         return view('trips.show', [
             'trip' => $trip->load('members'),
@@ -130,7 +129,7 @@ class TripController extends Controller
             'outfitDays' => $outfitDays,
             'weather' => $tripWeather,
             'rainDays' => $rainDays,
-            'rainGear' => $rainDays ? Item::accessibleBy($user)->orderBy('name')->get()->first(fn (Item $item) => RainGear::matches($item->name)) : null,
+            'rainGear' => $rainDays ? Item::accessibleBy($user)->where('rain_protection', true)->orderBy('name')->first() : null,
             'stageLocations' => $trip->stages->mapWithKeys(fn ($stage) => [$stage->date->toDateString() => $stage->location])->all(),
             'selectedDay' => $selectedDay?->date->toDateString(),
             'outfitOverview' => $outfits->overview($outfitDays),

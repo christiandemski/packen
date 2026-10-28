@@ -7,14 +7,15 @@
         </div>
 
         <form method="POST" action="{{ $editing ? route('items.update', $item) : route('items.store') }}" class="space-y-4"
-              x-data="{ category: @js(old('category', $item->category?->value)), clothing: @js(collect(ItemCategory::clothing())->pluck('value')) }">
+              x-data="{ category: @js(old('category', $item->category?->value)), clothing: @js(collect(ItemCategory::clothing())->pluck('value')), rain: @js((bool) old('rain_protection', $item->rain_protection)), rainTouched: @js($editing || old('name') !== null) }">
             @csrf
             @if ($editing) @method('PUT') @endif
 
             <div class="card space-y-4 p-5">
                 <div>
                     <label for="name" class="label">Name</label>
-                    <input id="name" name="name" value="{{ old('name', $item->name) }}" required maxlength="120" @unless($editing) autofocus @endunless placeholder="z. B. Regenjacke" class="input">
+                    <input id="name" name="name" value="{{ old('name', $item->name) }}" required maxlength="120" @unless($editing) autofocus @endunless placeholder="z. B. Regenjacke" class="input"
+                           @input="rainTouched || (rain = new RegExp(@js(App\Support\RainGear::PATTERN), 'iu').test($event.target.value))">
                     @error('name')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
 
@@ -58,6 +59,13 @@
                         <p class="text-sm text-muted">Steht in der Packliste ganz oben, z. B. Ladekabel oder Zahnbürste.</p>
                     </div>
                     <input type="checkbox" name="pack_last" value="1" @checked(old('pack_last', $item->pack_last)) class="size-6 accent-[var(--accent)]">
+                </label>
+                <label class="flex min-h-[64px] cursor-pointer items-center gap-4 px-5 py-3">
+                    <div class="flex-1">
+                        <p class="text-[15px] font-bold">Schützt vor Regen</p>
+                        <p class="text-sm text-muted">Z. B. Regenjacke, Schirm oder Softshell. Ist Regen angesagt und nichts davon dabei, weist die Packliste darauf hin.</p>
+                    </div>
+                    <input type="checkbox" name="rain_protection" value="1" x-model="rain" @change="rainTouched = true" class="size-6 accent-[var(--accent)]">
                 </label>
             </div>
 

@@ -19,6 +19,7 @@ class ItemRequest extends FormRequest
             'name' => trim((string) $this->input('name')),
             'per_day' => $this->boolean('per_day'),
             'pack_last' => $this->boolean('pack_last'),
+            'rain_protection' => $this->boolean('rain_protection'),
         ]);
     }
 
@@ -33,6 +34,7 @@ class ItemRequest extends FormRequest
             'weight_g' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'per_day' => ['boolean'],
             'pack_last' => ['boolean'],
+            'rain_protection' => ['boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
             'default_container_id' => ['nullable', 'integer', Rule::exists('containers', 'id')->where('owner_id', $this->user()->id)],
         ];
