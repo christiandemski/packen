@@ -15,6 +15,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SharingController;
 use App\Http\Controllers\StarterTemplateController;
 use App\Http\Controllers\TemplateController;
@@ -80,6 +81,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/freigabe/packliste', [SharingController::class, 'packlist'])->name('sharing.packlist');
         Route::put('/freigabe/outfits', [SharingController::class, 'outfits'])->name('sharing.outfits');
         Route::post('/einladen', [TripInvitationController::class, 'store'])->name('trips.invite');
+
+        Route::post('/rueckblick/fehlte', [ReviewController::class, 'missing'])->name('review.missing');
+        Route::patch('/rueckblick/{entry}', [ReviewController::class, 'update'])->name('review.update');
+        Route::post('/rueckblick/{entry}/vorlage', [ReviewController::class, 'addToTemplate'])->name('review.template.add');
+        Route::delete('/rueckblick/{entry}/vorlage/{template}', [ReviewController::class, 'removeFromTemplate'])->name('review.template.remove');
     });
 
     // Outfit-Routen ohne scopeBindings: Zugehörigkeit von Tag und Slot prüft der OutfitController.

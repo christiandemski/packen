@@ -512,6 +512,7 @@ class ComposerStaticInit644982d61768dde4b68efe594e5b406d
         'App\\Http\\Controllers\\OutfitController' => __DIR__ . '/../..' . '/app/Http/Controllers/OutfitController.php',
         'App\\Http\\Controllers\\PacklistController' => __DIR__ . '/../..' . '/app/Http/Controllers/PacklistController.php',
         'App\\Http\\Controllers\\ProfileController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProfileController.php',
+        'App\\Http\\Controllers\\ReviewController' => __DIR__ . '/../..' . '/app/Http/Controllers/ReviewController.php',
         'App\\Http\\Controllers\\SharingController' => __DIR__ . '/../..' . '/app/Http/Controllers/SharingController.php',
         'App\\Http\\Controllers\\StarterTemplateController' => __DIR__ . '/../..' . '/app/Http/Controllers/StarterTemplateController.php',
         'App\\Http\\Controllers\\TemplateController' => __DIR__ . '/../..' . '/app/Http/Controllers/TemplateController.php',

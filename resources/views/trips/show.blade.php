@@ -248,10 +248,13 @@
             @include('trips._outfits')
         </div>
 
-        {{-- ───────────── Rückblick (folgt) ───────────── --}}
-        <div class="card mt-4 p-5" role="tabpanel" x-show="tab === 'review'" x-cloak>
-            <p class="card-title">Rückblick</p>
-            <p class="mt-1 text-sm text-muted">Nach der Reise markierst du hier, was gefehlt hat oder unnötig war (Meilenstein 6).</p>
+        {{-- ───────────── Rückblick ───────────── --}}
+        <div class="mt-4" role="tabpanel" x-show="tab === 'review'" @if ($initialTab !== 'review') x-cloak @endif>
+            @if ($canEdit)
+                @include('trips._review')
+            @else
+                <div class="card p-5 text-sm text-muted">Den Rückblick macht jede Person für ihre eigene Liste.</div>
+            @endif
         </div>
 
         {{-- ───────────── Reisedetails ───────────── --}}

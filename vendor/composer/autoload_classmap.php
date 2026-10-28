@@ -34,6 +34,7 @@ return array(
     'App\\Http\\Controllers\\OutfitController' => $baseDir . '/app/Http/Controllers/OutfitController.php',
     'App\\Http\\Controllers\\PacklistController' => $baseDir . '/app/Http/Controllers/PacklistController.php',
     'App\\Http\\Controllers\\ProfileController' => $baseDir . '/app/Http/Controllers/ProfileController.php',
+    'App\\Http\\Controllers\\ReviewController' => $baseDir . '/app/Http/Controllers/ReviewController.php',
     'App\\Http\\Controllers\\SharingController' => $baseDir . '/app/Http/Controllers/SharingController.php',
     'App\\Http\\Controllers\\StarterTemplateController' => $baseDir . '/app/Http/Controllers/StarterTemplateController.php',
     'App\\Http\\Controllers\\TemplateController' => $baseDir . '/app/Http/Controllers/TemplateController.php',

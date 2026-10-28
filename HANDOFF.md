@@ -215,11 +215,12 @@ Benachrichtigung: in der App (Badge „1 neue Anfrage“). E-Mail-Benachrichtigu
 
 Statt eines eigenen Pärchenmodus: In einer gemeinsamen Reise kann jede Person einzelnen Mitreisenden ihre Packliste freigeben (`packlist_grants`). Die freigegebene Person sieht die Liste lesend und darf abhaken; Einträge anlegen oder löschen bleibt beim Besitzer. Die Freigabe gilt nur in eine Richtung und lässt sich jederzeit zurücknehmen. Beim Abhaken wird gespeichert, wer es war („gepackt von Max“).
 
-### 5.6 Meilenstein 6: Rückblick
+### 5.6 Meilenstein 6: Rückblick – umgesetzt
 
 - Nach Reiseende pro Eintrag markieren: „nicht gebraucht“ / „hat gefehlt“; für Outfits „nicht getragen“.
 - „Hat gefehlt“ lässt sich per Klick in eine Vorlage übernehmen.
 - Kleine Auswertung pro Reise.
+- Umgesetzt zusätzlich: „nicht gebraucht“ lässt sich per Klick aus Vorlagen streichen (wirkt nur auf kommende Reisen); bei Kleidung heißt die Markierung „nicht getragen“; „Was hat gefehlt?“ nimmt auch Dinge auf, die gar nicht auf der Liste standen.
 
 ### 5.7 Später
 
