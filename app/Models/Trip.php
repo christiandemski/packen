@@ -90,6 +90,25 @@ class Trip extends Model
         return (int) $this->start_date->diffInDays($this->end_date) + 1;
     }
 
+    public function nights(): int
+    {
+        return $this->days() - 1;
+    }
+
+    /** z. B. „5 Tage · 4 Nächte“; bei Tagesausflügen nur „1 Tag“. */
+    public function durationLabel(): string
+    {
+        $days = $this->days();
+        $nights = $this->nights();
+        $label = $days.' '.($days === 1 ? 'Tag' : 'Tage');
+
+        if ($nights > 0) {
+            $label .= ' · '.$nights.' '.($nights === 1 ? 'Nacht' : 'Nächte');
+        }
+
+        return $label;
+    }
+
     /** @return 'upcoming'|'running'|'past' */
     public function status(?Carbon $today = null): string
     {
