@@ -37,7 +37,7 @@
         <div class="space-y-1.5 text-sm font-semibold">
             <p class="flex items-center gap-2">
                 <x-icon name="calendar" size="16" class="text-muted" />
-                {{ $trip->dateRangeLabel() }} <span class="text-muted">· {{ $trip->days() }} {{ $trip->days() === 1 ? 'Tag' : 'Tage' }}</span>
+                {{ $trip->dateRangeLabel() }} <span class="text-muted">· {{ $trip->durationLabel() }}</span>
             </p>
             @if ($trip->location)
                 <p class="flex items-center gap-2"><x-icon name="map-pin" size="16" class="text-muted" /> <span class="truncate">{{ $trip->location }}</span></p>

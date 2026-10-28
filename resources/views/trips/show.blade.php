@@ -22,7 +22,7 @@
 
         <h1 class="page-title">{{ $trip->name }}</h1>
         <p class="mt-1.5 text-[15px] font-semibold text-muted">
-            {{ $trip->dateRangeLabel() }} · {{ $trip->days() }} {{ $trip->days() === 1 ? 'Tag' : 'Tage' }} · {{ $trip->type->label() }}
+            {{ $trip->dateRangeLabel() }} · {{ $trip->durationLabel() }} · {{ $trip->type->label() }}
         </p>
 
         <div class="segment mt-5" role="tablist" aria-label="Bereiche der Reise">

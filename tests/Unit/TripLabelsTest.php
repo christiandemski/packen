@@ -24,6 +24,13 @@ it('zählt Tage inklusive An- und Abreise', function () {
     expect(trip('2026-05-12', '2026-05-16')->days())->toBe(5);
 });
 
+it('zählt Nächte und beschreibt die Dauer', function () {
+    expect(trip('2026-05-12', '2026-05-16')->nights())->toBe(4)
+        ->and(trip('2026-05-12', '2026-05-16')->durationLabel())->toBe('5 Tage · 4 Nächte')
+        ->and(trip('2026-05-12', '2026-05-13')->durationLabel())->toBe('2 Tage · 1 Nacht')
+        ->and(trip('2026-05-12', '2026-05-12')->durationLabel())->toBe('1 Tag');
+});
+
 it('beschreibt den Stand der Reise', function () {
     expect(trip('2026-05-02', '2026-05-04')->countdownLabel())->toBe('Morgen')
         ->and(trip('2026-05-13', '2026-05-16')->countdownLabel())->toBe('in 12 Tagen')
