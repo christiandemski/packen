@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -36,7 +37,8 @@ class ItemController extends Controller
 
         return view('items.index', [
             'sections' => $sections,
-            'targets' => Category::choices($user),
+            // Ziele fürs Verschieben alphabetisch (Umlaute wie ihr Grundbuchstabe)
+            'targets' => Category::choices($user)->sortBy(fn ($group) => Str::lower(Str::ascii($group->label)))->values(),
             'total' => $items->count(),
             'duplicates' => $items->count() > 1 ? $duplicates->pairs($user)->count() : 0,
         ]);

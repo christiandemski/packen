@@ -178,3 +178,14 @@ it('bietet im Katalog über „Neu“ Gegenstand, Kategorie und Behältnis an', 
     $this->actingAs($this->anna)->get(route('categories.index', ['neu' => 1]))->assertOk()->assertSee('id="neu"', false);
     $this->actingAs($this->anna)->get(route('containers.index', ['neu' => 1]))->assertOk()->assertSee('id="neu"', false);
 });
+
+it('listet die Ziele zum Verschieben alphabetisch', function () {
+    Item::factory()->for($this->anna, 'owner')->create(['category' => 'misc']);
+    Category::create(['owner_id' => $this->anna->id, 'name' => 'Ätherische Öle', 'icon' => 'droplet']);
+    Category::create(['owner_id' => $this->anna->id, 'name' => 'Zelt', 'icon' => 'tent']);
+
+    $labels = $this->actingAs($this->anna)->get(route('items.index'))->viewData('targets')->pluck('label')->all();
+    $sorted = collect($labels)->sortBy(fn ($l) => Str::lower(Str::ascii($l)))->values()->all();
+
+    expect($labels)->toBe($sorted)->and($labels[1])->toBe('Ätherische Öle')->and(end($labels))->toBe('Zelt');
+});
