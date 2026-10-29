@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/katalog/doppelungen', [ItemDuplicateController::class, 'index'])->name('items.duplicates');
     Route::post('/katalog/doppelungen/zusammenfuehren', [ItemDuplicateController::class, 'merge'])->name('items.duplicates.merge');
     Route::post('/katalog/doppelungen/verschieden', [ItemDuplicateController::class, 'dismiss'])->name('items.duplicates.dismiss');
+    Route::post('/katalog/verschieben', [ItemController::class, 'move'])->name('items.move');
 
     Route::resource('katalog', ItemController::class)
         ->parameters(['katalog' => 'item'])
