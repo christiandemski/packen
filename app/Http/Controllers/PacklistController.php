@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EntrySource;
 use App\Models\Category;
+use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Services\ContainerService;
@@ -14,7 +15,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PacklistController extends Controller
 {
@@ -62,7 +65,7 @@ class PacklistController extends Controller
             ->with('status', $count === 1 ? '1 Eintrag zugeordnet.' : "{$count} Einträge zugeordnet.");
     }
 
-    public function store(Request $request, Trip $trip): RedirectResponse
+    public function store(Request $request, Trip $trip): RedirectResponse|JsonResponse
     {
         Gate::authorize('pack', $trip);
 
@@ -74,7 +77,34 @@ class PacklistController extends Controller
             'note' => ['nullable', 'string', 'max:200'],
         ], ['custom_name.required_without' => 'Bitte einen Namen eingeben oder etwas aus dem Katalog wählen.']);
 
-        $entry = $this->packlists->addEntry($trip, $request->user(), $data);
+        $user = $request->user();
+
+        // Schnelleingabe: Getippter Name, den es im Katalog gibt, ist dieser Gegenstand.
+        if (empty($data['item_id']) && $request->expectsJson()) {
+            $data['item_id'] = Item::accessibleBy($user)->whereRaw('lower(name) = ?', [Str::lower(trim($data['custom_name']))])->value('id');
+        }
+
+        if (! empty($data['item_id']) && $request->expectsJson()
+            && PacklistEntry::where(['trip_id' => $trip->id, 'user_id' => $user->id, 'item_id' => $data['item_id']])->visible()->exists()) {
+            throw ValidationException::withMessages(['custom_name' => 'Steht schon auf der Liste.']);
+        }
+
+        $entry = $this->packlists->addEntry($trip, $user, $data);
+
+        if ($request->expectsJson()) {
+            $group = $entry->load('item.customCategory')->packlistGroup();
+
+            return response()->json([
+                'id' => $entry->id,
+                'name' => $entry->name(),
+                'quantity' => $entry->quantity,
+                'group' => $group->key,
+                'group_label' => $group->label,
+                'toggle_url' => route('packlist.toggle', [$trip, $entry]),
+                'return_url' => route('packlist.return', [$trip, $entry]),
+                'destroy_url' => route('packlist.destroy', [$trip, $entry]),
+            ], 201);
+        }
 
         return redirect()->route('trips.show', $trip)->with('status', "„{$entry->name()}“ steht auf der Liste.");
     }

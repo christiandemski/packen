@@ -195,6 +195,9 @@
                                     <x-packlist-row :trip="$trip" :entry="$entry" :containers="$tripContainers" :can-edit="$canEdit" view="groups" />
                                 @endforeach
                             </ul>
+                            @if ($canEdit && ! $group->is(PacklistGroup::Shared))
+                                <x-packlist-quick-add :trip="$trip" :group="$group" />
+                            @endif
                         </section>
                     @endforeach
                 </div>
@@ -324,6 +327,8 @@
             @endif
 
             @if ($canEdit)
+            @php($suggestions = $addable->map(fn ($item) => ['id' => $item->id, 'name' => $item->name, 'group' => $item->packlistGroup()->key, 'label' => $item->packlistGroup()->label])->values())
+            <script type="application/json" id="packlist-suggestions">{!! $suggestions->toJson(JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) !!}</script>
             {{-- Nach dem Entfernen per X: ein paar Sekunden lang zurückholbar --}}
             <div x-cloak x-show="undo || undoError" x-transition.opacity role="status" aria-live="polite"
                  class="fixed inset-x-4 bottom-36 z-30 mx-auto flex max-w-md items-center gap-3 rounded-card bg-ink py-2 pr-2 pl-4 text-sm font-semibold text-white shadow-[0_20px_40px_-16px_rgba(23,33,30,0.5)] sm:bottom-24">
