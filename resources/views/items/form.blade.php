@@ -13,6 +13,12 @@
             <a href="{{ route('items.index') }}" class="icon-btn -ml-2" aria-label="Zurück zum Katalog"><x-icon name="arrow-left" /></a>
             <h1 class="page-title truncate">{{ $editing ? $item->name : 'Neuer Gegenstand' }}</h1>
         </div>
+        @if ($editing && $item->templates->isNotEmpty())
+            <p class="-mt-4 mb-6 flex items-start gap-2 text-sm font-semibold text-muted">
+                <x-icon name="layers" size="16" class="mt-0.5" />
+                <span>In {{ $item->templates->count() === 1 ? 'der Vorlage' : 'den Vorlagen' }} {{ $item->templates->sortBy('name')->pluck('name')->map(fn ($n) => "„{$n}“")->join(', ', ' und ') }}</span>
+            </p>
+        @endif
 
         <form method="POST" action="{{ $editing ? route('items.update', $item) : route('items.store') }}" class="space-y-4"
               x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), needs: @js($needs), patterns: @js($patterns), touched: @js($editing || old('name') !== null) ? @js($needs->map(fn () => true)) : {},

@@ -103,6 +103,23 @@ class Item extends Model
         return array_values(array_filter(WeatherNeed::cases(), fn (WeatherNeed $need) => (bool) $this->{$need->column()}));
     }
 
+    /** Reihenfolge der Symbole in Zeile und Legende */
+    public const MARK_ORDER = ['repeat', 'clock', 'umbrella', 'snowflake', 'sun'];
+
+    /**
+     * Kleine Symbole für die Katalog-Zeile: [Icon, Bedeutung, hervorgehoben].
+     *
+     * @return list<array{0: string, 1: string, 2: bool}>
+     */
+    public function marks(): array
+    {
+        return [
+            ...($this->per_day ? [['repeat', 'pro Tag', true]] : []),
+            ...($this->pack_last ? [['clock', 'Am Abfahrtstag', false]] : []),
+            ...array_map(fn (WeatherNeed $need) => [$need->badgeIcon(), $need->badge(), false], $this->weatherNeeds()),
+        ];
+    }
+
     public function weightLabel(): ?string
     {
         return match (true) {

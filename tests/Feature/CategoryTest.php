@@ -189,3 +189,15 @@ it('listet die Ziele zum Verschieben alphabetisch', function () {
 
     expect($labels)->toBe($sorted)->and($labels[1])->toBe('Ätherische Öle')->and(end($labels))->toBe('Zelt');
 });
+
+it('zeigt im Katalog Symbole mit Legende statt Text und die Vorlagen beim Bearbeiten', function () {
+    $item = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Socken', 'category' => 'underwear', 'per_day' => true]);
+    Template::factory()->for($this->anna, 'owner')->create(['name' => 'Wandern'])->items()->attach($item->id, ['quantity' => 1]);
+
+    $this->actingAs($this->anna)->get(route('items.index'))->assertOk()
+        ->assertSee('title="pro Tag"', false)
+        ->assertDontSee('in 1 Vorlage')
+        ->assertDontSee('Am Abfahrtstag'); // nur Symbole, die vorkommen
+
+    $this->actingAs($this->anna)->get(route('items.edit', $item))->assertOk()->assertSee('In der Vorlage „Wandern“');
+});
