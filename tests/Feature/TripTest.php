@@ -102,7 +102,7 @@ it('lässt nur den Owner ändern und löschen', function () {
     $this->actingAs($this->anna)->delete(route('trips.destroy', $trip))->assertForbidden();
 
     $this->actingAs($this->max)->put(route('trips.update', $trip), tripInput(['name' => 'Neu', 'mode' => 'group', 'members' => [$this->anna->id]]))
-        ->assertRedirect(route('trips.show', $trip));
+        ->assertRedirect(route('trips.show', $trip->fresh()));
     expect($trip->fresh()->name)->toBe('Neu');
 
     $this->actingAs($this->max)->delete(route('trips.destroy', $trip))->assertRedirect(route('home'));
@@ -175,4 +175,30 @@ it('erlaubt mehrere Verkehrsmittel und kann sie wieder abwählen', function () {
     expect($trip->fresh()->transports->all())->toBe([]);
 
     $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['transports' => ['zeppelin']]))->assertSessionHasErrors('transports.0');
+});
+
+it('hat lesbare Adressen, die auch nach dem Umbenennen funktionieren', function () {
+    $make = fn (string $name, string $start) => Trip::factory()->for($this->anna, 'owner')->create(['name' => $name, 'start_date' => $start, 'end_date' => $start]);
+    $first = $make('Städtetrip Köln', '2026-05-01');
+    $second = $make('Städtetrip Köln', '2027-05-01');
+    $third = $make('Städtetrip Köln', '2027-09-01');
+    $number = $make('2027', '2027-01-01');
+
+    expect([$first->slug, $second->slug, $third->slug, $number->slug])
+        ->toBe(['staedtetrip-koeln', 'staedtetrip-koeln-2027', 'staedtetrip-koeln-2027-2', 'reise-2027']);
+    expect(route('trips.show', $first))->toEndWith('/reisen/staedtetrip-koeln');
+
+    $this->actingAs($this->anna)->get('/reisen/staedtetrip-koeln')->assertOk()->assertSee('Städtetrip Köln');
+
+    // Alte Nummer und alter Name leiten weiter (Abfrage-Parameter bleiben erhalten).
+    $this->actingAs($this->anna)->get('/reisen/'.$first->id.'?tab=outfits')->assertRedirect('/reisen/staedtetrip-koeln?tab=outfits');
+    $first->update(['name' => 'Köln im Mai']);
+    expect($first->slug)->toBe('koeln-im-mai');
+    $this->actingAs($this->anna)->get('/reisen/staedtetrip-koeln')->assertRedirect('/reisen/koeln-im-mai');
+
+    // Die frühere Adresse wird nicht an eine andere Reise vergeben.
+    expect($make('Städtetrip Köln', '2028-05-01')->slug)->toBe('staedtetrip-koeln-2028');
+
+    // Fremde sehen auch über die Adresse nichts.
+    $this->actingAs($this->max)->get('/reisen/koeln-im-mai')->assertForbidden();
 });

@@ -21,16 +21,18 @@ class ItemController extends Controller
         $items = Item::accessibleBy($user)->with('customCategory')->withCount('templates')->orderBy('name')->get();
         $byKey = $items->groupBy(fn (Item $item) => $item->categoryGroup()->key);
 
-        // Kategorien mit Inhalt plus alle eigenen (auch leere – dort tippt man die ersten Dinge ein).
+        // Alle Kategorien; leere feste blendet die Seite erst auf Wunsch ein (eigene immer – die legt man ja zum Füllen an).
         $sections = Category::choices($user)
-            ->filter(fn ($group) => $byKey->has($group->key) || $group->isCustom())
-            ->map(fn ($group) => ['group' => $group, 'items' => $byKey->get($group->key, collect())])
+            ->map(fn ($group) => [
+                'group' => $group,
+                'items' => $byKey->get($group->key, collect()),
+                'hidden' => ! $byKey->has($group->key) && ! $group->isCustom(),
+            ])
             ->values();
 
         return view('items.index', [
             'sections' => $sections,
             'total' => $items->count(),
-            'hasCustom' => $sections->contains(fn ($s) => $s['group']->isCustom()),
         ]);
     }
 

@@ -37,6 +37,9 @@ it('ordnet Gegenstände einer eigenen Kategorie zu und zeigt sie im Katalog', fu
     Category::create(['owner_id' => $this->anna->id, 'name' => 'Hund', 'icon' => 'heart']);
     $this->actingAs($this->anna)->get(route('items.index'))->assertOk()->assertSee('Kamera')->assertSee('Objektiv')->assertSee('Hund');
 
+    // Leere feste Kategorien gibt es zum Einblenden und Füllen
+    $this->actingAs($this->anna)->get(route('items.index'))->assertSeeInOrder(['Weitere Kategorie füllen', 'Oberteile', 'Hygiene']);
+
     // Zurück auf eine feste Kategorie
     $this->actingAs($this->anna)->put(route('items.update', Item::sole()), ['name' => 'Objektiv', 'category' => 'electronics']);
     expect(Item::sole())->category_id->toBeNull()->category->toBe(ItemCategory::Electronics);

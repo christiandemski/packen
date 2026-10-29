@@ -10,8 +10,8 @@ Route::middleware([AuthenticateApiToken::class, 'throttle:60,1'])->name('api.')-
     // Wem gehört der Token? Zum Prüfen beim Eintragen in der anderen App.
     Route::get('/me', fn (Request $request) => response()->json(['data' => ['name' => $request->user()->name]]))->name('me');
     Route::post('/trips', [TripController::class, 'store'])->name('trips.store');
-    Route::get('/trips/{trip}', [TripController::class, 'show'])->name('trips.show');
-    Route::patch('/trips/{trip}', [TripController::class, 'update'])->name('trips.update');
-    Route::delete('/trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
-    Route::get('/trips/{trip}/summary', [TripController::class, 'summary'])->name('trips.summary');
+    Route::get('/trips/{trip:id}', [TripController::class, 'show'])->name('trips.show');
+    Route::patch('/trips/{trip:id}', [TripController::class, 'update'])->name('trips.update');
+    Route::delete('/trips/{trip:id}', [TripController::class, 'destroy'])->name('trips.destroy');
+    Route::get('/trips/{trip:id}/summary', [TripController::class, 'summary'])->name('trips.summary');
 });

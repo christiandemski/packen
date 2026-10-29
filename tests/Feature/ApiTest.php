@@ -173,7 +173,7 @@ it('holt das Wetter je Etappenort', function () {
     expect($weather['place'])->toBe('die jeweiligen Tagesorte')
         ->and(collect($weather['days'])->map->max->all())->toBe(['2027-06-01' => 20, '2027-06-02' => 25, '2027-06-03' => 20, '2027-06-04' => 20]);
 
-    $this->actingAs($this->anna)->get(route('trips.show', $id))->assertSee('Straßburg');
+    $this->actingAs($this->anna)->get(route('trips.show', Trip::find($id)))->assertSee('Straßburg');
 });
 
 it('verlinkt zurück zu „unterwegs“, um Etappen dort zu ändern', function () {
@@ -183,7 +183,7 @@ it('verlinkt zurück zu „unterwegs“, um Etappen dort zu ändern', function (
         ->assertJsonPath('data.external_url', 'https://unterwegs.example/aktivitaeten/42')
         ->json('data.id');
 
-    $this->actingAs($this->anna)->get(route('trips.show', $id))
+    $this->actingAs($this->anna)->get(route('trips.show', Trip::find($id)))
         ->assertSee('https://unterwegs.example/aktivitaeten/42')
         ->assertSeeText('Basel → Straßburg')
         ->assertSeeText('dort ändern');
