@@ -42,14 +42,33 @@
                          @if ($hidden) x-cloak @endif
                          x-on:catalog-reveal.window="$event.detail === category && $nextTick(() => { $el.scrollIntoView({ block: 'center', behavior: 'smooth' }); $refs.input.focus({ preventScroll: true }) })"
                          x-show="{{ $hidden ? 'shown.includes(category) && ' : '' }}(!q || added.length || @js($items->map(fn ($i) => Str::lower($i->name))->values()).some(n => n.includes(q.toLowerCase())))">
-                    <div class="flex items-center justify-between px-5 pt-4 pb-2">
-                        <h2 class="card-title flex items-center gap-2"><x-icon :name="$group->icon" size="18" class="text-accent" /> {{ $group->label }}</h2>
-                        <span class="text-xs font-bold text-muted" x-text="{{ $items->count() }} + added.length">{{ $items->count() }}</span>
+                    <div x-data="{ menu: false, picking: false, picked: [] }" @keydown.escape="menu = false; picking = false; picked = []">
+                    <div class="flex items-center justify-between gap-2 pt-4 pr-2 pb-2 pl-5">
+                        <h2 class="card-title flex min-w-0 items-center gap-2"><x-icon :name="$group->icon" size="18" class="text-accent" /> <span class="truncate">{{ $group->label }}</span></h2>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-muted" x-show="!picking" x-text="{{ $items->count() }} + added.length">{{ $items->count() }}</span>
+                            <div class="relative" @click.outside="menu = false">
+                                <button type="button" class="icon-btn size-9 min-h-9 min-w-9 text-muted" @click="menu = !menu" :aria-expanded="menu" aria-haspopup="true" aria-label="Mehr zu {{ $group->label }}"
+                                        x-show="!picking && {{ $items->count() }} + added.length > 0"><x-icon name="ellipsis" size="18" /></button>
+                                <div x-cloak x-show="menu" x-transition.origin.top.right class="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-card border border-line bg-surface p-1.5 shadow-[0_20px_40px_-16px_rgba(23,33,30,0.35)]">
+                                    <button type="button" class="flex w-full items-center gap-3 rounded-chip p-3 text-left text-[15px] font-bold hover:bg-line-soft" @click="menu = false; picking = true">
+                                        <x-icon name="list-checks" size="18" class="text-accent" /> Mehrere verschieben
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" x-cloak x-show="picking" class="text-sm font-bold text-accent-ink hover:underline px-2 min-h-9"
+                                    @click="const all = [...$el.closest('section').querySelectorAll('[data-pick]')].map(c => +c.value); picked = picked.length === all.length ? [] : all"
+                                    x-text="picked.length && picked.length === $el.closest('section').querySelectorAll('[data-pick]').length ? 'Keine' : 'Alle'"></button>
+                        </div>
                     </div>
                     <ul class="divide-y divide-line-soft border-b border-line-soft">
                         @foreach ($items as $item)
                             <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
-                                <a href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
+                                <label x-cloak x-show="picking" class="flex min-h-[52px] cursor-pointer items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
+                                    <input type="checkbox" data-pick value="{{ $item->id }}" x-model.number="picked" class="size-5 shrink-0 accent-[var(--accent)]">
+                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">{{ $item->name }}</span>
+                                </label>
+                                <a x-show="!picking" href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate text-[15px] font-semibold">{{ $item->name }}</p>
                                         @if ($item->per_day || $item->pack_last || $item->weatherNeeds() || $item->templates_count)
@@ -70,7 +89,11 @@
                         @endforeach
                         <template x-for="item in added" :key="item.id">
                             <li>
-                                <a :href="item.url" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
+                                <label x-show="picking" class="flex min-h-[52px] cursor-pointer items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
+                                    <input type="checkbox" data-pick :value="item.id" x-model.number="picked" class="size-5 shrink-0 accent-[var(--accent)]">
+                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold" x-text="item.name"></span>
+                                </label>
+                                <a x-show="!picking" :href="item.url" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate text-[15px] font-semibold" x-text="item.name"></p>
                                         <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
@@ -83,7 +106,24 @@
                             </li>
                         </template>
                     </ul>
-                    <x-quick-add :label="$group->label" />
+                    <form x-cloak x-show="picking" method="POST" action="{{ route('items.move') }}" class="space-y-3 bg-line-soft/60 px-5 py-4">
+                        @csrf
+                        <template x-for="id in picked" :key="id"><input type="hidden" name="items[]" :value="id"></template>
+                        <div>
+                            <label for="move-{{ $group->key }}" class="label" x-text="picked.length ? `${picked.length} ${picked.length === 1 ? 'Gegenstand' : 'Gegenstände'} verschieben nach` : 'Gegenstände antippen, dann Ziel wählen'"></label>
+                            <select id="move-{{ $group->key }}" name="category" required class="input">
+                                @foreach ($targets->where('key', '!=', $group->key) as $target)
+                                    <option value="{{ $target->key }}">{{ $target->label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary" :disabled="!picked.length" :class="!picked.length && 'opacity-50'">Verschieben</button>
+                            <button type="button" class="btn btn-secondary" @click="picking = false; picked = []">Abbrechen</button>
+                        </div>
+                    </form>
+                    <div x-show="!picking"><x-quick-add :label="$group->label" /></div>
+                    </div>
                 </section>
             @endforeach
         </div>

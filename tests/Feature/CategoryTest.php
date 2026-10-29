@@ -139,3 +139,30 @@ it('benennt feste Kategorien um und blendet sie aus – nur für mich', function
     $this->actingAs($this->anna)->put(route('categories.builtin.update', 'food'), []);
     expect(DB::table('category_settings')->count())->toBe(0);
 });
+
+it('verschiebt mehrere Gegenstände auf einmal in eine andere Kategorie', function () {
+    $camera = Category::create(['owner_id' => $this->anna->id, 'name' => 'Kamera', 'icon' => 'camera']);
+    $lens = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Objektiv', 'category' => 'electronics']);
+    $sd = Item::factory()->for($this->anna, 'owner')->create(['name' => 'SD-Karte', 'category' => 'electronics']);
+    $cable = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Ladekabel', 'category' => 'electronics']);
+
+    $this->actingAs($this->anna)->get(route('items.index'))->assertOk()->assertSee('Mehrere verschieben');
+
+    $this->actingAs($this->anna)->post(route('items.move'), ['items' => [$lens->id, $sd->id], 'category' => $camera->key()])
+        ->assertRedirect(route('items.index'))
+        ->assertSessionHas('status', '2 Gegenstände nach „Kamera“ verschoben.');
+
+    expect($lens->fresh())->category_id->toBe($camera->id)->category->toBe(ItemCategory::Misc)
+        ->and($sd->fresh()->category_id)->toBe($camera->id)
+        ->and($cable->fresh()->category)->toBe(ItemCategory::Electronics);
+
+    // In eine feste Kleidungskategorie – „is_clothing“ zieht mit
+    $this->actingAs($this->anna)->post(route('items.move'), ['items' => [$lens->id], 'category' => 'tops']);
+    expect($lens->fresh())->category_id->toBeNull()->category->toBe(ItemCategory::Tops)->is_clothing->toBeTrue();
+
+    // Fremde Gegenstände und unbekannte Kategorien gehen nicht
+    $foreign = Item::factory()->for($this->max, 'owner')->create(['category' => 'electronics']);
+    $this->actingAs($this->anna)->post(route('items.move'), ['items' => [$foreign->id], 'category' => 'tops'])->assertSessionHasErrors('items.0');
+    $this->actingAs($this->anna)->post(route('items.move'), ['items' => [$sd->id], 'category' => 'gibtsnicht'])->assertSessionHasErrors('category');
+    expect($foreign->fresh()->category)->toBe(ItemCategory::Electronics);
+});

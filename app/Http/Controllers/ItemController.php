@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ItemController extends Controller
@@ -35,6 +36,7 @@ class ItemController extends Controller
 
         return view('items.index', [
             'sections' => $sections,
+            'targets' => Category::choices($user),
             'total' => $items->count(),
             'duplicates' => $items->count() > 1 ? $duplicates->pairs($user)->count() : 0,
         ]);
@@ -83,6 +85,26 @@ class ItemController extends Controller
         }
 
         return redirect()->route('items.index')->with('status', 'Gespeichert.');
+    }
+
+    /** Mehrere Gegenstände auf einmal in eine andere Kategorie (aus dem „…“ einer Katalog-Karte). */
+    public function move(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $groups = Category::choices($user, withHidden: true);
+        $data = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*' => ['integer', Rule::exists('items', 'id')->where('owner_id', $user->id)],
+            'category' => ['required', 'string', Rule::in($groups->pluck('key'))],
+        ], ['items.required' => 'Wähl mindestens einen Gegenstand aus.'], ['category' => 'Kategorie']);
+
+        // Einzeln speichern, damit „is_clothing“ mitzieht
+        $items = Item::accessibleBy($user)->whereKey($data['items'])->get();
+        $items->each->update(Category::columnsFor($data['category'], $user));
+        $count = $items->count();
+        $label = $groups->firstWhere('key', $data['category'])->label;
+
+        return redirect()->route('items.index')->with('status', ($count === 1 ? '1 Gegenstand' : "{$count} Gegenstände")." nach „{$label}“ verschoben.");
     }
 
     public function destroy(Item $item): RedirectResponse
