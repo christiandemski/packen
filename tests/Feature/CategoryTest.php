@@ -166,3 +166,15 @@ it('verschiebt mehrere Gegenstände auf einmal in eine andere Kategorie', functi
     $this->actingAs($this->anna)->post(route('items.move'), ['items' => [$sd->id], 'category' => 'gibtsnicht'])->assertSessionHasErrors('category');
     expect($foreign->fresh()->category)->toBe(ItemCategory::Electronics);
 });
+
+it('bietet im Katalog über „Neu“ Gegenstand, Kategorie und Behältnis an', function () {
+    Item::factory()->for($this->anna, 'owner')->create();
+
+    $this->actingAs($this->anna)->get(route('items.index'))->assertOk()
+        ->assertSee(route('items.create'))
+        ->assertSee(route('categories.index', ['neu' => 1]).'#neu', false)
+        ->assertSee(route('containers.index', ['neu' => 1]).'#neu', false);
+
+    $this->actingAs($this->anna)->get(route('categories.index', ['neu' => 1]))->assertOk()->assertSee('id="neu"', false);
+    $this->actingAs($this->anna)->get(route('containers.index', ['neu' => 1]))->assertOk()->assertSee('id="neu"', false);
+});

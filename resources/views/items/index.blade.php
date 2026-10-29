@@ -145,8 +145,24 @@
     </div>
 
     @if ($total > 0)
-        <a href="{{ route('items.create') }}" class="btn btn-primary fixed right-4 bottom-20 z-20 shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] sm:bottom-6">
-            <x-icon name="plus" size="18" /> Gegenstand
-        </a>
+        <div class="fixed right-4 bottom-20 z-20 sm:bottom-6" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+            <div x-cloak x-show="open" x-transition.origin.bottom.right class="absolute right-0 bottom-full mb-2 w-64 overflow-hidden rounded-card border border-line bg-surface p-1.5 shadow-[0_20px_40px_-16px_rgba(23,33,30,0.35)]">
+                <a href="{{ route('items.create') }}" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
+                    <span class="inline-flex size-10 items-center justify-center rounded-chip bg-accent-soft text-accent-ink"><x-icon name="package" /></span>
+                    <span><span class="block text-[15px] font-bold">Gegenstand</span><span class="block text-xs font-semibold text-muted">Mit allen Angaben anlegen</span></span>
+                </a>
+                <a href="{{ route('categories.index', ['neu' => 1]) }}#neu" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
+                    <span class="inline-flex size-10 items-center justify-center rounded-chip bg-line-soft"><x-icon name="grid" /></span>
+                    <span><span class="block text-[15px] font-bold">Kategorie</span><span class="block text-xs font-semibold text-muted">Eigene, z. B. „Kamera“</span></span>
+                </a>
+                <a href="{{ route('containers.index', ['neu' => 1]) }}#neu" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
+                    <span class="inline-flex size-10 items-center justify-center rounded-chip bg-line-soft"><x-icon name="luggage" /></span>
+                    <span><span class="block text-[15px] font-bold">Behältnis</span><span class="block text-xs font-semibold text-muted">Koffer, Rucksack, Tasche …</span></span>
+                </a>
+            </div>
+            <button type="button" class="btn btn-primary shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)]" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
+                <x-icon name="plus" size="18" class="transition-transform" ::class="open && 'rotate-45'" /> Neu
+            </button>
+        </div>
     @endif
 </x-layouts.app>
