@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ItemCategory;
 use App\Models\Category;
+use App\Support\CategorySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,9 +16,28 @@ class CategoryController extends Controller
 {
     public function index(Request $request): View
     {
+        $user = $request->user();
+
         return view('categories.index', [
-            'categories' => Category::accessibleBy($request->user())->withCount('items')->orderBy('name')->get(),
+            'categories' => Category::accessibleBy($user)->withCount('items')->orderBy('name')->get(),
+            'builtin' => collect(ItemCategory::cases())->map(fn (ItemCategory $c) => [
+                'category' => $c,
+                'hidden' => in_array($c->value, CategorySettings::hidden($user), true),
+                'renamed' => CategorySettings::label($c, $user) !== null,
+            ]),
         ]);
+    }
+
+    /** Feste Kategorie umbenennen oder ausblenden (nur für mich). */
+    public function updateBuiltin(Request $request, string $category): RedirectResponse
+    {
+        $case = ItemCategory::tryFrom($category) ?? abort(404);
+        $request->merge(['label' => trim((string) $request->input('label'))]);
+        $data = $request->validateWithBag('builtin-'.$case->value, ['label' => ['nullable', 'string', 'max:60']], attributes: ['label' => 'Name']);
+
+        CategorySettings::save($request->user(), $case, $data['label'] ?? null, $request->boolean('hidden'));
+
+        return redirect()->route('categories.index')->with('status', 'Gespeichert.');
     }
 
     public function store(Request $request): RedirectResponse

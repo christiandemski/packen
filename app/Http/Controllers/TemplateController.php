@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\Template;
 use App\Services\PacklistService;
 use App\Services\StarterTemplates;
+use App\Support\CategorySettings;
 use App\Support\Group;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -104,7 +105,8 @@ class TemplateController extends Controller
     {
         $byKey = $template->items->sortBy('name')->groupBy(fn (Item $item) => $item->categoryGroup()->key);
 
-        return Category::choices($request->user())
+        return Category::choices($request->user(), withHidden: true)
+            ->reject(fn ($group) => in_array($group->key, CategorySettings::hidden($request->user()), true) && ! $byKey->has($group->key))
             ->map(fn ($group) => ['group' => $group, 'items' => $byKey->get($group->key, collect()), 'hidden' => ! $byKey->has($group->key)])
             ->values();
     }

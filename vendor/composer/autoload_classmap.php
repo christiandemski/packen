@@ -97,6 +97,7 @@ return array(
     'App\\Services\\StarterTemplates' => $baseDir . '/app/Services/StarterTemplates.php',
     'App\\Services\\TripService' => $baseDir . '/app/Services/TripService.php',
     'App\\Services\\WeatherService' => $baseDir . '/app/Services/WeatherService.php',
+    'App\\Support\\CategorySettings' => $baseDir . '/app/Support/CategorySettings.php',
     'App\\Support\\DayWeather' => $baseDir . '/app/Support/DayWeather.php',
     'App\\Support\\Group' => $baseDir . '/app/Support/Group.php',
     'App\\Support\\RainGear' => $baseDir . '/app/Support/RainGear.php',

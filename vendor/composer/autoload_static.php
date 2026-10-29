@@ -575,6 +575,7 @@ class ComposerStaticInit644982d61768dde4b68efe594e5b406d
         'App\\Services\\StarterTemplates' => __DIR__ . '/../..' . '/app/Services/StarterTemplates.php',
         'App\\Services\\TripService' => __DIR__ . '/../..' . '/app/Services/TripService.php',
         'App\\Services\\WeatherService' => __DIR__ . '/../..' . '/app/Services/WeatherService.php',
+        'App\\Support\\CategorySettings' => __DIR__ . '/../..' . '/app/Support/CategorySettings.php',
         'App\\Support\\DayWeather' => __DIR__ . '/../..' . '/app/Support/DayWeather.php',
         'App\\Support\\Group' => __DIR__ . '/../..' . '/app/Support/Group.php',
         'App\\Support\\RainGear' => __DIR__ . '/../..' . '/app/Support/RainGear.php',

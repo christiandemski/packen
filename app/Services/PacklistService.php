@@ -157,7 +157,7 @@ class PacklistService
             'trip_id' => $trip->id,
             'user_id' => $user->id,
             'custom_name' => trim((string) $data['custom_name']),
-            'group' => Category::packlistChoices($user)->firstWhere('key', $data['group'] ?? null)?->key ?? PacklistGroup::Misc->value,
+            'group' => Category::packlistChoices($user, withHidden: true)->firstWhere('key', $data['group'] ?? null)?->key ?? PacklistGroup::Misc->value,
             'quantity' => $quantity,
             'source' => EntrySource::Manual,
             'note' => $data['note'] ?? null,

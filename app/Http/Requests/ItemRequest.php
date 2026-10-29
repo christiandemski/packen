@@ -37,7 +37,7 @@ class ItemRequest extends FormRequest
                 'required', 'string', 'max:120',
                 Rule::unique('items', 'name')->where('owner_id', $this->user()->id)->ignore($this->route('item')),
             ],
-            'category' => ['required', 'string', Rule::in(Category::choices($this->user())->pluck('key'))],
+            'category' => ['required', 'string', Rule::in(Category::choices($this->user(), withHidden: true)->pluck('key'))],
             'weight_g' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'per_day' => ['boolean'],
             'pack_last' => ['boolean'],

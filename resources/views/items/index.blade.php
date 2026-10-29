@@ -6,7 +6,7 @@
             <h1 class="page-title mt-1">Katalog</h1>
             <p class="mt-2 max-w-xl text-[15px] text-muted">Alles, was du jemals einpacken könntest. Aus dem Katalog baust du Vorlagen und Packlisten.</p>
             <div class="mt-3 flex flex-wrap gap-2">
-                <a href="{{ route('categories.index') }}" class="btn btn-secondary min-h-10 text-sm"><x-icon name="grid" size="16" /> Eigene Kategorien</a>
+                <a href="{{ route('categories.index') }}" class="btn btn-secondary min-h-10 text-sm"><x-icon name="grid" size="16" /> Kategorien</a>
                 <a href="{{ route('containers.index') }}" class="btn btn-secondary min-h-10 text-sm"><x-icon name="luggage" size="16" /> Behältnisse</a>
             </div>
         </div>

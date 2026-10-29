@@ -115,6 +115,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/outfits/uebernehmen', [OutfitController::class, 'apply'])->name('apply');
     });
 
+    Route::put('/kategorien/fest/{category}', [CategoryController::class, 'updateBuiltin'])->name('categories.builtin.update');
     Route::resource('kategorien', CategoryController::class)
         ->parameters(['kategorien' => 'category'])
         ->names('categories')

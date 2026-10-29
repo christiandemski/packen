@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ItemCategory;
 use App\Enums\PacklistGroup;
 use App\Models\Concerns\OwnedByUser;
+use App\Support\CategorySettings;
 use App\Support\Group;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,13 +49,17 @@ class Category extends Model
     }
 
     /**
-     * Alle Kategorien zum Auswählen: feste und eigene, in Katalog-Reihenfolge.
+     * Alle Kategorien zum Auswählen: feste und eigene, in Katalog-Reihenfolge – ohne ausgeblendete,
+     * außer zum Prüfen von Eingaben ($withHidden), damit bestehende Gegenstände gültig bleiben.
      *
      * @return Collection<int, Group>
      */
-    public static function choices(User $user): Collection
+    public static function choices(User $user, bool $withHidden = false): Collection
     {
-        return collect(ItemCategory::cases())->map(fn (ItemCategory $c) => Group::category($c))
+        $hidden = $withHidden ? [] : CategorySettings::hidden($user);
+
+        return collect(ItemCategory::cases())->reject(fn (ItemCategory $c) => in_array($c->value, $hidden, true))
+            ->map(fn (ItemCategory $c) => Group::category($c))
             ->merge(self::accessibleBy($user)->orderBy('name')->get()->map(fn (self $c) => Group::custom($c)))
             ->sortBy(fn (Group $g) => $g->sortKey())
             ->values();
@@ -65,9 +70,12 @@ class Category extends Model
      *
      * @return Collection<int, Group>
      */
-    public static function packlistChoices(User $user): Collection
+    public static function packlistChoices(User $user, bool $withHidden = false): Collection
     {
-        return collect(PacklistGroup::cases())->map(fn (PacklistGroup $g) => Group::packlist($g))
+        $hidden = $withHidden ? [] : CategorySettings::hidden($user);
+
+        return collect(PacklistGroup::cases())->reject(fn (PacklistGroup $g) => in_array($g->value, $hidden, true))
+            ->map(fn (PacklistGroup $g) => Group::packlist($g))
             ->merge(self::accessibleBy($user)->orderBy('name')->get()->map(fn (self $c) => Group::custom($c, packlist: true)))
             ->sortBy(fn (Group $g) => $g->sortKey())
             ->values();
