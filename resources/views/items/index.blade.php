@@ -34,6 +34,13 @@
                 <x-icon name="search" size="18" class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
                 <input type="search" x-model="q" placeholder="Im Katalog suchen" aria-label="Im Katalog suchen" class="input pl-10">
             </div>
+            @if ($marks->isNotEmpty())
+                <p class="-mt-2 mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted" aria-hidden="true">
+                    @foreach ($marks as [$icon, $label, $accent])
+                        <span class="inline-flex items-center gap-1"><x-icon :name="$icon" size="13" class="{{ $accent ? 'text-accent' : '' }}" /> {{ $label }}</span>
+                    @endforeach
+                </p>
+            @endif
         @endif
 
         <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
@@ -68,22 +75,13 @@
                                     <input type="checkbox" data-pick value="{{ $item->id }}" x-model.number="picked" class="size-5 shrink-0 accent-[var(--accent)]">
                                     <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">{{ $item->name }}</span>
                                 </label>
-                                <a x-show="!picking" href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
-                                    <div class="min-w-0 flex-1">
-                                        <p class="truncate text-[15px] font-semibold">{{ $item->name }}</p>
-                                        @if ($item->per_day || $item->pack_last || $item->weatherNeeds() || $item->templates_count)
-                                            <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
-                                                @if ($item->per_day)<span class="text-accent-ink">pro Tag</span>@endif
-                                                @if ($item->pack_last)<span>Am Abfahrtstag</span>@endif
-                                                @foreach ($item->weatherNeeds() as $need)<span class="inline-flex items-center gap-1"><x-icon :name="$need->badgeIcon()" size="12" /> {{ $need->badge() }}</span>@endforeach
-                                                @if ($item->templates_count)<span>in {{ $item->templates_count }} {{ $item->templates_count === 1 ? 'Vorlage' : 'Vorlagen' }}</span>@endif
-                                            </p>
-                                        @endif
-                                    </div>
+                                <a x-show="!picking" href="{{ route('items.edit', $item) }}" class="flex min-h-[48px] items-center gap-2 px-5 py-2 hover:bg-line-soft">
+                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">{{ $item->name }}</span>
+                                    <x-item-marks :item="$item" />
                                     @if ($item->weightLabel())
-                                        <span class="text-[13px] font-semibold text-muted">{{ $item->weightLabel() }}</span>
+                                        <span class="ml-1 text-xs font-semibold text-muted">{{ $item->weightLabel() }}</span>
                                     @endif
-                                    <x-icon name="chevron-right" size="16" class="text-muted" />
+                                    <x-icon name="chevron-right" size="16" class="text-muted/60" />
                                 </a>
                             </li>
                         @endforeach
@@ -93,15 +91,13 @@
                                     <input type="checkbox" data-pick :value="item.id" x-model.number="picked" class="size-5 shrink-0 accent-[var(--accent)]">
                                     <span class="min-w-0 flex-1 truncate text-[15px] font-semibold" x-text="item.name"></span>
                                 </label>
-                                <a x-show="!picking" :href="item.url" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
-                                    <div class="min-w-0 flex-1">
-                                        <p class="truncate text-[15px] font-semibold" x-text="item.name"></p>
-                                        <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
-                                            <span class="text-accent-ink">neu</span>
-                                            <template x-for="badge in item.badges"><span x-text="badge"></span></template>
-                                        </p>
-                                    </div>
-                                    <x-icon name="chevron-right" size="16" class="text-muted" />
+                                <a x-show="!picking" :href="item.url" class="flex min-h-[48px] items-center gap-2 px-5 py-2 hover:bg-line-soft">
+                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold" x-text="item.name"></span>
+                                    <span class="text-xs font-bold text-accent-ink">neu</span>
+                                    @foreach (App\Enums\WeatherNeed::cases() as $need)
+                                        <span x-show="item.needs.includes(@js($need->value))" class="text-muted" title="{{ $need->badge() }}"><x-icon :name="$need->badgeIcon()" size="14" /><span class="sr-only">{{ $need->badge() }}</span></span>
+                                    @endforeach
+                                    <x-icon name="chevron-right" size="16" class="text-muted/60" />
                                 </a>
                             </li>
                         </template>

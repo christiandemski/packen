@@ -22,7 +22,7 @@ class ItemController extends Controller
     public function index(Request $request, CatalogDuplicates $duplicates): View
     {
         $user = $request->user();
-        $items = Item::accessibleBy($user)->with('customCategory')->withCount('templates')->orderBy('name')->get();
+        $items = Item::accessibleBy($user)->with('customCategory')->orderBy('name')->get();
         $byKey = $items->groupBy(fn (Item $item) => $item->categoryGroup()->key);
 
         // Alle Kategorien; leere feste blendet die Seite erst auf Wunsch ein (eigene immer – die legt man ja zum Füllen an).
@@ -37,6 +37,8 @@ class ItemController extends Controller
 
         return view('items.index', [
             'sections' => $sections,
+            // Legende: nur Symbole, die im Katalog vorkommen
+            'marks' => $items->flatMap->marks()->unique(fn ($mark) => $mark[0])->sortBy(fn ($mark) => array_search($mark[0], Item::MARK_ORDER, true))->values(),
             // Ziele fürs Verschieben alphabetisch (Umlaute wie ihr Grundbuchstabe)
             'targets' => Category::choices($user)->sortBy(fn ($group) => Str::lower(Str::ascii($group->label)))->values(),
             'total' => $items->count(),
@@ -63,6 +65,7 @@ class ItemController extends Controller
                 'url' => route('items.edit', $item),
                 'rain_protection' => $item->rain_protection,
                 'badges' => collect($item->weatherNeeds())->map->badge()->all(),
+                'needs' => collect($item->weatherNeeds())->map->value->all(),
             ], 201);
         }
 
