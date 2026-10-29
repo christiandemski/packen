@@ -45,6 +45,7 @@ class User extends Authenticatable
             'active' => 'boolean',
             'email_notifications' => 'boolean',
             'push_settings' => 'array',
+            'category_order' => 'array',
             'last_login_at' => 'datetime',
             'starter_templates_at' => 'datetime',
             'password' => 'hashed',

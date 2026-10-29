@@ -9,6 +9,37 @@
             </div>
         </div>
 
+        <section class="mb-8" x-data="categoryOrder(@js(route('categories.order')))">
+            <div class="mb-3 flex items-end justify-between gap-3">
+                <div>
+                    <h2 class="card-title">Reihenfolge</h2>
+                    <p class="mt-1 text-sm text-muted">Zum Verschieben am Griff ziehen – so stehen die Kategorien in Katalog, Vorlagen und Packliste. „Am Abfahrtstag“ und die Aufgaben bleiben in der Packliste oben.</p>
+                </div>
+                <span x-show="saved" x-cloak x-transition class="shrink-0 text-xs font-bold text-accent-ink">Gespeichert</span>
+            </div>
+            <ul x-ref="list" class="card divide-y divide-line-soft overflow-hidden">
+                @foreach ($order as $group)
+                    <li data-key="{{ $group->key }}" class="flex min-h-[48px] items-center gap-3 bg-surface pr-2 pl-3">
+                        <span data-handle class="flex size-10 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing" aria-hidden="true"><x-icon name="grip" size="18" /></span>
+                        <x-icon :name="$group->icon" size="18" class="text-accent" />
+                        <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">{{ $group->label }}</span>
+                        <span class="flex">
+                            <button type="button" @click="move($event, -1)" class="icon-btn size-9 min-h-9 min-w-9 text-muted" aria-label="{{ $group->label }} nach oben"><x-icon name="chevron-up" size="16" /></button>
+                            <button type="button" @click="move($event, 1)" class="icon-btn size-9 min-h-9 min-w-9 text-muted" aria-label="{{ $group->label }} nach unten"><x-icon name="chevron-down" size="16" /></button>
+                        </span>
+                    </li>
+                @endforeach
+            </ul>
+            <p x-show="error" x-cloak x-text="error" class="field-error mt-2" role="alert"></p>
+            @if (auth()->user()->category_order)
+                <form method="POST" action="{{ route('categories.order.reset') }}" class="mt-2">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-sm font-bold text-muted hover:text-ink hover:underline">Standard-Reihenfolge</button>
+                </form>
+            @endif
+        </section>
+
+        <h2 class="card-title mb-3">Eigene Kategorien</h2>
         <div class="space-y-3">
             @foreach ($categories as $category)
                 @php($bag = 'edit-'.$category->id)

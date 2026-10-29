@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ItemCategory;
 use App\Models\Category;
 use App\Support\CategorySettings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +20,7 @@ class CategoryController extends Controller
         $user = $request->user();
 
         return view('categories.index', [
+            'order' => Category::choices($user),
             'categories' => Category::accessibleBy($user)->withCount('items')->orderBy('name')->get(),
             'builtin' => collect(ItemCategory::cases())->map(fn (ItemCategory $c) => [
                 'category' => $c,
@@ -26,6 +28,30 @@ class CategoryController extends Controller
                 'renamed' => CategorySettings::label($c, $user) !== null,
             ]),
         ]);
+    }
+
+    /** Eigene Reihenfolge (per Ziehen); gilt für Katalog, Vorlagen und Packliste. */
+    public function order(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'order' => ['present', 'array'],
+            'order.*' => ['string', Rule::in(Category::choices($user, withHidden: true)->pluck('key'))],
+        ]);
+
+        // Ausgeblendete behalten ihren Platz hinten
+        $hidden = Category::choices($user, withHidden: true)->pluck('key')->diff($data['order'])->values()->all();
+        CategorySettings::saveOrder($user, [...$data['order'], ...$hidden]);
+
+        return response()->json(['saved' => true]);
+    }
+
+    /** Zurück zur Standard-Reihenfolge */
+    public function resetOrder(Request $request): RedirectResponse
+    {
+        $request->user()->forceFill(['category_order' => null])->save();
+
+        return redirect()->route('categories.index')->with('status', 'Standard-Reihenfolge wiederhergestellt.');
     }
 
     /** Feste Kategorie umbenennen oder ausblenden (nur für mich). */

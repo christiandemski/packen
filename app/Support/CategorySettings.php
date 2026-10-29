@@ -24,6 +24,20 @@ final class CategorySettings
         return array_keys(array_filter(self::for($user), fn ($row) => (bool) $row->hidden));
     }
 
+    /** @return array<string, int> Schlüssel („tops“, „c:12“) => Platz; leer = Standard-Reihenfolge */
+    public static function order(?User $user = null): array
+    {
+        $user ??= auth()->user();
+
+        return array_flip(array_values($user?->category_order ?? []));
+    }
+
+    /** @param  list<string>  $keys */
+    public static function saveOrder(User $user, array $keys): void
+    {
+        $user->forceFill(['category_order' => array_values(array_unique($keys))])->save();
+    }
+
     public static function save(User $user, ItemCategory $category, ?string $label, bool $hidden): void
     {
         $label = filled($label) && $label !== $category->defaultLabel() ? $label : null;

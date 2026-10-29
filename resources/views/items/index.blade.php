@@ -11,6 +11,14 @@
             </div>
         </div>
 
+        @if ($duplicates)
+            <a href="{{ route('items.duplicates') }}" class="mb-5 flex items-center gap-3 rounded-card bg-accent-soft px-4 py-3 text-accent-ink hover:opacity-90">
+                <x-icon name="layers" size="20" class="shrink-0" />
+                <span class="min-w-0 flex-1 text-sm font-bold">{{ $duplicates === 1 ? '1 mögliche Doppelung' : $duplicates.' mögliche Doppelungen' }} im Katalog – aufräumen?</span>
+                <x-icon name="chevron-right" size="16" />
+            </a>
+        @endif
+
         @if ($total === 0)
             <div class="card mb-5 flex flex-col items-center px-6 py-14 text-center" x-show="!added">
                 <span class="inline-flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent-ink"><x-icon name="package" size="30" /></span>
