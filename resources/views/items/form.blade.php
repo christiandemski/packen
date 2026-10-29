@@ -15,7 +15,8 @@
         </div>
 
         <form method="POST" action="{{ $editing ? route('items.update', $item) : route('items.store') }}" class="space-y-4"
-              x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), needs: @js($needs), patterns: @js($patterns), touched: @js($editing || old('name') !== null) ? @js($needs->map(fn () => true)) : {} }">
+              x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), needs: @js($needs), patterns: @js($patterns), touched: @js($editing || old('name') !== null) ? @js($needs->map(fn () => true)) : {},
+                       prefill(name) { for (const key in this.patterns) this.touched[key] || (this.needs[key] = new RegExp(this.patterns[key], 'iu').test(name)) } }">
             @csrf
             @if ($editing) @method('PUT') @endif
 
@@ -23,7 +24,7 @@
                 <div>
                     <label for="name" class="label">Name</label>
                     <input id="name" name="name" value="{{ old('name', $item->name) }}" required maxlength="120" @unless($editing) autofocus @endunless placeholder="z. B. Regenjacke" class="input"
-                           @input="for (const key in patterns) touched[key] || (needs[key] = new RegExp(patterns[key], 'iu').test($event.target.value))">
+                           @input="prefill($event.target.value)">
                     @error('name')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
 
