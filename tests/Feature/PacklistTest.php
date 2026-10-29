@@ -373,3 +373,29 @@ it('bietet an jeder Zeile ein X zum schnellen Entfernen mit Rückgängig', funct
     $this->trip->members()->attach($this->max->id, ['role' => 'member']);
     $this->actingAs($this->max)->get(route('trips.show', $this->trip))->assertDontSee('aria-label="Socken entfernen"', false);
 });
+
+it('fügt per Schnelleingabe in der Reise hinzu – mit Vorschlägen aus dem Katalog', function () {
+    $this->actingAs($this->anna)->put(route('packlist.templates', $this->trip), ['template_ids' => [$this->basis->id]]);
+
+    // Vorschläge: nur, was noch nicht auf der Liste steht
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertOk()
+        ->assertSee('id="packlist-suggestions"', false)
+        ->assertSee('"name":"Trinkflasche"', false)
+        ->assertDontSee('"name":"Socken"', false)
+        ->assertSee('packlistQuickAdd(', false);
+
+    // Vorschlag gewählt
+    $this->actingAs($this->anna)->postJson(route('packlist.store', $this->trip), ['item_id' => $this->bottle->id])
+        ->assertCreated()->assertJson(['name' => 'Trinkflasche', 'group' => 'gear']);
+
+    // Getippter Name, den es im Katalog gibt → dieser Gegenstand; steht er schon drauf → Hinweis
+    $this->actingAs($this->anna)->postJson(route('packlist.store', $this->trip), ['custom_name' => 'socken', 'group' => 'misc'])
+        ->assertUnprocessable()->assertJsonValidationErrors(['custom_name' => 'Steht schon auf der Liste.']);
+
+    // Unbekannter Name → Freitext in dieser Karte
+    $this->actingAs($this->anna)->postJson(route('packlist.store', $this->trip), ['custom_name' => 'Geschenk für Oma', 'group' => 'misc'])
+        ->assertCreated()->assertJson(['name' => 'Geschenk für Oma', 'group' => 'misc']);
+
+    expect(PacklistEntry::where('custom_name', 'Geschenk für Oma')->sole()->item_id)->toBeNull()
+        ->and(entryFor($this->bottle))->not->toBeNull();
+});

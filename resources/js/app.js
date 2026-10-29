@@ -294,6 +294,74 @@ Alpine.data('packlist', (packed = {}, view = 'groups', back = {}, direction = 't
     },
 }));
 
+/** Katalog-Gegenstände, die noch nicht auf der Packliste stehen (einmal pro Seite eingebettet). */
+let catalogSuggestions = null;
+const takenSuggestions = new Set();
+const normalize = (text) => text.toLocaleLowerCase('de').normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/**
+ * Schnelleingabe in einer Karte der Packliste (liegt im „packlist“-Bereich): Beim Tippen
+ * Vorschläge aus dem Katalog – Pfeiltasten/Enter oder antippen. Ohne Vorschlag wird der Name
+ * ein Freitext-Eintrag in dieser Karte (oder der gleichnamige Katalog-Gegenstand).
+ */
+Alpine.data('packlistQuickAdd', (url, group) => ({
+    name: '',
+    open: false,
+    active: -1,
+    added: [],
+    error: '',
+    busy: false,
+    get suggestions() {
+        const q = normalize(this.name.trim());
+        if (!q) return [];
+        catalogSuggestions ??= JSON.parse(document.getElementById('packlist-suggestions')?.textContent ?? '[]').map((s) => ({ ...s, key: normalize(s.name) }));
+        const rank = (s) => (s.key.startsWith(q) ? 0 : s.key.split(/[\s-]+/).some((word) => word.startsWith(q)) ? 1 : 2);
+        return catalogSuggestions
+            .filter((s) => !takenSuggestions.has(s.id) && s.key.includes(q))
+            .sort((a, b) => rank(a) - rank(b) || (b.group === group) - (a.group === group) || a.key.localeCompare(b.key))
+            .slice(0, 6);
+    },
+    normalizeName: (text) => normalize(text.trim()),
+    typed() {
+        this.open = true;
+        this.active = -1;
+        this.error = '';
+    },
+    move(step) {
+        const count = this.suggestions.length;
+        if (!count) return;
+        this.open = true;
+        // -1 = nichts markiert (Enter nimmt dann den getippten Namen)
+        const next = this.active + step;
+        this.active = next < -1 ? count - 1 : next >= count ? -1 : next;
+    },
+    enter() {
+        const pick = this.open ? this.suggestions[this.active] : null;
+        pick ? this.add({ item_id: pick.id }) : this.name.trim() && this.add({ custom_name: this.name.trim(), group });
+    },
+    async add(body) {
+        if (this.busy) return;
+        this.busy = true;
+        this.error = '';
+        try {
+            const response = await sendJson(url, 'POST', body);
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(errorText(data));
+            const match = catalogSuggestions?.find((s) => s.key === normalize(data.name));
+            if (body.item_id || match) takenSuggestions.add(body.item_id ?? match.id);
+            this.added.push(data);
+            this.packed[data.id] = false;
+            this.name = '';
+            this.open = false;
+            this.active = -1;
+        } catch (e) {
+            this.error = e.message === 'Failed to fetch' ? 'Keine Verbindung – bitte gleich noch einmal.' : e.message;
+        }
+        this.busy = false;
+        this.$nextTick(() => this.$refs.input.focus());
+    },
+}));
+
 let csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
 /** JSON an die App schicken; ein abgelaufener CSRF-Token wird einmal erneuert. */
