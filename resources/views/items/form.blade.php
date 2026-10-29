@@ -1,4 +1,12 @@
-@php use App\Enums\ItemCategory; $editing = $item->exists; $clothing = collect(ItemCategory::clothing())->pluck('value')->all(); @endphp
+@php
+    use App\Enums\ItemCategory;
+    use App\Enums\WeatherNeed;
+
+    $editing = $item->exists;
+    $clothing = collect(ItemCategory::clothing())->pluck('value')->all();
+    $needs = collect(WeatherNeed::cases())->mapWithKeys(fn ($n) => [$n->value => (bool) old($n->column(), $item->{$n->column()})]);
+    $patterns = collect(WeatherNeed::cases())->mapWithKeys(fn ($n) => [$n->value => $n->pattern()]);
+@endphp
 <x-layouts.app :title="$editing ? $item->name : 'Neuer Gegenstand'">
     <div class="mx-auto max-w-2xl">
         <div class="mb-6 flex items-center gap-2">
@@ -7,7 +15,7 @@
         </div>
 
         <form method="POST" action="{{ $editing ? route('items.update', $item) : route('items.store') }}" class="space-y-4"
-              x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), rain: @js((bool) old('rain_protection', $item->rain_protection)), rainTouched: @js($editing || old('name') !== null) }">
+              x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), needs: @js($needs), patterns: @js($patterns), touched: @js($editing || old('name') !== null) ? @js($needs->map(fn () => true)) : {} }">
             @csrf
             @if ($editing) @method('PUT') @endif
 
@@ -15,7 +23,7 @@
                 <div>
                     <label for="name" class="label">Name</label>
                     <input id="name" name="name" value="{{ old('name', $item->name) }}" required maxlength="120" @unless($editing) autofocus @endunless placeholder="z. B. Regenjacke" class="input"
-                           @input="rainTouched || (rain = new RegExp(@js(App\Support\RainGear::PATTERN), 'iu').test($event.target.value))">
+                           @input="for (const key in patterns) touched[key] || (needs[key] = new RegExp(patterns[key], 'iu').test($event.target.value))">
                     @error('name')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
 
@@ -44,7 +52,7 @@
                 </fieldset>
             </div>
 
-            <div class="card divide-y divide-line-soft">
+            <div class="card divide-y divide-line-soft" x-show="category !== 'tasks'">
                 <label class="flex min-h-[64px] cursor-pointer items-center gap-4 px-5 py-3">
                     <div class="flex-1">
                         <p class="text-[15px] font-bold">Pro Tag</p>
@@ -60,23 +68,26 @@
                     </div>
                     <input type="checkbox" name="pack_last" value="1" @checked(old('pack_last', $item->pack_last)) class="size-6 accent-[var(--accent)]">
                 </label>
-                <label class="flex min-h-[64px] cursor-pointer items-center gap-4 px-5 py-3">
-                    <div class="flex-1">
-                        <p class="text-[15px] font-bold">Schützt vor Regen</p>
-                        <p class="text-sm text-muted">Z. B. Regenjacke, Schirm oder Softshell. Ist Regen angesagt und nichts davon dabei, weist die Packliste darauf hin.</p>
-                    </div>
-                    <input type="checkbox" name="rain_protection" value="1" x-model="rain" @change="rainTouched = true" class="size-6 accent-[var(--accent)]">
-                </label>
+                @foreach (WeatherNeed::cases() as $need)
+                    <label class="flex min-h-[64px] cursor-pointer items-center gap-4 px-5 py-3">
+                        <div class="flex-1">
+                            <p class="flex items-center gap-1.5 text-[15px] font-bold"><x-icon :name="$need->badgeIcon()" size="16" class="text-muted" /> {{ $need->label() }}</p>
+                            <p class="text-sm text-muted">{{ $need->description() }}</p>
+                        </div>
+                        <input type="checkbox" name="{{ $need->column() }}" value="1" x-model="needs.{{ $need->value }}" @change="touched.{{ $need->value }} = true" class="size-6 accent-[var(--accent)]">
+                    </label>
+                @endforeach
             </div>
 
             <div class="card space-y-4 p-5">
-                <div>
+                <p x-show="category === 'tasks'" x-cloak class="text-sm font-semibold text-muted">Eine Aufgabe wird in der Packliste abgehakt, aber nicht eingepackt – ohne Gewicht und Behältnis.</p>
+                <div x-show="category !== 'tasks'">
                     <label for="weight_g" class="label">Gewicht in Gramm <span class="normal-case tracking-normal">(optional)</span></label>
                     <input id="weight_g" name="weight_g" type="number" inputmode="numeric" min="0" max="100000" value="{{ old('weight_g', $item->weight_g) }}" class="input max-w-40">
                     @error('weight_g')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
                 @if ($containers->isNotEmpty())
-                    <div>
+                    <div x-show="category !== 'tasks'">
                         <label for="default_container_id" class="label">Standardplatz <span class="normal-case tracking-normal">(optional)</span></label>
                         <select id="default_container_id" name="default_container_id" class="input">
                             <option value="">Kein fester Platz</option>

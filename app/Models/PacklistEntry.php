@@ -83,6 +83,14 @@ class PacklistEntry extends Model
         return $this->item?->name ?? $this->custom_name ?? 'Unbenannt';
     }
 
+    /** „Vor der Abfahrt erledigen“: wird abgehakt, aber nicht eingepackt (kein Gewicht, kein Behältnis). */
+    public function isTask(): bool
+    {
+        return $this->item !== null
+            ? $this->item->category_id === null && $this->item->category->isTask()
+            : $this->group_item_id === null && $this->group === PacklistGroup::Tasks->value;
+    }
+
     public function packlistGroup(): Group
     {
         if ($this->group_item_id !== null) {

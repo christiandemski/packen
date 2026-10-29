@@ -31,12 +31,20 @@
             </form>
         </div>
 
-        <div class="space-y-4">
-            @forelse ($groups as $items)
-                @php($cat = $items->first()->categoryGroup())
-                <section class="card overflow-hidden">
+        @php($empty = $sections->where('hidden', true))
+        <div class="space-y-4" x-data="{ shown: [] }">
+            @if ($empty->count() === $sections->count())
+                <div class="card px-6 py-10 text-center">
+                    <p class="text-lg font-extrabold">Noch leer</p>
+                    <p class="mt-1 text-[15px] text-muted">Öffne unten eine Kategorie und tipp los, oder füge Gegenstände aus deinem Katalog hinzu.</p>
+                </div>
+            @endif
+            @foreach ($sections as ['group' => $cat, 'items' => $items, 'hidden' => $hidden])
+                <section class="card overflow-hidden" x-data="quickAdd(@js(route('templates.items.store', $template)), @js($cat->key), { name: 'new_name', category: 'new_category' })"
+                         @if ($hidden) x-cloak x-show="shown.includes(category)" @endif
+                         x-on:template-reveal.window="$event.detail === category && $nextTick(() => { $el.scrollIntoView({ block: 'center', behavior: 'smooth' }); $refs.input.focus({ preventScroll: true }) })">
                     <h2 class="card-title flex items-center gap-2 px-5 pt-4 pb-2"><x-icon :name="$cat->icon" size="18" class="text-accent" /> {{ $cat->label }}</h2>
-                    <ul class="divide-y divide-line-soft">
+                    <ul class="divide-y divide-line-soft border-b border-line-soft">
                         @foreach ($items as $item)
                             @php($qty = $item->pivot->quantity)
                             <li class="flex min-h-[56px] items-center gap-2 py-1.5 pr-2 pl-5">
@@ -75,14 +83,31 @@
                                 </form>
                             </li>
                         @endforeach
+                        <template x-for="item in added" :key="item.id">
+                            <li class="flex min-h-[56px] items-center gap-2 py-1.5 pr-5 pl-5">
+                                <p class="min-w-0 flex-1 truncate text-[15px] font-semibold" x-text="item.name"></p>
+                                <span class="text-xs font-bold text-accent-ink" x-text="item.badges.length ? item.badges.join(' · ') : 'neu'"></span>
+                                <span class="w-8 text-center text-[15px] font-extrabold">1×</span>
+                            </li>
+                        </template>
                     </ul>
+                    <x-quick-add :label="$cat->label" />
                 </section>
-            @empty
-                <div class="card px-6 py-10 text-center">
-                    <p class="text-lg font-extrabold">Noch leer</p>
-                    <p class="mt-1 text-[15px] text-muted">Füge unten Gegenstände aus deinem Katalog hinzu oder leg neue an.</p>
+            @endforeach
+
+            @if ($empty->isNotEmpty())
+                <div x-show="shown.length < {{ $empty->count() }}">
+                    <p class="mb-2 text-xs font-bold tracking-[0.06em] text-muted uppercase">Weitere Kategorie füllen</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($empty as ['group' => $cat])
+                            <button type="button" class="chip border border-dashed border-muted/60 text-muted hover:border-ink hover:text-ink"
+                                    x-show="!shown.includes(@js($cat->key))" @click="shown.push(@js($cat->key)); $dispatch('template-reveal', @js($cat->key))">
+                                <x-icon :name="$cat->icon" size="14" /> {{ $cat->label }}
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
-            @endforelse
+            @endif
 
             {{-- Hinzufügen --}}
             <section class="card p-5" id="hinzufuegen" x-data="{ q: '', selected: [] }">

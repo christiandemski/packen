@@ -203,6 +203,46 @@ class PacklistService
     }
 
     /**
+     * Was schon auf früheren Reisen weggelassen wurde: Vorschlag, es aus der Vorlage zu streichen.
+     *
+     * @param  Collection<int, PacklistEntry>  $excluded  siehe excludedEntries()
+     * @return array<int, array{times: int, templates: Collection<int, Template>}> entry_id => Hinweis
+     */
+    public function exclusionHints(Trip $trip, User $user, Collection $excluded): array
+    {
+        $itemIds = $excluded->pluck('item_id')->filter()->values();
+        if ($itemIds->isEmpty()) {
+            return [];
+        }
+
+        $earlier = PacklistEntry::where(['user_id' => $user->id, 'excluded' => true, 'source' => EntrySource::Template])
+            ->where('trip_id', '!=', $trip->id)
+            ->whereIn('item_id', $itemIds)
+            ->whereNotIn('id', DB::table('group_items')->whereNotNull('source_entry_id')->select('source_entry_id'))
+            ->groupBy('item_id')
+            ->selectRaw('item_id, count(distinct trip_id) as trips')
+            ->pluck('trips', 'item_id');
+
+        // Aus welchen der gewählten Vorlagen kommt der Gegenstand?
+        $links = DB::table('trip_templates')
+            ->join('template_items', 'template_items.template_id', '=', 'trip_templates.template_id')
+            ->where(['trip_templates.trip_id' => $trip->id, 'trip_templates.user_id' => $user->id])
+            ->whereIn('template_items.item_id', $earlier->keys())
+            ->get(['template_items.item_id', 'trip_templates.template_id']);
+        $templates = Template::whereIn('id', $links->pluck('template_id')->unique())->orderBy('name')->get()->keyBy('id');
+
+        $hints = [];
+        foreach ($excluded as $entry) {
+            $ids = $links->where('item_id', $entry->item_id)->pluck('template_id');
+            if ($earlier->has($entry->item_id) && $ids->isNotEmpty()) {
+                $hints[$entry->id] = ['times' => (int) $earlier[$entry->item_id] + 1, 'templates' => $templates->only($ids->all())->values()];
+            }
+        }
+
+        return $hints;
+    }
+
+    /**
      * Übernimmt Vorlagen-Auswahl und eigene Einträge einer früheren Reise.
      * Bereits vorhandene Gegenstände bleiben unverändert; nichts ist abgehakt.
      */

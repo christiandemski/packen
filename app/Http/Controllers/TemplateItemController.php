@@ -6,11 +6,13 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Template;
 use App\Services\PacklistService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class TemplateItemController extends Controller
 {
@@ -19,7 +21,7 @@ class TemplateItemController extends Controller
     public function __construct(private readonly PacklistService $packlists) {}
 
     /** Fügt Gegenstände aus dem Katalog hinzu – oder legt einen neuen an und fügt ihn hinzu. */
-    public function store(Request $request, Template $template): RedirectResponse
+    public function store(Request $request, Template $template): RedirectResponse|JsonResponse
     {
         Gate::authorize('update', $template);
         $user = $request->user();
@@ -31,11 +33,27 @@ class TemplateItemController extends Controller
             ], attributes: ['new_name' => 'Name', 'new_category' => 'Kategorie']);
 
             $name = trim($data['new_name']);
-            $item = Item::accessibleBy($user)->whereRaw('lower(name) = ?', [Str::lower($name)])->first()
-                ?? $user->items()->create(['name' => $name, ...Category::columnsFor($data['new_category'], $user)]);
+            $item = Item::accessibleBy($user)->whereRaw('lower(name) = ?', [Str::lower($name)])->first();
+
+            // Schnelleingabe: Doppeltes direkt am Feld melden
+            if ($item && $request->expectsJson() && $template->items()->whereKey($item->id)->exists()) {
+                throw ValidationException::withMessages(['new_name' => 'Steht schon in der Vorlage.']);
+            }
+
+            $item ??= $user->items()->create(['name' => $name, ...Category::columnsFor($data['new_category'], $user)]);
 
             $template->items()->syncWithoutDetaching([$item->id => ['quantity' => 1]]);
             $this->packlists->syncTemplate($template);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'url' => route('items.edit', $item),
+                    // Gab es den Gegenstand schon im Katalog (evtl. in anderer Kategorie)?
+                    'badges' => $item->wasRecentlyCreated ? [] : ['aus dem Katalog'],
+                ], 201);
+            }
 
             return back()->with('status', "„{$item->name}“ hinzugefügt.");
         }

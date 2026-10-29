@@ -35,8 +35,8 @@
     @endif
 
     <div x-show="person === 'me'" class="space-y-4">
-    @if ($rainDays)
-        <div class="-mb-4">@include('trips._rain-warning')</div>
+    @if ($weatherHints)
+        <div class="-mb-4">@include('trips._weather-hints')</div>
     @endif
     {{-- Wochenübersicht --}}
     <section class="card overflow-hidden">
@@ -156,7 +156,7 @@
                 </div>
 
                 @if ($dayWeather)
-                    <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold {{ $dayWeather->isRainy() && $rainDays ? 'text-warn-ink' : 'text-muted' }}">
+                    <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold {{ collect($weatherHints)->contains(fn ($h) => $h['need']->isDue($dayWeather)) ? 'text-warn-ink' : 'text-muted' }}">
                         <x-icon :name="$dayWeather->icon()" size="16" /> {{ $dayWeather->label() }} · {{ $dayWeather->summary() }}
                     </p>
                 @endif

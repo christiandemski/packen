@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\WeatherNeed;
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,9 +22,11 @@ class ItemRequest extends FormRequest
             'pack_last' => $this->boolean('pack_last'),
         ]);
 
-        // Schnelleingabe im Katalog schickt kein Häkchen – dann nach dem Namen vorbelegen (siehe Item).
-        if (! $this->expectsJson() || $this->has('rain_protection')) {
-            $this->merge(['rain_protection' => $this->boolean('rain_protection')]);
+        // Schnelleingabe im Katalog schickt keine Häkchen – dann nach dem Namen vorbelegen (siehe Item).
+        foreach (WeatherNeed::cases() as $need) {
+            if (! $this->expectsJson() || $this->has($need->column())) {
+                $this->merge([$need->column() => $this->boolean($need->column())]);
+            }
         }
     }
 
@@ -39,6 +42,8 @@ class ItemRequest extends FormRequest
             'per_day' => ['boolean'],
             'pack_last' => ['boolean'],
             'rain_protection' => ['boolean'],
+            'cold_protection' => ['boolean'],
+            'sun_protection' => ['boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
             'default_container_id' => ['nullable', 'integer', Rule::exists('containers', 'id')->where('owner_id', $this->user()->id)],
         ];

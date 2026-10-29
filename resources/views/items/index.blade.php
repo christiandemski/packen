@@ -44,11 +44,11 @@
                                 <a href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate text-[15px] font-semibold">{{ $item->name }}</p>
-                                        @if ($item->per_day || $item->pack_last || $item->rain_protection || $item->templates_count)
+                                        @if ($item->per_day || $item->pack_last || $item->weatherNeeds() || $item->templates_count)
                                             <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
                                                 @if ($item->per_day)<span class="text-accent-ink">pro Tag</span>@endif
                                                 @if ($item->pack_last)<span>Am Abfahrtstag</span>@endif
-                                                @if ($item->rain_protection)<span class="inline-flex items-center gap-1"><x-icon name="umbrella" size="12" /> Regenschutz</span>@endif
+                                                @foreach ($item->weatherNeeds() as $need)<span class="inline-flex items-center gap-1"><x-icon :name="$need->badgeIcon()" size="12" /> {{ $need->badge() }}</span>@endforeach
                                                 @if ($item->templates_count)<span>in {{ $item->templates_count }} {{ $item->templates_count === 1 ? 'Vorlage' : 'Vorlagen' }}</span>@endif
                                             </p>
                                         @endif
@@ -67,7 +67,7 @@
                                         <p class="truncate text-[15px] font-semibold" x-text="item.name"></p>
                                         <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
                                             <span class="text-accent-ink">neu</span>
-                                            <span x-show="item.rain_protection" class="inline-flex items-center gap-1"><x-icon name="umbrella" size="12" /> Regenschutz</span>
+                                            <template x-for="badge in item.badges"><span x-text="badge"></span></template>
                                         </p>
                                     </div>
                                     <x-icon name="chevron-right" size="16" class="text-muted" />
@@ -75,14 +75,7 @@
                             </li>
                         </template>
                     </ul>
-                    <form @submit.prevent="add" class="flex items-center gap-2 py-1.5 pr-2 pl-5">
-                        <x-icon name="plus" size="16" class="shrink-0 text-muted" />
-                        <input x-ref="input" x-model="name" maxlength="120" enterkeyhint="enter" autocomplete="off"
-                               placeholder="Neuer Eintrag – Enter zum Hinzufügen" aria-label="Neuer Gegenstand in {{ $group->label }}"
-                               class="min-h-11 min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted">
-                        <button type="submit" x-show="name.trim()" x-cloak class="icon-btn text-accent" aria-label="Hinzufügen"><x-icon name="check" size="18" /></button>
-                    </form>
-                    <p x-show="error" x-cloak x-text="error" class="field-error px-5 pb-3" role="alert"></p>
+                    <x-quick-add :label="$group->label" />
                 </section>
             @endforeach
         </div>

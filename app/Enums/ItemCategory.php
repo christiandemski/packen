@@ -22,6 +22,7 @@ enum ItemCategory: string
     case Gear = 'gear';
     case Sleep = 'sleep';
     case Food = 'food';
+    case Tasks = 'tasks';           // nichts zum Einpacken: „Herd aus“, „Pflanzen gießen“
     case Misc = 'misc';
 
     public function label(): string
@@ -41,6 +42,7 @@ enum ItemCategory: string
             self::Gear => 'Ausrüstung',
             self::Sleep => 'Schlafen',
             self::Food => 'Essen & Küche',
+            self::Tasks => 'Vor der Abfahrt erledigen',
             self::Misc => 'Sonstiges',
         };
     }
@@ -60,6 +62,7 @@ enum ItemCategory: string
             self::Gear => 'backpack',
             self::Sleep => 'bed',
             self::Food => 'utensils',
+            self::Tasks => 'house',
             self::Misc => 'package',
         };
     }
@@ -73,6 +76,12 @@ enum ItemCategory: string
     public static function clothing(): array
     {
         return [self::Tops, self::Bottoms, self::Underwear, self::Outerwear, self::Sportswear, self::Shoes, self::Accessories];
+    }
+
+    /** Aufgaben haben kein Gewicht und landen in keinem Behältnis. */
+    public function isTask(): bool
+    {
+        return $this === self::Tasks;
     }
 
     public function position(): int

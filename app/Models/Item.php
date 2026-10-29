@@ -5,9 +5,9 @@ namespace App\Models;
 use App\Enums\EntrySource;
 use App\Enums\ItemCategory;
 use App\Enums\PacklistGroup;
+use App\Enums\WeatherNeed;
 use App\Models\Concerns\OwnedByUser;
 use App\Support\Group;
-use App\Support\RainGear;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +19,7 @@ class Item extends Model
     /** @use HasFactory<ItemFactory> */
     use HasFactory, OwnedByUser;
 
-    protected $fillable = ['owner_id', 'name', 'category', 'category_id', 'weight_g', 'per_day', 'pack_last', 'rain_protection', 'default_container_id', 'notes'];
+    protected $fillable = ['owner_id', 'name', 'category', 'category_id', 'weight_g', 'per_day', 'pack_last', 'rain_protection', 'cold_protection', 'sun_protection', 'default_container_id', 'notes'];
 
     protected function casts(): array
     {
@@ -30,6 +30,8 @@ class Item extends Model
             'per_day' => 'boolean',
             'pack_last' => 'boolean',
             'rain_protection' => 'boolean',
+            'cold_protection' => 'boolean',
+            'sun_protection' => 'boolean',
         ];
     }
 
@@ -37,8 +39,10 @@ class Item extends Model
     {
         // Ohne ausdrückliche Angabe (Outfit-Planer, Start-Vorlagen) nach dem Namen vorbelegen.
         static::creating(function (Item $item) {
-            if (! array_key_exists('rain_protection', $item->getAttributes())) {
-                $item->rain_protection = RainGear::matches($item->name);
+            foreach (WeatherNeed::cases() as $need) {
+                if (! array_key_exists($need->column(), $item->getAttributes())) {
+                    $item->{$need->column()} = $need->matches($item->name);
+                }
             }
         });
 
@@ -91,6 +95,12 @@ class Item extends Model
     public function templates(): BelongsToMany
     {
         return $this->belongsToMany(Template::class, 'template_items')->withPivot('quantity');
+    }
+
+    /** @return list<WeatherNeed> */
+    public function weatherNeeds(): array
+    {
+        return array_values(array_filter(WeatherNeed::cases(), fn (WeatherNeed $need) => (bool) $this->{$need->column()}));
     }
 
     public function weightLabel(): ?string
