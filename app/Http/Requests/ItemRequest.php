@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ItemCategory;
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,8 +19,12 @@ class ItemRequest extends FormRequest
             'name' => trim((string) $this->input('name')),
             'per_day' => $this->boolean('per_day'),
             'pack_last' => $this->boolean('pack_last'),
-            'rain_protection' => $this->boolean('rain_protection'),
         ]);
+
+        // Schnelleingabe im Katalog schickt kein Häkchen – dann nach dem Namen vorbelegen (siehe Item).
+        if (! $this->expectsJson() || $this->has('rain_protection')) {
+            $this->merge(['rain_protection' => $this->boolean('rain_protection')]);
+        }
     }
 
     public function rules(): array
@@ -30,7 +34,7 @@ class ItemRequest extends FormRequest
                 'required', 'string', 'max:120',
                 Rule::unique('items', 'name')->where('owner_id', $this->user()->id)->ignore($this->route('item')),
             ],
-            'category' => ['required', Rule::enum(ItemCategory::class)],
+            'category' => ['required', 'string', Rule::in(Category::choices($this->user())->pluck('key'))],
             'weight_g' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'per_day' => ['boolean'],
             'pack_last' => ['boolean'],
@@ -38,6 +42,15 @@ class ItemRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:500'],
             'default_container_id' => ['nullable', 'integer', Rule::exists('containers', 'id')->where('owner_id', $this->user()->id)],
         ];
+    }
+
+    /** „category“ kann eine eigene Kategorie sein („c:12“) – daraus werden die beiden Spalten. */
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated();
+        $data = [...$data, ...Category::columnsFor($data['category'], $this->user())];
+
+        return data_get($data, $key, $default);
     }
 
     public function attributes(): array

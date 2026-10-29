@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\PacklistGroup;
+use App\Enums\EntrySource;
+use App\Models\Category;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Services\ContainerService;
@@ -68,7 +69,7 @@ class PacklistController extends Controller
         $data = $request->validate([
             'item_id' => ['nullable', 'integer', Rule::exists('items', 'id')->where('owner_id', $request->user()->id)],
             'custom_name' => ['required_without:item_id', 'nullable', 'string', 'max:120'],
-            'group' => ['nullable', Rule::enum(PacklistGroup::class)],
+            'group' => ['nullable', 'string', Rule::in(Category::packlistChoices($request->user())->pluck('key'))],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_QUANTITY],
             'note' => ['nullable', 'string', 'max:200'],
         ], ['custom_name.required_without' => 'Bitte einen Namen eingeben oder etwas aus dem Katalog wählen.']);
@@ -127,7 +128,8 @@ class PacklistController extends Controller
         return redirect()->route('trips.show', $trip);
     }
 
-    public function destroy(Request $request, Trip $trip, PacklistEntry $entry): RedirectResponse
+    /** Entfernen – als Formular oder per fetch aus „Liste anpassen“. */
+    public function destroy(Request $request, Trip $trip, PacklistEntry $entry): RedirectResponse|JsonResponse
     {
         Gate::authorize('delete', $entry);
 
@@ -136,13 +138,33 @@ class PacklistController extends Controller
         // Gemeinsamer Gegenstand: Entfernen heißt „wieder abgeben“.
         if ($entry->groupItem) {
             app(GroupItemService::class)->release($entry->groupItem, $request->user());
-
-            return redirect()->route('trips.show', $trip)->with('status', "„{$name}“ wieder an die Gruppe abgegeben.");
+            $status = "„{$name}“ wieder an die Gruppe abgegeben.";
+        } else {
+            $this->packlists->removeEntry($entry);
+            $status = "„{$name}“ entfernt.";
         }
 
-        $this->packlists->removeEntry($entry);
+        if ($request->expectsJson()) {
+            // Nur ausgeblendete Vorlagen-Einträge lassen sich zurückholen; der Rest ist gelöscht.
+            return response()->json(['restorable' => (bool) $entry->fresh()?->excluded, 'progress' => $this->packlists->progress($trip, $request->user())]);
+        }
 
-        return redirect()->route('trips.show', $trip)->with('status', "„{$name}“ entfernt.");
+        return redirect()->route('trips.show', $trip)->with('status', $status);
+    }
+
+    /** Weggelassenen Vorlagen-Eintrag doch mitnehmen. */
+    public function restore(Request $request, Trip $trip, PacklistEntry $entry): RedirectResponse|JsonResponse
+    {
+        Gate::authorize('update', $entry);
+        abort_unless($entry->excluded && $entry->source === EntrySource::Template, 404);
+
+        $this->packlists->restoreEntry($entry);
+
+        if ($request->expectsJson()) {
+            return response()->json(['packed' => false]);
+        }
+
+        return redirect()->route('trips.show', $trip)->with('status', "„{$entry->load('item')->name()}“ kommt wieder mit.");
     }
 
     public function copy(Request $request, Trip $trip): RedirectResponse

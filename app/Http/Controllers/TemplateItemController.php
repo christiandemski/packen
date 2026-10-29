@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ItemCategory;
+use App\Models\Category;
 use App\Models\Item;
 use App\Models\Template;
 use App\Services\PacklistService;
@@ -27,12 +27,12 @@ class TemplateItemController extends Controller
         if ($request->filled('new_name')) {
             $data = $request->validate([
                 'new_name' => ['string', 'max:120'],
-                'new_category' => ['required', Rule::enum(ItemCategory::class)],
+                'new_category' => ['required', 'string', Rule::in(Category::choices($user)->pluck('key'))],
             ], attributes: ['new_name' => 'Name', 'new_category' => 'Kategorie']);
 
             $name = trim($data['new_name']);
             $item = Item::accessibleBy($user)->whereRaw('lower(name) = ?', [Str::lower($name)])->first()
-                ?? $user->items()->create(['name' => $name, 'category' => $data['new_category']]);
+                ?? $user->items()->create(['name' => $name, ...Category::columnsFor($data['new_category'], $user)]);
 
             $template->items()->syncWithoutDetaching([$item->id => ['quantity' => 1]]);
             $this->packlists->syncTemplate($template);

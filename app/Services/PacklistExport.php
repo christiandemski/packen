@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\PacklistGroup;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Models\User;
@@ -24,7 +23,7 @@ class PacklistExport
      */
     public function sections(Trip $trip, User $owner, bool $byContainer = false, bool $onlyOpen = false): Collection
     {
-        $entries = $trip->entries()->with(['item', 'container', 'groupItem'])
+        $entries = $trip->entries()->with(['item.customCategory', 'container', 'groupItem'])
             ->where('user_id', $owner->id)->visible()
             ->when($onlyOpen, fn ($q) => $q->where('packed', false))
             ->get()
@@ -40,9 +39,9 @@ class PacklistExport
         }
 
         return $entries
-            ->groupBy(fn (PacklistEntry $e) => $e->packlistGroup()->value)
-            ->sortBy(fn ($group, $key) => PacklistGroup::from($key)->position())
-            ->map(fn ($group, $key) => ['title' => PacklistGroup::from($key)->label(), 'entries' => $group->values()])
+            ->groupBy(fn (PacklistEntry $e) => $e->packlistGroup()->key)
+            ->sortBy(fn ($group) => $group->first()->packlistGroup()->sortKey())
+            ->map(fn ($group) => ['title' => $group->first()->packlistGroup()->label, 'entries' => $group->values()])
             ->values();
     }
 

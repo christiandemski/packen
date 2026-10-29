@@ -1,28 +1,31 @@
-@php use App\Enums\ItemCategory; use Illuminate\Support\Str; @endphp
+@php use Illuminate\Support\Str; @endphp
 <x-layouts.app title="Katalog">
     <div x-data="{ q: '' }">
         <div class="mb-5">
             <p class="eyebrow">{{ $total }} {{ $total === 1 ? 'Gegenstand' : 'Gegenstände' }}</p>
             <h1 class="page-title mt-1">Katalog</h1>
             <p class="mt-2 max-w-xl text-[15px] text-muted">Alles, was du jemals einpacken könntest. Aus dem Katalog baust du Vorlagen und Packlisten.</p>
-            <a href="{{ route('containers.index') }}" class="btn btn-secondary mt-3 min-h-10 text-sm"><x-icon name="luggage" size="16" /> Behältnisse</a>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a href="{{ route('categories.index') }}" class="btn btn-secondary min-h-10 text-sm"><x-icon name="grid" size="16" /> Eigene Kategorien</a>
+                <a href="{{ route('containers.index') }}" class="btn btn-secondary min-h-10 text-sm"><x-icon name="luggage" size="16" /> Behältnisse</a>
+            </div>
         </div>
 
-        @if ($total > 0)
+        @if ($sections->isNotEmpty())
             <div class="relative mb-5">
                 <x-icon name="search" size="18" class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
                 <input type="search" x-model="q" placeholder="Im Katalog suchen" aria-label="Im Katalog suchen" class="input pl-10">
             </div>
 
             <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-                @foreach ($groups as $category => $items)
-                    @php($cat = ItemCategory::from($category))
-                    <section class="card overflow-hidden" x-show="!q || @js($items->map(fn ($i) => Str::lower($i->name))->values()).some(n => n.includes(q.toLowerCase()))">
+                @foreach ($sections as ['group' => $group, 'items' => $items])
+                    <section class="card overflow-hidden" x-data="quickAdd(@js(route('items.store')), @js($group->key))"
+                             x-show="!q || added.length || @js($items->map(fn ($i) => Str::lower($i->name))->values()).some(n => n.includes(q.toLowerCase()))">
                         <div class="flex items-center justify-between px-5 pt-4 pb-2">
-                            <h2 class="card-title flex items-center gap-2"><x-icon :name="$cat->icon()" size="18" class="text-accent" /> {{ $cat->label() }}</h2>
-                            <span class="text-xs font-bold text-muted">{{ $items->count() }}</span>
+                            <h2 class="card-title flex items-center gap-2"><x-icon :name="$group->icon" size="18" class="text-accent" /> {{ $group->label }}</h2>
+                            <span class="text-xs font-bold text-muted" x-text="{{ $items->count() }} + added.length">{{ $items->count() }}</span>
                         </div>
-                        <ul class="divide-y divide-line-soft">
+                        <ul class="divide-y divide-line-soft border-b border-line-soft">
                             @foreach ($items as $item)
                                 <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
                                     <a href="{{ route('items.edit', $item) }}" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
@@ -44,7 +47,29 @@
                                     </a>
                                 </li>
                             @endforeach
+                            <template x-for="item in added" :key="item.id">
+                                <li>
+                                    <a :href="item.url" class="flex min-h-[52px] items-center gap-3 px-5 py-2.5 hover:bg-line-soft">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate text-[15px] font-semibold" x-text="item.name"></p>
+                                            <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs font-bold text-muted">
+                                                <span class="text-accent-ink">neu</span>
+                                                <span x-show="item.rain_protection" class="inline-flex items-center gap-1"><x-icon name="umbrella" size="12" /> Regenschutz</span>
+                                            </p>
+                                        </div>
+                                        <x-icon name="chevron-right" size="16" class="text-muted" />
+                                    </a>
+                                </li>
+                            </template>
                         </ul>
+                        <form @submit.prevent="add" class="flex items-center gap-2 py-1.5 pr-2 pl-5">
+                            <x-icon name="plus" size="16" class="shrink-0 text-muted" />
+                            <input x-ref="input" x-model="name" maxlength="120" enterkeyhint="enter" autocomplete="off"
+                                   placeholder="Neuer Eintrag – Enter zum Hinzufügen" aria-label="Neuer Gegenstand in {{ $group->label }}"
+                                   class="min-h-11 min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted">
+                            <button type="submit" x-show="name.trim()" x-cloak class="icon-btn text-accent" aria-label="Hinzufügen"><x-icon name="check" size="18" /></button>
+                        </form>
+                        <p x-show="error" x-cloak x-text="error" class="field-error px-5 pb-3" role="alert"></p>
                     </section>
                 @endforeach
             </div>

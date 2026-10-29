@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EntrySource;
-use App\Enums\ItemCategory;
 use App\Enums\PacklistGroup;
+use App\Models\Category;
 use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Template;
@@ -62,7 +62,7 @@ class ReviewController extends Controller
         $item = $entry->item ?? Item::accessibleBy($request->user())->whereRaw('lower(name) = ?', [Str::lower($entry->name())])->first()
             ?? $request->user()->items()->create([
                 'name' => $entry->name(),
-                'category' => ItemCategory::tryFrom((string) $entry->group) ?? ItemCategory::Misc,
+                ...Category::columnsFor($entry->group, $request->user()),
                 'pack_last' => $entry->group === PacklistGroup::DepartureDay->value,
             ]);
 

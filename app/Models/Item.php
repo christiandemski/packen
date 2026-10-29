@@ -6,6 +6,7 @@ use App\Enums\EntrySource;
 use App\Enums\ItemCategory;
 use App\Enums\PacklistGroup;
 use App\Models\Concerns\OwnedByUser;
+use App\Support\Group;
 use App\Support\RainGear;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ class Item extends Model
     /** @use HasFactory<ItemFactory> */
     use HasFactory, OwnedByUser;
 
-    protected $fillable = ['owner_id', 'name', 'category', 'weight_g', 'per_day', 'pack_last', 'rain_protection', 'default_container_id', 'notes'];
+    protected $fillable = ['owner_id', 'name', 'category', 'category_id', 'weight_g', 'per_day', 'pack_last', 'rain_protection', 'default_container_id', 'notes'];
 
     protected function casts(): array
     {
@@ -50,10 +51,34 @@ class Item extends Model
         static::deleting(function (Item $item) {
             PacklistEntry::where('item_id', $item->id)->update([
                 'custom_name' => $item->name,
-                'group' => ($item->pack_last ? PacklistGroup::DepartureDay : PacklistGroup::forCategory($item->category))->value,
+                'group' => $item->packlistGroup()->key,
                 'source' => EntrySource::Manual,
             ]);
         });
+    }
+
+    /** Eigene Kategorie (statt der festen) */
+    public function customCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    /** Überschrift im Katalog und in Vorlagen */
+    public function categoryGroup(): Group
+    {
+        return $this->category_id && $this->customCategory
+            ? Group::custom($this->customCategory)
+            : Group::category($this->category);
+    }
+
+    /** Karte in der Packliste */
+    public function packlistGroup(): Group
+    {
+        return match (true) {
+            $this->pack_last => Group::packlist(PacklistGroup::DepartureDay),
+            $this->category_id && $this->customCategory !== null => Group::custom($this->customCategory, packlist: true),
+            default => Group::packlist(PacklistGroup::forCategory($this->category)),
+        };
     }
 
     /** Standardplatz, z. B. Kocher → „Eurobox Küche“ */

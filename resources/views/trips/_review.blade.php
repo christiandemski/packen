@@ -82,11 +82,11 @@
     </section>
 
     {{-- Pro Eintrag markieren --}}
-    @foreach ($groups as $groupKey => $entries)
-        @php($group = PacklistGroup::from($groupKey))
-        @php($unusedLabel = $group === PacklistGroup::Clothing ? 'nicht getragen' : 'nicht gebraucht')
+    @foreach ($groups as $entries)
+        @php($group = $entries->first()->packlistGroup())
+        @php($unusedLabel = $group->is(PacklistGroup::Clothing) ? 'nicht getragen' : 'nicht gebraucht')
         <section class="card overflow-hidden">
-            <h2 class="card-title flex items-center gap-2 px-5 pt-4 pb-2"><x-icon :name="$group->icon()" size="18" class="text-accent" /> {{ $group->label() }}</h2>
+            <h2 class="card-title flex items-center gap-2 px-5 pt-4 pb-2"><x-icon :name="$group->icon" size="18" class="text-accent" /> {{ $group->label }}</h2>
             <ul class="divide-y divide-line-soft">
                 @foreach ($entries as $entry)
                     <li class="px-5 py-2.5">

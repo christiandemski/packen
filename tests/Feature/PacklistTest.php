@@ -46,8 +46,8 @@ it('setzt die Liste aus Modulen zusammen und führt doppelte zusammen', function
 it('stellt „Am Abfahrtstag“ an die erste Stelle', function () {
     app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->basis->id]);
 
-    expect(entryFor($this->charger)->packlistGroup())->toBe(PacklistGroup::DepartureDay)
-        ->and(entryFor($this->socks)->packlistGroup())->toBe(PacklistGroup::Clothing);
+    expect(entryFor($this->charger)->packlistGroup()->key)->toBe(PacklistGroup::DepartureDay->value)
+        ->and(entryFor($this->socks)->packlistGroup()->key)->toBe(PacklistGroup::Clothing->value);
 
     $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
         ->assertOk()
@@ -103,6 +103,28 @@ it('lässt entfernte Vorlagen-Einträge beim Neuberechnen weg', function () {
     expect(entryFor($this->jacket)->excluded)->toBeFalse();
 });
 
+it('lässt Einträge per „Anpassen“ weg und holt sie wieder zurück', function () {
+    app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->basis->id]);
+    $manual = app(PacklistService::class)->addEntry($this->trip, $this->anna, ['custom_name' => 'Geschenk']);
+
+    $this->actingAs($this->anna)->deleteJson(route('packlist.destroy', [$this->trip, entryFor($this->socks)]))
+        ->assertOk()->assertJson(['restorable' => true, 'progress' => ['total' => 3]]);
+    $this->actingAs($this->anna)->deleteJson(route('packlist.destroy', [$this->trip, $manual]))
+        ->assertOk()->assertJson(['restorable' => false]);
+
+    // Die Vorlage bleibt unverändert, die Reise zeigt den Eintrag unter „Diesmal nicht dabei“.
+    expect($this->basis->items()->count())->toBe(3);
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSeeInOrder(['Diesmal nicht dabei', 'Socken', 'Doch mitnehmen']);
+
+    $this->actingAs($this->anna)->postJson(route('packlist.restore', [$this->trip, entryFor($this->socks)]))->assertOk();
+    expect(entryFor($this->socks))->excluded->toBeFalse()->quantity->toBe(5);
+
+    // Nur Weggelassenes lässt sich zurückholen, nur von der Person selbst.
+    $this->actingAs($this->anna)->postJson(route('packlist.restore', [$this->trip, entryFor($this->socks)]))->assertNotFound();
+    $this->actingAs($this->anna)->deleteJson(route('packlist.destroy', [$this->trip, entryFor($this->socks)]));
+    $this->actingAs($this->max)->postJson(route('packlist.restore', [$this->trip, entryFor($this->socks)]))->assertForbidden();
+});
+
 it('übernimmt Änderungen an Vorlagen in kommende Reisen', function () {
     app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->hiking->id]);
 
@@ -140,7 +162,7 @@ it('behält den Namen, wenn ein Gegenstand aus dem Katalog gelöscht wird', func
     $entry = PacklistEntry::with('item')->find($entryId);
     expect($entry->item_id)->toBeNull()
         ->and($entry->name())->toBe('Ladekabel')
-        ->and($entry->packlistGroup())->toBe(PacklistGroup::DepartureDay);
+        ->and($entry->packlistGroup()->key)->toBe(PacklistGroup::DepartureDay->value);
 });
 
 it('fügt Freitext- und Katalog-Einträge hinzu', function () {

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EntrySource;
-use App\Enums\PacklistGroup;
 use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
+use App\Models\Category;
 use App\Models\Container;
 use App\Models\GroupItem;
 use App\Models\Item;
@@ -71,11 +71,11 @@ class TripController extends Controller
         }
         $canEdit = $listOwner->is($user);
 
-        $entries = $trip->entries()->with(['item', 'packer', 'groupItem'])->where('user_id', $listOwner->id)->visible()->get();
+        $entries = $trip->entries()->with(['item.customCategory', 'packer', 'groupItem'])->where('user_id', $listOwner->id)->visible()->get();
         $groups = $entries
             ->sortBy(fn (PacklistEntry $entry) => mb_strtolower($entry->name()))
-            ->groupBy(fn (PacklistEntry $entry) => $entry->packlistGroup()->value)
-            ->sortBy(fn ($group, $key) => PacklistGroup::from($key)->position());
+            ->groupBy(fn (PacklistEntry $entry) => $entry->packlistGroup()->key)
+            ->sortBy(fn ($group) => $group->first()->packlistGroup()->sortKey());
 
         $templates = Template::accessibleBy($user)->withCount('items')->orderBy('name')->get();
         $selected = $trip->templatesFor($user)->pluck('templates.id');
@@ -142,6 +142,8 @@ class TripController extends Controller
             'suggested' => $suggested,
             'otherTrips' => $otherTrips,
             'addable' => $packlists->addableItems($trip, $user),
+            'entryGroups' => Category::packlistChoices($user),
+            'excluded' => $canEdit ? $packlists->excludedEntries($trip, $user) : collect(),
         ]);
     }
 
