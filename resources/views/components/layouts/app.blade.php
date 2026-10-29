@@ -35,22 +35,54 @@
             </nav>
 
             <div class="flex items-center gap-1">
-                @php($unread = auth()->user()->unreadNotifications()->count())
-                <a href="{{ route('notifications.index') }}" class="icon-btn relative {{ request()->routeIs('notifications.*') ? 'bg-line-soft' : '' }}"
-                   aria-label="Benachrichtigungen{{ $unread ? ', '.$unread.' neu' : '' }}">
-                    <x-icon name="bell" />
-                    @if ($unread)
-                        <span class="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-warn px-1 text-[10px] leading-4 font-extrabold text-white">{{ $unread > 9 ? '9+' : $unread }}</span>
-                    @endif
-                </a>
-                @can('admin')
-                    <a href="{{ route('admin.index') }}" class="icon-btn {{ request()->routeIs('admin.*') ? 'bg-line-soft' : '' }}" aria-label="Admin">
-                        <x-icon name="shield" />
-                    </a>
-                @endcan
-                <a href="{{ route('profile.edit') }}" class="flex min-h-11 items-center rounded-full p-1 hover:bg-line-soft" aria-label="Profil">
-                    <x-avatar :user="auth()->user()" />
-                </a>
+                @php($user = auth()->user())
+                @php($unread = $user->unreadNotifications()->count())
+
+                {{-- Benachrichtigungen: Popup, Inhalt wird beim ersten Öffnen geladen (gilt dann als gelesen) --}}
+                <div class="relative" x-data="popover(@js(route('notifications.index', ['popup' => 1])))" @keydown.escape.window="close()" @click.outside="close()">
+                    <button type="button" class="icon-btn relative" :class="open && 'bg-line-soft'" @click="toggle()" :aria-expanded="open" aria-haspopup="true"
+                            aria-label="Benachrichtigungen{{ $unread ? ', '.$unread.' neu' : '' }}">
+                        <x-icon name="bell" />
+                        @if ($unread)
+                            <span x-show="!loaded" class="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-warn px-1 text-[10px] leading-4 font-extrabold text-white">{{ $unread > 9 ? '9+' : $unread }}</span>
+                        @endif
+                    </button>
+                    <div x-show="open" x-cloak x-transition.origin.top.right
+                         class="fixed inset-x-4 top-[4.25rem] z-40 overflow-hidden rounded-card border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96">
+                        <div class="flex items-center justify-between border-b border-line-soft px-4 py-3">
+                            <p class="card-title">Benachrichtigungen</p>
+                            <a href="{{ route('notifications.index') }}" class="text-sm font-bold text-accent-ink hover:underline">Alle anzeigen</a>
+                        </div>
+                        <div class="max-h-[min(28rem,70dvh)] overflow-y-auto" x-html="html"></div>
+                    </div>
+                </div>
+
+                {{-- Profil-Menü --}}
+                <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                    <button type="button" class="flex min-h-11 items-center rounded-full p-1 hover:bg-line-soft" :class="open && 'bg-line-soft'" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="Profil-Menü">
+                        <x-avatar :user="$user" />
+                    </button>
+                    <div x-show="open" x-cloak x-transition.origin.top.right
+                         class="fixed inset-x-4 top-[4.25rem] z-40 overflow-hidden rounded-card border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-72">
+                        <div class="flex items-center gap-3 border-b border-line-soft px-4 py-3">
+                            <x-avatar :user="$user" />
+                            <div class="min-w-0">
+                                <p class="truncate text-[15px] font-bold">{{ $user->name }}</p>
+                                <p class="truncate text-xs font-semibold text-muted">{{ $user->email }}</p>
+                            </div>
+                        </div>
+                        <nav class="py-1" aria-label="Profil">
+                            <a href="{{ route('profile.edit') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="user" size="18" class="text-muted" /> Profil &amp; Einstellungen</a>
+                            @can('admin')
+                                <a href="{{ route('admin.index') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="shield" size="18" class="text-muted" /> Admin</a>
+                            @endcan
+                        </nav>
+                        <form method="POST" action="{{ route('logout') }}" class="border-t border-line-soft py-1">
+                            @csrf
+                            <button type="submit" class="flex min-h-11 w-full items-center gap-3 px-4 text-left text-[15px] font-semibold hover:bg-line-soft"><x-icon name="log-out" size="18" class="text-muted" /> Abmelden</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </header>

@@ -172,6 +172,21 @@ it('zeigt Benachrichtigungen mit Zähler und markiert sie beim Ansehen als geles
     expect($this->max->fresh()->unreadNotifications()->count())->toBe(0);
 });
 
+it('lädt die Benachrichtigungen fürs Popup der Glocke nach', function () {
+    $this->service->request($this->trip, $this->anna, 'Föhn');
+
+    $this->actingAs($this->max)->get(route('home'))
+        ->assertSee('benachrichtigungen?popup=1', false)
+        ->assertSee('Profil &amp; Einstellungen', false);
+
+    // Nur die Liste, ohne Seitenrahmen – und danach gelesen
+    $this->actingAs($this->max)->get(route('notifications.index', ['popup' => 1]))
+        ->assertOk()
+        ->assertSee('Anna fragt: Kann jemand „Föhn“ mitnehmen?')
+        ->assertDontSee('<html', false);
+    expect($this->max->fresh()->unreadNotifications()->count())->toBe(0);
+});
+
 it('verschickt E-Mails nur, wenn eingeschaltet', function () {
     $notification = new TripNotification($this->trip, 'Test', 'request');
 
