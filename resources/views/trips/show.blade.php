@@ -324,6 +324,12 @@
             @endif
 
             @if ($canEdit)
+            {{-- Nach dem Entfernen per X: ein paar Sekunden lang zurückholbar --}}
+            <div x-cloak x-show="undo || undoError" x-transition.opacity role="status" aria-live="polite"
+                 class="fixed inset-x-4 bottom-36 z-30 mx-auto flex max-w-md items-center gap-3 rounded-card bg-ink py-2 pr-2 pl-4 text-sm font-semibold text-white shadow-[0_20px_40px_-16px_rgba(23,33,30,0.5)] sm:bottom-24">
+                <span class="min-w-0 flex-1 truncate" x-text="undoError || (undo && `„${undo.name}“ entfernt`)"></span>
+                <button type="button" x-show="undo" @click="undoRemove()" class="min-h-11 shrink-0 rounded-chip px-3 font-extrabold text-accent-soft hover:bg-white/10">Rückgängig</button>
+            </div>
             <button type="button" @click="$dispatch('open-sheet', 'add-entry')"
                     class="btn btn-primary fixed right-4 bottom-20 z-20 shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] sm:bottom-6">
                 <x-icon name="plus" size="18" /> Gegenstand

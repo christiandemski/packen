@@ -44,9 +44,16 @@
                 aria-label="{{ $entry->name() }} für diese Reise weglassen" title="Für diese Reise weglassen">
             <x-icon name="x" size="20" />
         </button>
-        <button type="button" x-show="!editing" @click="edit = !edit" :aria-expanded="edit" class="mr-3 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2" aria-label="{{ $entry->name() }} bearbeiten">
+        <button type="button" x-show="!editing" @click="edit = !edit" :aria-expanded="edit" class="ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2 {{ $entry->group_item_id ? 'mr-3' : '' }}" :class="direction !== 'there' && 'mr-3'" aria-label="{{ $entry->name() }} bearbeiten">
             <span class="rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold {{ $entry->quantity_locked ? 'text-accent-ink' : 'text-ink' }}">{{ $entry->quantity }}×</span>
         </button>
+        @unless ($entry->group_item_id)
+            <button type="button" x-show="!editing && direction === 'there'" @click="edit = false; quickRemove({{ $id }}, @js(route('packlist.destroy', [$trip, $entry])), @js($entry->name()))"
+                    class="mr-1 inline-flex min-h-11 min-w-10 items-center justify-center rounded-chip text-muted/70 hover:bg-warn/10 hover:text-warn-ink"
+                    aria-label="{{ $entry->name() }} entfernen" title="Entfernen">
+                <x-icon name="x" size="16" />
+            </button>
+        @endunless
         @else
             <span class="mr-5 ml-2 rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold">{{ $entry->quantity }}×</span>
         @endif

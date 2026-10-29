@@ -240,6 +240,48 @@ Alpine.data('packlist', (packed = {}, view = 'groups', back = {}, direction = 't
             if (id in this.packed) await this.remove(id, url);
         }
     },
+    // Schnell entfernen (X an der Zeile): sofort weg, gelöscht wird erst nach ein paar Sekunden –
+    // bis dahin holt „Rückgängig“ jeden Eintrag zurück, auch selbst hinzugefügte.
+    undo: null,
+    undoError: '',
+    quickRemove(id, url, name) {
+        if (this.undo) this.commitRemove();
+        this.undoError = '';
+        const entry = { id, url, name, before: this.packed[id], beforeBack: this.back[id] };
+        delete this.packed[id];
+        delete this.back[id];
+        entry.timer = setTimeout(() => this.commitRemove(), 6000);
+        this.undo = entry;
+        if (!this.unloadHooked) {
+            this.unloadHooked = true;
+            // Seite wird verlassen: Entfernen nicht verlieren
+            window.addEventListener('pagehide', () => this.undo && this.commitRemove(true));
+        }
+    },
+    putBack(entry) {
+        this.packed[entry.id] = entry.before;
+        if (entry.beforeBack !== undefined) this.back[entry.id] = entry.beforeBack;
+    },
+    undoRemove() {
+        if (!this.undo) return;
+        clearTimeout(this.undo.timer);
+        this.putBack(this.undo);
+        this.undo = null;
+    },
+    async commitRemove(leaving = false) {
+        const entry = this.undo;
+        clearTimeout(entry.timer);
+        this.undo = null;
+        try {
+            const response = await sendJson(entry.url, 'DELETE', {}, leaving);
+            if (!response.ok) throw new Error();
+        } catch {
+            if (leaving) return;
+            this.putBack(entry);
+            this.undoError = `„${entry.name}“ ließ sich nicht entfernen – bitte noch einmal.`;
+            setTimeout(() => (this.undoError = ''), 5000);
+        }
+    },
     async restore(id, url) {
         try {
             const response = await sendJson(url, 'POST');
@@ -255,10 +297,11 @@ Alpine.data('packlist', (packed = {}, view = 'groups', back = {}, direction = 't
 let csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
 /** JSON an die App schicken; ein abgelaufener CSRF-Token wird einmal erneuert. */
-async function sendJson(url, method, body = {}) {
+async function sendJson(url, method, body = {}, keepalive = false) {
     const send = () =>
         fetch(url, {
             method,
+            keepalive,
             headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
             body: JSON.stringify(body),
         });

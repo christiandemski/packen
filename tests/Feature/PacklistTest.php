@@ -360,3 +360,16 @@ it('hakt auf dem Rückweg getrennt ab – ohne Aufgaben, ab dem ersten Reisetag'
     // Fremde dürfen nicht
     $this->actingAs($this->max)->patchJson(route('packlist.return', [$this->trip, $socks]), ['packed' => false])->assertForbidden();
 });
+
+it('bietet an jeder Zeile ein X zum schnellen Entfernen mit Rückgängig', function () {
+    $this->actingAs($this->anna)->put(route('packlist.templates', $this->trip), ['template_ids' => [$this->basis->id]]);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertOk()
+        ->assertSee('aria-label="Socken entfernen"', false)
+        ->assertSee('quickRemove('.entryFor($this->socks)->id, false)
+        ->assertSee('Rückgängig');
+
+    // Mitreisende ohne Freigabe sehen kein X
+    $this->trip->members()->attach($this->max->id, ['role' => 'member']);
+    $this->actingAs($this->max)->get(route('trips.show', $this->trip))->assertDontSee('aria-label="Socken entfernen"', false);
+});
