@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\CategorySettings;
+
 /** Feste Kategorien, damit Packliste und Outfit-Tabelle sauber gruppieren können. */
 enum ItemCategory: string
 {
@@ -25,7 +27,13 @@ enum ItemCategory: string
     case Tasks = 'tasks';           // nichts zum Einpacken: „Herd aus“, „Pflanzen gießen“
     case Misc = 'misc';
 
+    /** Name im Katalog – den kann jede Person für sich ändern (siehe CategorySettings). */
     public function label(): string
+    {
+        return CategorySettings::label($this) ?? $this->defaultLabel();
+    }
+
+    public function defaultLabel(): string
     {
         return match ($this) {
             self::Tops => 'Oberteile',
@@ -76,6 +84,12 @@ enum ItemCategory: string
     public static function clothing(): array
     {
         return [self::Tops, self::Bottoms, self::Underwear, self::Outerwear, self::Sportswear, self::Shoes, self::Accessories];
+    }
+
+    /** „Sonstiges“ ist der Rückfall für alles und bleibt immer sichtbar. */
+    public function canBeHidden(): bool
+    {
+        return $this !== self::Misc;
     }
 
     /** Aufgaben haben kein Gewicht und landen in keinem Behältnis. */

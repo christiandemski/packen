@@ -29,7 +29,7 @@ class TemplateItemController extends Controller
         if ($request->filled('new_name')) {
             $data = $request->validate([
                 'new_name' => ['string', 'max:120'],
-                'new_category' => ['required', 'string', Rule::in(Category::choices($user)->pluck('key'))],
+                'new_category' => ['required', 'string', Rule::in(Category::choices($user, withHidden: true)->pluck('key'))],
             ], attributes: ['new_name' => 'Name', 'new_category' => 'Kategorie']);
 
             $name = trim($data['new_name']);

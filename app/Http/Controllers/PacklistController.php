@@ -69,7 +69,7 @@ class PacklistController extends Controller
         $data = $request->validate([
             'item_id' => ['nullable', 'integer', Rule::exists('items', 'id')->where('owner_id', $request->user()->id)],
             'custom_name' => ['required_without:item_id', 'nullable', 'string', 'max:120'],
-            'group' => ['nullable', 'string', Rule::in(Category::packlistChoices($request->user())->pluck('key'))],
+            'group' => ['nullable', 'string', Rule::in(Category::packlistChoices($request->user(), withHidden: true)->pluck('key'))],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_QUANTITY],
             'note' => ['nullable', 'string', 'max:200'],
         ], ['custom_name.required_without' => 'Bitte einen Namen eingeben oder etwas aus dem Katalog wählen.']);

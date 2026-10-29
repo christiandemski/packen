@@ -7,6 +7,7 @@ use App\Http\Requests\ItemRequest;
 use App\Models\Category;
 use App\Models\Item;
 use App\Services\PacklistService;
+use App\Support\CategorySettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ class ItemController extends Controller
         $byKey = $items->groupBy(fn (Item $item) => $item->categoryGroup()->key);
 
         // Alle Kategorien; leere feste blendet die Seite erst auf Wunsch ein (eigene immer – die legt man ja zum Füllen an).
-        $sections = Category::choices($user)
+        $sections = Category::choices($user, withHidden: true)
+            ->reject(fn ($group) => in_array($group->key, CategorySettings::hidden($user), true) && ! $byKey->has($group->key))
             ->map(fn ($group) => [
                 'group' => $group,
                 'items' => $byKey->get($group->key, collect()),
@@ -94,7 +96,9 @@ class ItemController extends Controller
     {
         return [
             'item' => $item,
-            'categories' => Category::choices($request->user()),
+            'categories' => Category::choices($request->user(), withHidden: true)
+                ->filter(fn ($group) => ! in_array($group->key, CategorySettings::hidden($request->user()), true) || $group->key === $item->categoryGroup()->key)
+                ->values(),
             'containers' => $request->user()->containers()->orderBy('name')->get(),
         ];
     }

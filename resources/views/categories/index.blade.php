@@ -4,8 +4,8 @@
         <div class="mb-5 flex items-start gap-2">
             <a href="{{ route('items.index') }}" class="icon-btn -ml-2" aria-label="Zurück zum Katalog"><x-icon name="arrow-left" /></a>
             <div>
-                <h1 class="page-title">Eigene Kategorien</h1>
-                <p class="mt-2 text-[15px] text-muted">Zusätzlich zu den festen Kategorien, z. B. „Kamera“ oder „Hund“. In der Packliste bekommt jede eine eigene Karte, direkt vor „Sonstiges“.</p>
+                <h1 class="page-title">Kategorien</h1>
+                <p class="mt-2 text-[15px] text-muted">Eigene Kategorien zusätzlich zu den festen, z. B. „Kamera“ oder „Hund“. In der Packliste bekommt jede eine eigene Karte, direkt vor „Sonstiges“.</p>
             </div>
         </div>
 
@@ -46,5 +46,44 @@
                 </div>
             </div>
         </div>
+
+        <section class="mt-10">
+            <h2 class="card-title">Feste Kategorien</h2>
+            <p class="mt-1 mb-3 text-sm text-muted">Umbenennen oder ausblenden, was du nie brauchst – nur für dich. Ausgeblendete stehen nicht mehr zur Auswahl; Gegenstände darin bleiben sichtbar.</p>
+            <div class="card divide-y divide-line-soft">
+                @foreach ($builtin as ['category' => $case, 'hidden' => $hidden, 'renamed' => $renamed])
+                    @php($bag = 'builtin-'.$case->value)
+                    <div x-data="{ edit: {{ $errors->getBag($bag)->any() ? 'true' : 'false' }} }">
+                        <div class="flex min-h-[56px] items-center gap-3 py-2 pr-2 pl-5 {{ $hidden ? 'text-muted' : '' }}">
+                            <x-icon :name="$case->icon()" size="18" class="{{ $hidden ? '' : 'text-accent' }}" />
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-[15px] font-bold {{ $hidden ? 'line-through' : '' }}">{{ $case->label() }}</p>
+                                @if ($renamed || $hidden)
+                                    <p class="text-xs font-semibold text-muted">{{ collect([$renamed ? 'statt „'.$case->defaultLabel().'“' : null, $hidden ? 'ausgeblendet' : null])->filter()->join(' · ') }}</p>
+                                @endif
+                            </div>
+                            <button type="button" class="icon-btn" @click="edit = !edit" :aria-expanded="edit" aria-label="{{ $case->label() }} bearbeiten"><x-icon name="pencil" size="18" /></button>
+                        </div>
+                        <form method="POST" action="{{ route('categories.builtin.update', $case->value) }}" x-show="edit" x-cloak class="space-y-3 bg-line-soft/60 px-5 py-4">
+                            @csrf @method('PUT')
+                            <div>
+                                <label for="label-{{ $case->value }}" class="label">Name</label>
+                                <input id="label-{{ $case->value }}" name="label" value="{{ $errors->getBag($bag)->any() ? old('label') : ($renamed ? $case->label() : '') }}" maxlength="60" placeholder="{{ $case->defaultLabel() }}" class="input">
+                                @error('label', $bag)<p class="field-error">{{ $message }}</p>@enderror
+                                <p class="mt-1.5 text-xs font-semibold text-muted">Leer lassen für „{{ $case->defaultLabel() }}“.</p>
+                            </div>
+                            @if ($case->canBeHidden())
+                                <label class="flex cursor-pointer items-center gap-3 text-sm font-bold">
+                                    <input type="checkbox" name="hidden" value="1" @checked($hidden) class="size-5 accent-[var(--accent)]"> Ausblenden
+                                </label>
+                            @else
+                                <p class="text-xs font-semibold text-muted">„Sonstiges“ bleibt immer sichtbar – dort landet alles ohne Kategorie.</p>
+                            @endif
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        </section>
     </div>
 </x-layouts.app>

@@ -7,6 +7,8 @@ use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\PacklistService;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->anna = User::factory()->create();
@@ -106,4 +108,34 @@ it('bekommt in der Packliste eine eigene Karte', function () {
     expect(PacklistEntry::where('custom_name', 'Speicherkarte')->sole()->packlistGroup()->label)->toBe('Kamera');
 
     $this->actingAs($this->anna)->get(route('trips.show', $trip))->assertOk()->assertSeeInOrder(['Kamera', 'Objektiv', 'Speicherkarte']);
+});
+
+it('benennt feste Kategorien um und blendet sie aus – nur für mich', function () {
+    $soap = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Seife', 'category' => 'toiletries']);
+    $trip = Trip::factory()->for($this->anna, 'owner')->create();
+    $trip->addMember($this->max);
+    app(PacklistService::class)->addEntry($trip, $this->anna, ['item_id' => $soap->id]);
+
+    $this->actingAs($this->anna)->put(route('categories.builtin.update', 'toiletries'), ['label' => 'Kulturbeutel'])->assertRedirect(route('categories.index'));
+    $this->actingAs($this->anna)->put(route('categories.builtin.update', 'food'), ['label' => '', 'hidden' => '1']);
+    $this->actingAs($this->anna)->put(route('categories.builtin.update', 'misc'), ['hidden' => '1']); // geht nicht
+
+    $this->actingAs($this->anna)->get(route('items.index'))->assertSee('Kulturbeutel')->assertDontSee('Hygiene')->assertDontSee('Essen &amp; Küche', false);
+    $this->actingAs($this->anna)->get(route('items.create'))->assertDontSee('value="food"', false)->assertSee('value="misc"', false);
+    $this->actingAs($this->anna)->get(route('trips.show', $trip))->assertSee('Kulturbeutel');
+    $this->actingAs($this->anna)->get(route('categories.index'))->assertSee('statt „Hygiene“')->assertSee('ausgeblendet');
+
+    // Andere sehen weiter die Standardnamen
+    $this->actingAs($this->max)->get(route('items.index'))->assertSee('Essen &amp; Küche', false);
+
+    // Bestehende Gegenstände in ausgeblendeten Kategorien bleiben gültig und sichtbar
+    $bread = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Brot', 'category' => 'food']);
+    $this->actingAs($this->anna)->get(route('items.index'))->assertSee('Brot')->assertSee('Essen &amp; Küche', false);
+    $this->actingAs($this->anna)->get(route('items.edit', $bread))->assertSee('value="food"', false);
+    $this->actingAs($this->anna)->put(route('items.update', $bread), ['name' => 'Brot', 'category' => 'food'])->assertSessionHasNoErrors();
+
+    // Leerer Name = Standard, nicht mehr ausgeblendet = Einstellung weg
+    $this->actingAs($this->anna)->put(route('categories.builtin.update', 'toiletries'), ['label' => '']);
+    $this->actingAs($this->anna)->put(route('categories.builtin.update', 'food'), []);
+    expect(DB::table('category_settings')->count())->toBe(0);
 });
