@@ -141,7 +141,7 @@
 
                 @if ($canEdit)
                     <div x-show="editing" x-cloak class="mt-4 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
-                        <p class="flex items-start gap-2"><x-icon name="pencil" size="16" class="mt-0.5" /> Tipp auf <x-icon name="x" size="14" class="mt-0.5 inline" />, was du diesmal nicht brauchst. Deine Vorlagen und der Katalog bleiben, wie sie sind.</p>
+                        <p class="flex items-start gap-2"><x-icon name="pencil" size="16" class="mt-0.5" /> <span>Tipp auf <x-icon name="x" size="14" class="inline align-[-2px]" />, was du diesmal nicht brauchst. Deine Vorlagen und der Katalog bleiben, wie sie sind.</span></p>
                         <p x-show="removeError" x-text="removeError" class="mt-2 text-warn-ink" role="alert"></p>
                     </div>
                 @endif

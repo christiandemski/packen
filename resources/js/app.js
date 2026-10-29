@@ -299,6 +299,7 @@ Alpine.data('quickAdd', (url, category, fields = { name: 'name', category: 'cate
                 const data = await response.json().catch(() => ({}));
                 if (response.ok) {
                     this.added.push(data);
+                    this.$dispatch('quick-added', data);
                 } else {
                     failed.push(`„${name}“: ${errorText(data)}`);
                 }

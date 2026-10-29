@@ -186,6 +186,12 @@ it('hat lesbare Adressen, die auch nach dem Umbenennen funktionieren', function 
 
     expect([$first->slug, $second->slug, $third->slug, $number->slug])
         ->toBe(['staedtetrip-koeln', 'staedtetrip-koeln-2027', 'staedtetrip-koeln-2027-2', 'reise-2027']);
+
+    // „Neu“ darf /reisen/neu (Reise anlegen) nicht verdecken
+    $new = $make('Neu', '2027-02-01');
+    expect($new->slug)->toBe('reise-neu');
+    $this->actingAs($this->anna)->get('/reisen/neu')->assertOk()->assertViewIs('trips.form');
+    $this->actingAs($this->anna)->get('/reisen/reise-neu')->assertOk()->assertViewIs('trips.show');
     expect(route('trips.show', $first))->toEndWith('/reisen/staedtetrip-koeln');
 
     $this->actingAs($this->anna)->get('/reisen/staedtetrip-koeln')->assertOk()->assertSee('Städtetrip Köln');

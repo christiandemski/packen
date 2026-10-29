@@ -1,8 +1,8 @@
 @php use Illuminate\Support\Str; @endphp
 <x-layouts.app title="Katalog">
-    <div x-data="{ q: '', shown: [] }">
+    <div x-data="{ q: '', shown: [], added: 0, total: {{ $total }} }" x-on:quick-added="added++">
         <div class="mb-5">
-            <p class="eyebrow">{{ $total }} {{ $total === 1 ? 'Gegenstand' : 'Gegenstände' }}</p>
+            <p class="eyebrow" x-text="`${total + added} ${total + added === 1 ? 'Gegenstand' : 'Gegenstände'}`">{{ $total }} {{ $total === 1 ? 'Gegenstand' : 'Gegenstände' }}</p>
             <h1 class="page-title mt-1">Katalog</h1>
             <p class="mt-2 max-w-xl text-[15px] text-muted">Alles, was du jemals einpacken könntest. Aus dem Katalog baust du Vorlagen und Packlisten.</p>
             <div class="mt-3 flex flex-wrap gap-2">
@@ -12,7 +12,7 @@
         </div>
 
         @if ($total === 0)
-            <div class="card mb-5 flex flex-col items-center px-6 py-14 text-center">
+            <div class="card mb-5 flex flex-col items-center px-6 py-14 text-center" x-show="!added">
                 <span class="inline-flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent-ink"><x-icon name="package" size="30" /></span>
                 <h2 class="mt-5 text-xl font-extrabold">Dein Katalog ist leer</h2>
                 <p class="mt-2 max-w-sm text-[15px] text-muted">Leg Gegenstände einzeln an, tipp sie unten in eine Kategorie oder übernimm die Start-Vorlagen – die füllen den Katalog gleich mit.</p>

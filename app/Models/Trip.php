@@ -59,6 +59,9 @@ class Trip extends Model
         });
     }
 
+    /** Feste Adressen unter /reisen/ (Route::resourceVerbs: create → neu) */
+    public const RESERVED_SLUGS = ['neu', 'create'];
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -78,12 +81,12 @@ class Trip extends Model
 
     /**
      * „Mallorca“ → mallorca; ist das schon vergeben, mallorca-2027, dann mallorca-2027-2 …
-     * Reine Zahlen und „create“ bekommen ein „reise-“ davor, damit sie nicht mit Routen kollidieren.
+     * Reine Zahlen und Routen-Wörter („neu“) bekommen ein „reise-“ davor, damit sie nicht kollidieren.
      */
     public static function uniqueSlug(string $name, ?Carbon $start = null, ?int $ignoreId = null): string
     {
         $base = trim(Str::limit(Str::slug($name, '-', 'de'), 60, ''), '-') ?: 'reise';
-        if (ctype_digit($base) || $base === 'create') {
+        if (ctype_digit($base) || in_array($base, self::RESERVED_SLUGS, true)) {
             $base = 'reise-'.$base;
         }
 
