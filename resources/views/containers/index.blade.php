@@ -33,7 +33,8 @@
                 </div>
             @endforeach
 
-            <div class="card border-dashed p-5" x-data="{ open: {{ $errors->getBag('create')->any() || $containers->isEmpty() ? 'true' : 'false' }} }">
+            <div id="neu" class="card border-dashed scroll-mt-24 p-5" x-data="{ open: {{ $errors->getBag('create')->any() || $containers->isEmpty() || request()->boolean('neu') ? 'true' : 'false' }} }"
+                 @if (request()->boolean('neu')) x-init="$nextTick(() => $el.querySelector('input:not([type=hidden])')?.focus())" @endif>
                 <button type="button" x-show="!open" @click="open = true" class="flex min-h-12 w-full items-center justify-center gap-2 text-[15px] font-bold text-muted hover:text-ink">
                     <x-icon name="plus" size="20" /> Behältnis anlegen
                 </button>
