@@ -256,6 +256,7 @@ const errorText = (data) => Object.values(data?.errors ?? {})[0]?.[0] ?? data?.m
  * das Feld bleibt fokussiert (Tastatur bleibt offen) für den nächsten.
  */
 Alpine.data('quickAdd', (url, category) => ({
+    category,
     name: '',
     added: [],
     error: '',

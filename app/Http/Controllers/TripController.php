@@ -58,9 +58,14 @@ class TripController extends Controller
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
     }
 
-    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits, WeatherService $weather): View
+    public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits, WeatherService $weather): View|RedirectResponse
     {
         Gate::authorize('view', $trip);
+
+        // Alte Nummer oder früherer Name in der Adresse → auf die aktuelle umleiten
+        if ($request->route()->originalParameter('trip') !== $trip->slug) {
+            return redirect()->route('trips.show', [$trip, ...$request->query()], 301);
+        }
         $user = $request->user();
 
         // Liste einer mitreisenden Person, die ihre Packliste für mich freigegeben hat

@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Trip extends Model
 {
@@ -36,6 +38,72 @@ class Trip extends Model
             'accommodation' => Accommodation::class,
             'transports' => AsEnumCollection::of(Transport::class),
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Trip $trip) {
+            $trip->slug ??= self::uniqueSlug($trip->name, $trip->start_date);
+        });
+
+        // Umbenennen ändert die Adresse; die alte leitet weiter.
+        static::updating(function (Trip $trip) {
+            if (! $trip->isDirty('name')) {
+                return;
+            }
+            $old = $trip->getOriginal('slug');
+            $trip->slug = self::uniqueSlug($trip->name, $trip->start_date, $trip->id);
+            if ($old && $old !== $trip->slug) {
+                DB::table('trip_slugs')->insertOrIgnore(['trip_id' => $trip->id, 'slug' => $old]);
+            }
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /** Aktuelle Adresse, sonst frühere Adresse oder alte Nummer (Links von vor der Umstellung). */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field !== null && $field !== 'slug') {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        return static::where('slug', $value)->first()
+            ?? static::whereIn('id', DB::table('trip_slugs')->where('slug', $value)->select('trip_id'))->first()
+            ?? (ctype_digit((string) $value) ? static::find($value) : null);
+    }
+
+    /**
+     * „Mallorca“ → mallorca; ist das schon vergeben, mallorca-2027, dann mallorca-2027-2 …
+     * Reine Zahlen und „create“ bekommen ein „reise-“ davor, damit sie nicht mit Routen kollidieren.
+     */
+    public static function uniqueSlug(string $name, ?Carbon $start = null, ?int $ignoreId = null): string
+    {
+        $base = trim(Str::limit(Str::slug($name, '-', 'de'), 60, ''), '-') ?: 'reise';
+        if (ctype_digit($base) || $base === 'create') {
+            $base = 'reise-'.$base;
+        }
+
+        $taken = fn (string $slug) => static::where('slug', $slug)->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))->exists()
+            || DB::table('trip_slugs')->where('slug', $slug)->where('trip_id', '!=', $ignoreId ?? 0)->exists();
+
+        $candidates = [$base];
+        if ($start !== null) {
+            $candidates[] = $base.'-'.$start->year;
+        }
+        foreach ($candidates as $slug) {
+            if (! $taken($slug)) {
+                return $slug;
+            }
+        }
+
+        $stem = end($candidates);
+        for ($n = 2; $taken("{$stem}-{$n}"); $n++);
+
+        return "{$stem}-{$n}";
     }
 
     /** @return BelongsTo<User, $this> */
