@@ -3,12 +3,13 @@
 namespace App\Enums;
 
 /**
- * Karten der Packliste in fester Reihenfolge. „Am Abfahrtstag“ steht immer oben,
+ * Karten der Packliste in fester Reihenfolge. „Am Abfahrtstag“ steht immer oben, gefolgt von den Aufgaben,
  * alle Kleidungskategorien teilen sich die Karte „Kleidung“.
  */
 enum PacklistGroup: string
 {
     case DepartureDay = 'departure_day';
+    case Tasks = 'tasks';
     case Shared = 'shared';
     case Clothing = 'clothing';
     case Toiletries = 'toiletries';

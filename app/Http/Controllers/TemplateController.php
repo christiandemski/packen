@@ -7,8 +7,10 @@ use App\Models\Item;
 use App\Models\Template;
 use App\Services\PacklistService;
 use App\Services\StarterTemplates;
+use App\Support\Group;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -50,9 +52,7 @@ class TemplateController extends Controller
 
         return view('templates.show', [
             'template' => $template,
-            'groups' => $template->items
-                ->sortBy([fn (Item $item) => $item->categoryGroup()->sortKey(), 'name'])
-                ->groupBy(fn (Item $item) => $item->categoryGroup()->key),
+            'sections' => $this->sections($request, $template),
             'categories' => Category::choices($request->user()),
             'available' => $available,
         ]);
@@ -88,5 +88,19 @@ class TemplateController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:200'],
         ], ['name.unique' => 'Eine Vorlage mit diesem Namen gibt es schon.']);
+    }
+
+    /**
+     * Alle Kategorien; ohne Inhalt bleiben sie ausgeblendet, bis man sie zum Eintippen öffnet.
+     *
+     * @return Collection<int, array{group: Group, items: Collection, hidden: bool}>
+     */
+    private function sections(Request $request, Template $template)
+    {
+        $byKey = $template->items->sortBy('name')->groupBy(fn (Item $item) => $item->categoryGroup()->key);
+
+        return Category::choices($request->user())
+            ->map(fn ($group) => ['group' => $group, 'items' => $byKey->get($group->key, collect()), 'hidden' => ! $byKey->has($group->key)])
+            ->values();
     }
 }

@@ -185,3 +185,38 @@ it('belegt das Häkchen bei neuen Gegenständen nach dem Namen vor', function ()
     expect(Item::where('name', 'Softshell')->value('rain_protection'))->toBeTruthy()
         ->and(Item::where('name', 'Regenhose')->value('rain_protection'))->toBeFalsy(); // im Formular abgewählt
 });
+
+it('weist auch auf Kälte und Sonne hin, bis etwas dagegen auf der Liste steht', function () {
+    Http::fake([
+        'geocoding-api.open-meteo.com/*' => Http::response(['results' => [['name' => 'Lissabon', 'country' => 'Portugal', 'latitude' => 38.7, 'longitude' => -9.1]]]),
+        'https://api.open-meteo.com/*' => function ($request) {
+            $dates = collect(CarbonPeriod::create($request['start_date'], $request['end_date']))->map->toDateString();
+
+            // Erster Tag kalt, alle weiteren sonnig und heiß, nie Regen
+            return Http::response(['daily' => [
+                'time' => $dates->all(),
+                'weather_code' => $dates->map(fn () => 0)->all(),
+                'temperature_2m_min' => $dates->keys()->map(fn ($i) => $i === 0 ? 2.0 : 18.0)->all(),
+                'temperature_2m_max' => $dates->keys()->map(fn ($i) => $i === 0 ? 9.0 : 29.0)->all(),
+                'precipitation_probability_max' => $dates->map(fn () => 0)->all(),
+            ]]);
+        },
+    ]);
+    $packlists = app(PacklistService::class);
+    $packlists->addEntry($this->trip, $this->anna, ['custom_name' => 'Pass']);
+    $hat = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Wollmütze', 'category' => 'accessories']);
+
+    expect($hat)->cold_protection->toBeTrue()->sun_protection->toBeFalse()
+        ->and(Item::factory()->create(['name' => 'Sonnencreme LSF 50'])->sun_protection)->toBeTrue();
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSee('Kalt: Mi, 12. Mai')
+        ->assertSee('Wollmütze') // Vorschlag aus dem Katalog
+        ->assertSee('Sonnig und heiß')
+        ->assertSee('Sonnencreme') // ohne Katalog-Gegenstand: Freitext-Vorschlag
+        ->assertDontSee('Regen angesagt');
+
+    $packlists->addEntry($this->trip, $this->anna, ['item_id' => $hat->id]);
+    $packlists->addEntry($this->trip, $this->anna, ['custom_name' => 'Sonnenbrille']);
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertDontSee('Kalt:')->assertDontSee('Sonnig und heiß');
+});

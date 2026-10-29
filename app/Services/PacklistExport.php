@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PacklistGroup;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Models\User;
@@ -30,12 +31,16 @@ class PacklistExport
             ->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()));
 
         if ($byContainer) {
-            return $entries
+            // Aufgaben kommen in kein Behältnis – sie stehen am Ende für sich.
+            [$tasks, $packable] = $entries->partition(fn (PacklistEntry $e) => $e->isTask());
+
+            return $packable
                 ->groupBy(fn (PacklistEntry $e) => $e->container?->name ?? '')
                 ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE)
                 ->sortBy(fn ($group, $name) => $name === '' ? 1 : 0) // „Ohne Behältnis“ ans Ende
                 ->map(fn ($group, $name) => ['title' => $name === '' ? 'Ohne Behältnis' : $name, 'entries' => $group->values()])
-                ->values();
+                ->values()
+                ->when($tasks->isNotEmpty(), fn ($sections) => $sections->push(['title' => PacklistGroup::Tasks->label(), 'entries' => $tasks->values()]));
         }
 
         return $entries

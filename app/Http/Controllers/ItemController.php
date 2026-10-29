@@ -49,7 +49,13 @@ class ItemController extends Controller
 
         // Schnelleingabe im Katalog
         if ($request->expectsJson()) {
-            return response()->json(['id' => $item->id, 'name' => $item->name, 'url' => route('items.edit', $item), 'rain_protection' => $item->rain_protection], 201);
+            return response()->json([
+                'id' => $item->id,
+                'name' => $item->name,
+                'url' => route('items.edit', $item),
+                'rain_protection' => $item->rain_protection,
+                'badges' => collect($item->weatherNeeds())->map->badge()->all(),
+            ], 201);
         }
 
         return redirect()->route('items.index')->with('status', "„{$item->name}“ ist im Katalog.");

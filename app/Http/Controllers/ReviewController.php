@@ -86,7 +86,14 @@ class ReviewController extends Controller
         $template->items()->detach($entry->item_id);
         $packlists->syncTemplate($template); // betrifft nur kommende Reisen
 
-        return $this->back($trip, "„{$entry->item->name}“ aus „{$template->name}“ gestrichen.");
+        $status = "„{$entry->item->name}“ aus „{$template->name}“ gestrichen.";
+
+        // Aus „Diesmal nicht dabei“ in der Packliste
+        if ($request->input('zurueck') === 'packliste') {
+            return redirect()->route('trips.show', $trip)->with('status', $status);
+        }
+
+        return $this->back($trip, $status);
     }
 
     private function authorizeEntry(Trip $trip, PacklistEntry $entry): void

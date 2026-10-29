@@ -49,7 +49,7 @@
                 </p>
             @endunless
             @include('trips._group-requests')
-            @include('trips._rain-warning')
+            @include('trips._weather-hints')
             @if ($isEmpty && $canEdit)
                 <div class="card p-5">
                     <p class="card-title">Stell deine Packliste zusammen</p>
@@ -168,7 +168,14 @@
                                         <button type="button" @click="tab = 'outfits'; window.scrollTo({ top: 0, behavior: 'smooth' })" class="chip bg-accent-soft text-accent-ink hover:bg-accent hover:text-white">Aus Outfits</button>
                                     @endif
                                 </h2>
-                                <span class="text-xs font-bold text-muted" x-text="`${present(@js($ids)).length - openIn(@js($ids))}/${present(@js($ids)).length}`">{{ $entries->where('packed', true)->count() }}/{{ $ids->count() }}</span>
+                                <span class="text-xs font-bold text-muted" x-show="!editing" x-text="`${present(@js($ids)).length - openIn(@js($ids))}/${present(@js($ids)).length}`">{{ $entries->where('packed', true)->count() }}/{{ $ids->count() }}</span>
+                                @if ($canEdit && ! $group->is(PacklistGroup::Shared))
+                                    <button type="button" x-show="editing && present(@js($ids)).length" x-cloak
+                                            @click="removeAll(@js($entries->map(fn ($e) => ['id' => $e->id, 'url' => route('packlist.destroy', [$trip, $e])])->values()))"
+                                            class="chip min-h-9 shrink-0 border border-line text-muted hover:border-warn-ink hover:text-warn-ink">
+                                        <x-icon name="x" size="12" /> Ganze Karte weglassen
+                                    </button>
+                                @endif
                             </div>
                             <ul class="divide-y divide-line-soft">
                                 @foreach ($entries as $entry)
@@ -181,23 +188,41 @@
 
                 {{-- Für diese Reise weggelassen --}}
                 @if ($excluded->isNotEmpty())
-                    <section class="card mt-4 overflow-hidden" x-data="{ open: false }">
+                    <section class="card mt-4 overflow-hidden" x-data="{ open: @js($excludedHints !== []) }">
                         <button type="button" @click="open = !open" :aria-expanded="open" class="flex min-h-[56px] w-full items-center gap-3 px-5 py-3 text-left">
                             <x-icon name="ban" size="18" class="text-muted" />
                             <span class="flex-1">
                                 <span class="block text-[15px] font-bold">Diesmal nicht dabei</span>
                                 <span class="block text-xs font-semibold text-muted">{{ $excluded->count() }} {{ $excluded->count() === 1 ? 'Eintrag' : 'Einträge' }} aus deinen Vorlagen weggelassen</span>
+                                @if ($excludedHints)
+                                    <span class="block text-xs font-bold text-accent-ink">{{ count($excludedHints) === 1 ? 'Einer davon fehlt' : count($excludedHints).' davon fehlen' }} schon öfter – Vorlage aufräumen?</span>
+                                @endif
                             </span>
                             <x-icon name="chevron-right" size="16" class="text-muted transition" ::class="open && 'rotate-90'" />
                         </button>
                         <ul x-show="open" x-cloak class="divide-y divide-line-soft border-t border-line-soft">
                             @foreach ($excluded as $entry)
-                                <li class="flex min-h-[52px] items-center gap-3 py-1.5 pr-3 pl-5">
-                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold text-muted">{{ $entry->name() }}</span>
-                                    <form method="POST" action="{{ route('packlist.restore', [$trip, $entry]) }}" data-keep-scroll>
-                                        @csrf
-                                        <button type="submit" class="min-h-11 px-2 text-sm font-bold text-accent-ink hover:underline">Doch mitnehmen</button>
-                                    </form>
+                                @php($hint = $excludedHints[$entry->id] ?? null)
+                                <li class="py-1.5 pr-3 pl-5">
+                                    <div class="flex min-h-[44px] items-center gap-3">
+                                        <span class="min-w-0 flex-1 truncate text-[15px] font-semibold text-muted">{{ $entry->name() }}</span>
+                                        <form method="POST" action="{{ route('packlist.restore', [$trip, $entry]) }}" data-keep-scroll>
+                                            @csrf
+                                            <button type="submit" class="min-h-11 px-2 text-sm font-bold text-accent-ink hover:underline">Doch mitnehmen</button>
+                                        </form>
+                                    </div>
+                                    @if ($hint)
+                                        <div class="mb-2 flex flex-wrap items-center gap-2 rounded-chip bg-accent-soft px-3 py-2 text-xs font-semibold text-accent-ink">
+                                            <span class="flex-1 basis-40">Schon auf {{ $hint['times'] }} Reisen weggelassen.</span>
+                                            @foreach ($hint['templates'] as $template)
+                                                <form method="POST" action="{{ route('review.template.remove', [$trip, $entry, $template]) }}" data-keep-scroll>
+                                                    @csrf @method('DELETE')
+                                                    <input type="hidden" name="zurueck" value="packliste">
+                                                    <button type="submit" class="chip min-h-9 bg-surface text-accent-ink hover:bg-accent hover:text-white">Aus „{{ $template->name }}“ streichen</button>
+                                                </form>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </li>
                             @endforeach
                         </ul>

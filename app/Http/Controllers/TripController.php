@@ -8,7 +8,6 @@ use App\Http\Requests\TripRequest;
 use App\Models\Category;
 use App\Models\Container;
 use App\Models\GroupItem;
-use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
@@ -19,7 +18,7 @@ use App\Services\OutfitService;
 use App\Services\PacklistService;
 use App\Services\TripService;
 use App\Services\WeatherService;
-use App\Support\RainGear;
+use App\Support\WeatherGear;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -99,15 +98,20 @@ class TripController extends Controller
 
         $tripContainers = $trip->containersFor($listOwner)->orderBy('name')->get();
         $worn = $outfits->wornOnArrival($trip, $listOwner);
-        $summary = $containers->summary($trip, $listOwner, $entries, $worn);
+        // Aufgaben („Herd aus“) werden abgehakt, aber nicht eingepackt.
+        $packable = $entries->reject(fn (PacklistEntry $e) => $e->isTask());
+        $summary = $containers->summary($trip, $listOwner, $packable, $worn);
         $members = $trip->members()->get();
         $dayLocations = fn ($days) => $days->mapWithKeys(fn ($day) => [$day->date->toDateString() => $day->location])->all();
         $tripWeather = $weather->forTrip($trip, $dayLocations($outfitDays));
 
-        // Regen angesagt, aber kein Regenschutz auf der Liste oder im Outfit?
-        $rainDays = $canEdit && $entries->isNotEmpty() && ! RainGear::covered($entries, $outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items))
-            ? RainGear::rainyDays($tripWeather['days'])
+        // Regen, Kälte oder Sonne angesagt, aber nichts dagegen auf der Liste oder im Outfit?
+        $weatherHints = $canEdit && $entries->isNotEmpty()
+            ? WeatherGear::hints($user, $entries, $outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items), $tripWeather['days'])
             : [];
+
+        // Für diese Reise weggelassene Vorlagen-Einträge
+        $excluded = $canEdit ? $packlists->excludedEntries($trip, $user) : collect();
 
         return view('trips.show', [
             'trip' => $trip->load('members'),
@@ -127,14 +131,13 @@ class TripController extends Controller
             'tripContainers' => $tripContainers,
             'containerSummary' => $summary,
             'neededLabel' => ContainerService::neededLabel($summary),
-            'weight' => ContainerService::totalWeight($entries, $summary, $worn),
-            'unassigned' => $entries->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
+            'weight' => ContainerService::totalWeight($packable, $summary, $worn),
+            'unassigned' => $packable->whereNull('container_id')->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))->values(),
             'initialView' => $request->query('ansicht') === 'behaeltnisse' ? 'containers' : 'groups',
             'initialTab' => in_array($request->query('tab'), ['outfits', 'review'], true) ? $request->query('tab') : 'packlist',
             'outfitDays' => $outfitDays,
             'weather' => $tripWeather,
-            'rainDays' => $rainDays,
-            'rainGear' => $rainDays ? Item::accessibleBy($user)->where('rain_protection', true)->orderBy('name')->first() : null,
+            'weatherHints' => $weatherHints,
             'stageLocations' => $trip->stages->mapWithKeys(fn ($stage) => [$stage->date->toDateString() => $stage->location])->all(),
             'selectedDay' => $selectedDay?->date->toDateString(),
             'outfitOverview' => $outfits->overview($outfitDays),
@@ -148,7 +151,8 @@ class TripController extends Controller
             'otherTrips' => $otherTrips,
             'addable' => $packlists->addableItems($trip, $user),
             'entryGroups' => Category::packlistChoices($user),
-            'excluded' => $canEdit ? $packlists->excludedEntries($trip, $user) : collect(),
+            'excluded' => $excluded,
+            'excludedHints' => $canEdit ? $packlists->exclusionHints($trip, $user, $excluded) : [],
         ]);
     }
 

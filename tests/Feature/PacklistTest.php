@@ -2,11 +2,13 @@
 
 use App\Enums\EntrySource;
 use App\Enums\PacklistGroup;
+use App\Models\Container;
 use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Template;
 use App\Models\Trip;
 use App\Models\User;
+use App\Services\ContainerService;
 use App\Services\PacklistService;
 
 beforeEach(function () {
@@ -278,4 +280,51 @@ it('zeigt den Fortschritt auf der Startseite', function () {
     expect($service->progress($this->trip, $this->anna))->toBe(['packed' => 2, 'total' => 3]);
     $this->actingAs($this->anna)->get(route('home'))->assertSee('2 von 3 gepackt');
     $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSee('width: 67%', false);
+});
+
+it('führt Aufgaben vor der Abfahrt als eigene Karte ohne Behältnis und Gewicht', function () {
+    $task = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Herd aus', 'category' => 'tasks', 'weight_g' => 500]);
+    $suitcase = Container::factory()->for($this->anna, 'owner')->create(['name' => 'Koffer']);
+    app(ContainerService::class)->setForTrip($this->trip, $this->anna, [$suitcase->id]);
+    app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->basis->id]);
+    app(PacklistService::class)->addEntry($this->trip, $this->anna, ['item_id' => $task->id]);
+
+    expect(entryFor($task)->isTask())->toBeTrue()
+        ->and(entryFor($task)->packlistGroup()->key)->toBe(PacklistGroup::Tasks->value);
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSeeInOrder(['Am Abfahrtstag', 'Vor der Abfahrt erledigen', 'Herd aus', 'Kleidung'])
+        ->assertViewHas('unassigned', fn ($entries) => ! $entries->contains('item_id', $task->id))
+        ->assertViewHas('weight', fn ($weight) => $weight['total'] < 500);
+});
+
+it('legt per Schnelleingabe Gegenstände direkt in der Vorlage an', function () {
+    $this->actingAs($this->anna)->postJson(route('templates.items.store', $this->basis), ['new_name' => 'Kulturbeutel', 'new_category' => 'toiletries'])
+        ->assertCreated()->assertJson(['name' => 'Kulturbeutel', 'badges' => []]);
+    // Gibt es schon im Katalog → wird übernommen
+    $this->actingAs($this->anna)->postJson(route('templates.items.store', $this->basis), ['new_name' => 'trinkflasche', 'new_category' => 'misc'])
+        ->assertCreated()->assertJson(['name' => 'Trinkflasche', 'badges' => ['aus dem Katalog']]);
+    // Steht schon drin → Fehler am Feld
+    $this->actingAs($this->anna)->postJson(route('templates.items.store', $this->basis), ['new_name' => 'Socken', 'new_category' => 'misc'])
+        ->assertUnprocessable()->assertJsonValidationErrors('new_name');
+
+    expect(Item::where('name', 'Kulturbeutel')->sole()->category->value)->toBe('toiletries')
+        ->and($this->basis->items()->pluck('name')->sort()->values()->all())->toBe(['Kulturbeutel', 'Ladekabel', 'Regenjacke', 'Socken', 'Trinkflasche']);
+});
+
+it('schlägt vor, mehrfach Weggelassenes aus der Vorlage zu streichen', function () {
+    $earlier = Trip::factory()->for($this->anna, 'owner')->create(['start_date' => '2027-03-01', 'end_date' => '2027-03-03']);
+    $service = app(PacklistService::class);
+    foreach ([$earlier, $this->trip] as $trip) {
+        $service->setTemplates($trip, $this->anna, [$this->basis->id]);
+        $service->removeEntry(PacklistEntry::where(['trip_id' => $trip->id, 'item_id' => $this->jacket->id])->sole());
+    }
+
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
+        ->assertSee('Schon auf 2 Reisen weggelassen')
+        ->assertSee('Aus „Basis“ streichen');
+
+    $this->actingAs($this->anna)->delete(route('review.template.remove', [$this->trip, entryFor($this->jacket), $this->basis]), ['zurueck' => 'packliste'])
+        ->assertRedirect(route('trips.show', $this->trip));
+    expect($this->basis->items()->whereKey($this->jacket->id)->exists())->toBeFalse();
 });

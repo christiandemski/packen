@@ -20,6 +20,18 @@ class StarterTemplates
     public static function definitions(): array
     {
         return [
+            'Haus verlassen' => [
+                'description' => 'Aufgaben vor der Abfahrt – zum Abhaken wie die Packliste',
+                'items' => [
+                    ['Herd und Backofen aus', C::Tasks],
+                    ['Fenster zu', C::Tasks],
+                    ['Pflanzen gießen', C::Tasks],
+                    ['Müll rausbringen', C::Tasks],
+                    ['Kühlschrank leeren', C::Tasks],
+                    ['Heizung runterdrehen', C::Tasks],
+                    ['Stecker ziehen', C::Tasks],
+                ],
+            ],
             'Basis' => [
                 'description' => 'Was auf jede Reise mitkommt',
                 'items' => [
