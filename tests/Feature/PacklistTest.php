@@ -331,3 +331,32 @@ it('schlägt vor, mehrfach Weggelassenes aus der Vorlage zu streichen', function
         ->assertRedirect(route('trips.show', $this->trip));
     expect($this->basis->items()->whereKey($this->jacket->id)->exists())->toBeFalse();
 });
+
+it('hakt auf dem Rückweg getrennt ab – ohne Aufgaben, ab dem ersten Reisetag', function () {
+    app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->basis->id]);
+    $task = app(PacklistService::class)->addEntry($this->trip, $this->anna, ['custom_name' => 'Herd aus', 'group' => 'tasks']);
+    $socks = entryFor($this->socks);
+    $socks->update(['packed' => true]);
+
+    // Vor der Reise: kein Rückweg
+    $this->travelTo('2027-05-01');
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertDontSee('Rückweg')->assertViewHas('initialDirection', 'there');
+
+    // Während der Reise umschaltbar, am letzten Tag gleich aktiv
+    $this->travelTo('2027-05-13');
+    $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSee('Rückweg')->assertViewHas('initialDirection', 'there');
+    $this->travelTo('2027-05-16');
+    $response = $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertViewHas('initialDirection', 'back');
+    expect($response->getContent())->not->toContain('&quot;'.$task->id.'&quot;:false}');
+
+    $this->actingAs($this->anna)->patchJson(route('packlist.return', [$this->trip, $socks]), ['packed' => true])
+        ->assertOk()->assertJson(['applied' => true, 'packed' => true]);
+    expect($socks->fresh())->returned->toBeTrue()->packed->toBeTrue();
+
+    // Älterer Offline-Stand verliert
+    $this->actingAs($this->anna)->patchJson(route('packlist.return', [$this->trip, $socks]), ['packed' => false, 'changed_at' => now()->subHour()->toIso8601String()])
+        ->assertJson(['applied' => false, 'packed' => true]);
+
+    // Fremde dürfen nicht
+    $this->actingAs($this->max)->patchJson(route('packlist.return', [$this->trip, $socks]), ['packed' => false])->assertForbidden();
+});

@@ -110,6 +110,10 @@ class TripController extends Controller
             ? WeatherGear::hints($user, $entries, $outfitDays->flatMap(fn ($day) => $day->slots->flatMap->items), $tripWeather['days'])
             : [];
 
+        // Rückweg: ab dem ersten Reisetag umschaltbar, ab dem letzten Tag gleich aktiv
+        $returnAvailable = ! today()->lt($trip->start_date);
+        $initialDirection = $returnAvailable && ($request->query('richtung') === 'rueck' || ! today()->lt($trip->end_date)) ? 'back' : 'there';
+
         // Für diese Reise weggelassene Vorlagen-Einträge
         $excluded = $canEdit ? $packlists->excludedEntries($trip, $user) : collect();
 
@@ -152,6 +156,8 @@ class TripController extends Controller
             'addable' => $packlists->addableItems($trip, $user),
             'entryGroups' => Category::packlistChoices($user),
             'excluded' => $excluded,
+            'returnAvailable' => $returnAvailable,
+            'initialDirection' => $initialDirection,
             'excludedHints' => $canEdit ? $packlists->exclusionHints($trip, $user, $excluded) : [],
         ]);
     }

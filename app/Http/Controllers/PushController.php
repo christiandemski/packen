@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PushSubscription;
-use App\Services\DepartureReminder;
+use App\Services\Reminders;
 use App\Support\WebPush;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,13 +48,13 @@ class PushController extends Controller
     }
 
     /** Der Service Worker fragt nach einem Push, was er anzeigen soll. */
-    public function messages(Request $request, DepartureReminder $reminder): JsonResponse
+    public function messages(Request $request, Reminders $reminder): JsonResponse
     {
         return response()->json(['data' => $reminder->messagesFor($request->user())])->header('Cache-Control', 'no-store');
     }
 
-    /** Täglicher Auslöser, z. B. Plesk „URL abrufen“ um 7 Uhr. */
-    public function cron(Request $request, DepartureReminder $reminder): JsonResponse
+    /** Stündlicher Auslöser (Plesk „URL abrufen“); was gerade dran ist, entscheidet Reminders. */
+    public function cron(Request $request, Reminders $reminder): JsonResponse
     {
         $token = (string) config('services.cron.token');
         abort_if($token === '' || ! hash_equals($token, (string) $request->query('token')), 403);

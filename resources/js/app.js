@@ -155,41 +155,56 @@ Alpine.data('avatarCropper', () => ({
 /**
  * Packliste: Abhaken sofort im Browser, gespeichert wird über die Warteschlange –
  * online sofort, offline sobald wieder Netz da ist.
+ *
+ * Rückweg: zweiter Haken je Eintrag („wieder eingepackt“), in der Warteschlange als „r<id>“.
  */
-Alpine.data('packlist', (packed = {}, view = 'groups') => ({
+Alpine.data('packlist', (packed = {}, view = 'groups', back = {}, direction = 'there') => ({
     packed,
+    back,
+    direction,
     view,
     onlyOpen: storage.get('packen.onlyOpen', '0') === '1',
     init() {
         // Noch nicht übertragene Haken über den (evtl. gecachten) Seitenstand legen.
-        for (const [id, change] of Object.entries(pendingChanges())) {
-            if (id in this.packed) this.packed[id] = change.packed;
+        for (const [key, change] of Object.entries(pendingChanges())) {
+            const [state, id] = this.stateFor(key);
+            if (id in state) state[id] = change.packed;
         }
         window.addEventListener('packlist:synced', ({ detail }) => {
-            if (detail.id in this.packed && !(detail.id in pendingChanges())) this.packed[detail.id] = detail.packed;
+            const [state, id] = this.stateFor(detail.key);
+            if (id in state && !(detail.key in pendingChanges())) state[id] = detail.packed;
         });
     },
+    /** Schlüssel der Warteschlange → [Zustand, Eintrag-ID] */
+    stateFor(key) {
+        return String(key).startsWith('r') ? [this.back, String(key).slice(1)] : [this.packed, String(key)];
+    },
+    /** Haken der gerade gezeigten Richtung */
+    get current() {
+        return this.direction === 'back' ? this.back : this.packed;
+    },
     get total() {
-        return Object.keys(this.packed).length;
+        return Object.keys(this.current).length;
     },
     get done() {
-        return Object.values(this.packed).filter(Boolean).length;
+        return Object.values(this.current).filter(Boolean).length;
     },
     get percent() {
         return this.total ? Math.round((this.done / this.total) * 100) : 0;
     },
     openIn(ids) {
-        return ids.filter((id) => id in this.packed && !this.packed[id]).length;
+        return ids.filter((id) => id in this.current && !this.current[id]).length;
     },
     toggleOnlyOpen() {
         this.onlyOpen = !this.onlyOpen;
         storage.set('packen.onlyOpen', this.onlyOpen ? '1' : '0');
     },
-    toggle(id, url) {
+    toggle(id, url, backUrl) {
         if (this.removed[id]) return;
-        const next = !this.packed[id];
-        this.packed[id] = next;
-        enqueue(id, url, next);
+        const back = this.direction === 'back';
+        const next = !this.current[id];
+        this.current[id] = next;
+        enqueue(back ? `r${id}` : id, back ? backUrl : url, next);
         flush();
     },
     // „Liste anpassen“: Einträge für diese Reise weglassen, ohne die Vorlage zu ändern.
@@ -197,13 +212,15 @@ Alpine.data('packlist', (packed = {}, view = 'groups') => ({
     removed: {},
     removeError: '',
     present(ids) {
-        return ids.filter((id) => id in this.packed);
+        return ids.filter((id) => id in this.current);
     },
     async remove(id, url) {
         this.removeError = '';
         const before = this.packed[id];
         this.removed[id] = { restorable: false, pending: true };
+        const beforeBack = this.back[id];
         delete this.packed[id];
+        delete this.back[id];
         try {
             const response = await sendJson(url, 'DELETE');
             if (!response.ok) throw new Error();
@@ -212,6 +229,7 @@ Alpine.data('packlist', (packed = {}, view = 'groups') => ({
         } catch {
             delete this.removed[id];
             this.packed[id] = before;
+            if (beforeBack !== undefined) this.back[id] = beforeBack;
             this.removeError = 'Entfernen hat nicht geklappt – bitte noch einmal.';
         }
     },

@@ -4,6 +4,8 @@
     use Illuminate\Support\Str;
 
     $packedState = $groups->flatten()->mapWithKeys(fn ($e) => [$e->id => $e->packed]);
+    // Rückweg: alles außer Aufgaben („Herd aus“ muss nicht zurück)
+    $returnState = $groups->flatten()->reject(fn ($e) => $e->isTask())->mapWithKeys(fn ($e) => [$e->id => $e->returned]);
     $isEmpty = $groups->isEmpty();
     $selectedTemplates = $templates->whereIn('id', $selected);
 @endphp
@@ -34,7 +36,7 @@
         </div>
 
         {{-- ───────────── Packliste ───────────── --}}
-        <div role="tabpanel" x-show="tab === 'packlist'" class="mt-4" x-data="packlist(@js((object) $packedState->all()), @js($initialView))">
+        <div role="tabpanel" x-show="tab === 'packlist'" class="mt-4" x-data="packlist(@js((object) $packedState->all()), @js($initialView), @js((object) $returnState->all()), @js($initialDirection))">
             @if ($grantedToMe->isNotEmpty())
                 <div class="segment mb-4" role="group" aria-label="Wessen Packliste">
                     <a href="{{ route('trips.show', $trip) }}" class="segment-item" aria-pressed="{{ $canEdit ? 'true' : 'false' }}">Meine Liste</a>
@@ -92,10 +94,21 @@
             @elseif ($isEmpty)
                 <div class="card p-5 text-sm text-muted">Diese Liste ist noch leer.</div>
             @else
+                @if ($returnAvailable)
+                    <div class="segment mb-4" role="group" aria-label="Richtung">
+                        <button type="button" class="segment-item" :aria-pressed="direction === 'there'" @click="direction = 'there'"><x-icon name="luggage" size="16" /> Hinweg</button>
+                        <button type="button" class="segment-item" :aria-pressed="direction === 'back'" @click="direction = 'back'; editing = false"><x-icon name="repeat" size="16" /> Rückweg</button>
+                    </div>
+                    <p x-show="direction === 'back'" x-cloak class="mb-4 flex items-start gap-2 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
+                        <x-icon name="repeat" size="16" class="mt-0.5" />
+                        <span>Rückweg: Hak ab, was wieder im Gepäck ist – Ladekabel in der Steckdose, Jacke an der Garderobe?</span>
+                    </p>
+                @endif
+
                 {{-- Fortschritt --}}
                 <div class="card p-5">
                     <div class="flex items-baseline justify-between gap-3">
-                        <p class="text-[15px] font-bold"><span x-text="done">{{ $progress['packed'] }}</span> von <span x-text="total">{{ $progress['total'] }}</span> gepackt</p>
+                        <p class="text-[15px] font-bold"><span x-text="done">{{ $progress['packed'] }}</span> von <span x-text="total">{{ $progress['total'] }}</span> <span x-text="direction === 'back' ? 'wieder eingepackt' : 'gepackt'">gepackt</span></p>
                         <p class="text-2xl font-extrabold text-accent"><span x-text="percent">{{ $progress['total'] ? round($progress['packed'] / $progress['total'] * 100) : 0 }}</span> %</p>
                     </div>
                     <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-line-soft" role="progressbar" aria-label="Packfortschritt" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100">
@@ -123,7 +136,7 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-1">
                         @if ($canEdit)
-                            <button type="button" class="btn min-h-11 px-3 text-sm" :class="editing ? 'btn-primary' : 'btn-ghost'" @click="editing = !editing" :aria-pressed="editing">
+                            <button type="button" x-show="direction === 'there'" class="btn min-h-11 px-3 text-sm" :class="editing ? 'btn-primary' : 'btn-ghost'" @click="editing = !editing" :aria-pressed="editing">
                                 <x-icon name="pencil" size="16" /> <span x-text="editing ? 'Fertig' : 'Anpassen'">Anpassen</span>
                             </button>
                         @endif

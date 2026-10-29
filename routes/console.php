@@ -3,8 +3,8 @@
 use App\Enums\AuthSource;
 use App\Enums\Role;
 use App\Models\User;
-use App\Services\DepartureReminder;
 use App\Services\MagicLinkService;
+use App\Services\Reminders;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -102,6 +102,6 @@ Artisan::command('packen:push-einrichten', function () {
     return 0;
 })->purpose('Schlüssel für Web Push und Cron-Token erzeugen, falls sie in der .env fehlen');
 
-Artisan::command('packen:abfahrt-erinnern', function (DepartureReminder $reminder) {
-    $this->info($reminder->run().' Erinnerungen verschickt.');
-})->purpose('Erinnerung am Abfahrtstag per Push verschicken (einmal täglich morgens)');
+Artisan::command('packen:erinnern', function (Reminders $reminders) {
+    $this->info($reminders->run().' Erinnerungen verschickt.');
+})->purpose('Erinnerungen per Push verschicken – Vorabend, Abfahrtstag, Rückblick (stündlich aufrufen)');

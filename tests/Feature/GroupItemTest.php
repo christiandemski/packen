@@ -192,6 +192,6 @@ it('verschickt E-Mails nur, wenn eingeschaltet', function () {
 
     expect($notification->via($this->max))->toBe(['database']);
 
-    $this->actingAs($this->max)->patch(route('profile.update'), ['name' => 'Max', 'email_notifications' => '1']);
+    $this->actingAs($this->max)->put(route('notifications.settings.update'), ['email_notifications' => '1'])->assertRedirect(route('notifications.settings'));
     expect($notification->via($this->max->fresh()))->toBe(['database', 'mail']);
 });
