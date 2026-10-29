@@ -312,6 +312,59 @@ Alpine.data('quickAdd', (url, category, fields = { name: 'name', category: 'cate
     },
 }));
 
+/** Erinnerung am Abfahrtstag per Push für dieses Gerät ein- und ausschalten. */
+Alpine.data('pushToggle', (publicKey, url, testUrl) => ({
+    supported: 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
+    active: false,
+    busy: false,
+    message: '',
+    async init() {
+        if (!this.supported) return;
+        const registration = await navigator.serviceWorker.ready;
+        this.active = !!(await registration.pushManager.getSubscription());
+    },
+    async toggle() {
+        this.busy = true;
+        this.message = '';
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const current = await registration.pushManager.getSubscription();
+            if (this.active && current) {
+                await sendJson(url, 'DELETE', { endpoint: current.endpoint });
+                await current.unsubscribe();
+                this.active = false;
+                return;
+            }
+            if ((await Notification.requestPermission()) !== 'granted') {
+                this.message = 'Benachrichtigungen sind für Packen blockiert – in den Browser-Einstellungen erlauben.';
+                return;
+            }
+            const key = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+            const subscription = current ?? (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
+            const response = await sendJson(url, 'POST', { endpoint: subscription.endpoint });
+            if (!response.ok) throw new Error();
+            this.active = true;
+            this.message = 'Eingeschaltet. Mit „Probe-Nachricht“ kannst du es gleich ausprobieren.';
+        } catch {
+            this.message = 'Das hat nicht geklappt – bitte noch einmal versuchen.';
+        } finally {
+            this.busy = false;
+        }
+    },
+    async test() {
+        this.busy = true;
+        try {
+            const response = await sendJson(testUrl, 'POST');
+            const data = await response.json();
+            this.message = data.sent ? 'Probe-Nachricht ist unterwegs.' : 'Der Push-Dienst hat nicht geantwortet – bitte aus- und wieder einschalten.';
+        } catch {
+            this.message = 'Das hat nicht geklappt – bitte noch einmal versuchen.';
+        } finally {
+            this.busy = false;
+        }
+    },
+}));
+
 /** Formulare mit data-keep-scroll laden die Seite neu, ohne dass man nach oben springt. */
 document.addEventListener('submit', (event) => {
     if (!event.target.matches('form[data-keep-scroll]')) return;

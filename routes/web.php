@@ -18,6 +18,7 @@ use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
 use App\Http\Controllers\PacklistExportController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SharingController;
 use App\Http\Controllers\StarterTemplateController;
@@ -40,6 +41,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/einladung/{token}', [InvitationAcceptanceController::class, 'store'])->name('invitation.accept');
 });
 
+// Täglicher Auslöser für die Erinnerung am Abfahrtstag (Plesk: geplante Aufgabe „URL abrufen“)
+Route::get('/cron/abfahrt', [PushController::class, 'cron'])->middleware('throttle:10,1')->name('cron.departure');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::post('/abmelden', LogoutController::class)->name('logout');
@@ -52,6 +56,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/profil/bild', [ProfileController::class, 'avatar'])->name('profile.avatar');
     Route::post('/profil/zugaenge', [ApiTokenController::class, 'store'])->name('api-tokens.store');
     Route::delete('/profil/zugaenge/{apiToken}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
+    Route::post('/push/abo', [PushController::class, 'store'])->name('push.store');
+    Route::delete('/push/abo', [PushController::class, 'destroy'])->name('push.destroy');
+    Route::post('/push/test', [PushController::class, 'test'])->middleware('throttle:5,1')->name('push.test');
+    Route::get('/push/hinweise', [PushController::class, 'messages'])->name('push.messages');
     Route::get('/benutzer/{user}/bild', [ProfileController::class, 'showAvatar'])->name('users.avatar');
 
     Route::resource('reisen', TripController::class)

@@ -104,5 +104,18 @@
                 @endforeach
             </ul>
         </section>
+        <section class="card p-5" x-data="{ copied: false }">
+            <p class="card-title flex items-center gap-2"><x-icon name="bell" size="18" class="text-accent" /> Erinnerung am Abfahrtstag</p>
+            @if ($pushReady && $cronUrl)
+                <p class="mt-1 text-sm text-muted">In Plesk unter <strong>Geplante Aufgaben</strong> eine Aufgabe „URL abrufen“ mit diesem Link anlegen, täglich um 7:00. {{ $pushDevices }} {{ $pushDevices === 1 ? 'Gerät hat' : 'Geräte haben' }} die Erinnerung eingeschaltet.</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <input readonly value="{{ $cronUrl }}" aria-label="Cron-Link" class="input min-w-0 flex-1 font-mono text-xs" @focus="$el.select()">
+                    <button type="button" class="btn btn-secondary" @click="navigator.clipboard.writeText(@js($cronUrl)); copied = true"><x-icon name="copy" size="16" /> <span x-text="copied ? 'Kopiert' : 'Kopieren'">Kopieren</span></button>
+                </div>
+                <p class="mt-2 text-xs font-semibold text-muted">Der Link enthält einen geheimen Schlüssel – nicht weitergeben.</p>
+            @else
+                <p class="mt-1 text-sm text-muted">Noch nicht eingerichtet: Beim nächsten Deployment legt <code>deploy.sh</code> die Schlüssel in der <code>.env</code> an (<code>php artisan packen:push-einrichten</code>).</p>
+            @endif
+        </section>
     </div>
 </x-layouts.app>

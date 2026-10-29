@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\AccountService;
 use App\Services\AvatarService;
 use App\Services\SessionLogin;
+use App\Support\WebPush;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -20,6 +21,7 @@ class ProfileController extends Controller
         return view('profile.edit', [
             'user' => $request->user(),
             'apiTokens' => $request->user()->apiTokens()->latest()->get(),
+            'pushKey' => WebPush::publicKey(),
         ]);
     }
 
