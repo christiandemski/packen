@@ -13,6 +13,7 @@ use App\Http\Controllers\ContainerController;
 use App\Http\Controllers\GroupItemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\ItemDuplicateController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OutfitController;
 use App\Http\Controllers\PacklistController;
@@ -83,6 +84,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/eintraege/{entry}/zurueck', [PacklistController::class, 'restore'])->name('restore');
     });
 
+    Route::get('/katalog/doppelungen', [ItemDuplicateController::class, 'index'])->name('items.duplicates');
+    Route::post('/katalog/doppelungen/zusammenfuehren', [ItemDuplicateController::class, 'merge'])->name('items.duplicates.merge');
+    Route::post('/katalog/doppelungen/verschieden', [ItemDuplicateController::class, 'dismiss'])->name('items.duplicates.dismiss');
+
     Route::resource('katalog', ItemController::class)
         ->parameters(['katalog' => 'item'])
         ->names('items')
@@ -119,6 +124,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::put('/kategorien/fest/{category}', [CategoryController::class, 'updateBuiltin'])->name('categories.builtin.update');
+    Route::put('/kategorien/reihenfolge', [CategoryController::class, 'order'])->name('categories.order');
+    Route::delete('/kategorien/reihenfolge', [CategoryController::class, 'resetOrder'])->name('categories.order.reset');
     Route::resource('kategorien', CategoryController::class)
         ->parameters(['kategorien' => 'category'])
         ->names('categories')

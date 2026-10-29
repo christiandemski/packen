@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import Sortable from 'sortablejs';
 import { enqueue, flush, initOffline, pendingChanges } from './offline';
 
 /** localStorage kann in privaten Fenstern fehlen oder werfen – dann einfach ohne Merken. */
@@ -328,6 +329,39 @@ Alpine.data('quickAdd', (url, category, fields = { name: 'name', category: 'cate
         this.error = failed.join(' ');
         this.busy = false;
         this.$refs.input.focus();
+    },
+}));
+
+/**
+ * Reihenfolge der Kategorien: ziehen (Griff) oder Pfeile; jede Änderung wird gleich gespeichert.
+ */
+Alpine.data('categoryOrder', (url) => ({
+    saved: false,
+    error: '',
+    init() {
+        // forceFallback: Zeiger-Ereignisse statt HTML5-Drag&Drop – verhält sich auf Handy und Desktop gleich
+        Sortable.create(this.$refs.list, { handle: '[data-handle]', animation: 150, forceFallback: true, onEnd: () => this.save() });
+    },
+    move(event, step) {
+        const item = event.currentTarget.closest('li');
+        const sibling = step < 0 ? item.previousElementSibling : item.nextElementSibling;
+        if (!sibling) return;
+        step < 0 ? sibling.before(item) : sibling.after(item);
+        event.currentTarget.focus();
+        this.save();
+    },
+    async save() {
+        this.error = '';
+        const order = [...this.$refs.list.children].map((li) => li.dataset.key);
+        try {
+            const response = await sendJson(url, 'PUT', { order });
+            if (!response.ok) throw new Error();
+            this.saved = true;
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => (this.saved = false), 1500);
+        } catch {
+            this.error = 'Speichern hat nicht geklappt – bitte Seite neu laden.';
+        }
     },
 }));
 

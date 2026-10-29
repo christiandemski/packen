@@ -6,6 +6,7 @@ use App\Enums\ItemCategory;
 use App\Http\Requests\ItemRequest;
 use App\Models\Category;
 use App\Models\Item;
+use App\Services\CatalogDuplicates;
 use App\Services\PacklistService;
 use App\Support\CategorySettings;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class ItemController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, CatalogDuplicates $duplicates): View
     {
         $user = $request->user();
         $items = Item::accessibleBy($user)->with('customCategory')->withCount('templates')->orderBy('name')->get();
@@ -35,6 +36,7 @@ class ItemController extends Controller
         return view('items.index', [
             'sections' => $sections,
             'total' => $items->count(),
+            'duplicates' => $items->count() > 1 ? $duplicates->pairs($user)->count() : 0,
         ]);
     }
 
