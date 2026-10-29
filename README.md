@@ -66,11 +66,11 @@ Einmalig in Plesk (Netcup Webhosting, PHP 8.5):
 5. In Plesk unter **Git → „Jetzt bereitstellen“** klicken (oder auf `main` pushen). `deploy.sh` erzeugt den `APP_KEY`, migriert und legt den Admin an. Anmeldung danach unter `/admin-anmeldung`.
 6. **`PACKEN_ADMIN_PASSWORD` wieder aus der `.env` löschen.** Ein bestehender Benutzer wird nie überschrieben; das Passwort ändern geht per SSH mit `php artisan packen:admin`.
 
-Eine Queue braucht die App nicht. Für die **Erinnerung am Abfahrtstag** (Web Push) gibt es einen täglichen Auslöser:
+Eine Queue braucht die App nicht. Für die **Erinnerungen per Web Push** (Vorabend 18 Uhr, Abfahrtstag 7 Uhr, Rückblick 10 Uhr am Tag nach der Reise) gibt es einen stündlichen Auslöser:
 
 7. `deploy.sh` legt beim ersten Lauf `VAPID_PRIVATE_KEY` und `CRON_TOKEN` in der `.env` an (`php artisan packen:push-einrichten`).
-8. In Plesk unter **Geplante Aufgaben → Aufgabe hinzufügen → „URL abrufen“** den Link von der Admin-Seite eintragen (`https://packen.allpixx.de/cron/abfahrt?token=…`), täglich um 7:00. Mehrfaches Aufrufen schadet nicht – je Reise und Person geht die Erinnerung nur einmal raus.
-9. Jede Person schaltet die Erinnerung im Profil auf ihren Geräten ein (auf dem iPhone nur, wenn die App zum Home-Bildschirm hinzugefügt ist).
+8. In Plesk unter **Geplante Aufgaben → Aufgabe hinzufügen → „URL abrufen“** den Link von der Admin-Seite eintragen (`https://packen.allpixx.de/cron/abfahrt?token=…`), **stündlich**. Was gerade dran ist, entscheidet die App; je Reise, Person und Art geht eine Erinnerung nur einmal raus.
+9. Jede Person schaltet Push unter **Benachrichtigungen** (Profil-Menü) auf ihren Geräten ein und wählt dort, welche Arten sie möchte (auf dem iPhone nur, wenn die App zum Home-Bildschirm hinzugefügt ist).
 
 ## Offline (PWA)
 

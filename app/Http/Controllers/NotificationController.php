@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PushKind;
+use App\Support\WebPush;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -23,5 +26,25 @@ class NotificationController extends Controller
         return $popup
             ? view('notifications._list', ['notifications' => $notifications, 'unreadIds' => $unreadIds, 'compact' => true])
             : view('notifications.index', ['notifications' => $notifications, 'unreadIds' => $unreadIds]);
+    }
+
+    /** Übersicht: was wohin kommt (App, Push, E-Mail). */
+    public function settings(Request $request): View
+    {
+        return view('notifications.settings', [
+            'user' => $request->user(),
+            'pushKey' => WebPush::publicKey(),
+            'devices' => $request->user()->pushSubscriptions()->count(),
+        ]);
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $request->user()->update([
+            'email_notifications' => $request->boolean('email_notifications'),
+            'push_settings' => collect(PushKind::cases())->mapWithKeys(fn (PushKind $kind) => [$kind->value => $request->boolean('push.'.$kind->value)])->all(),
+        ]);
+
+        return redirect()->route('notifications.settings')->with('status', 'Gespeichert.');
     }
 }

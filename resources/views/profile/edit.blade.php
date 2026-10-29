@@ -57,13 +57,6 @@
                 <input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="100" class="input">
                 @error('name')<p class="field-error">{{ $message }}</p>@enderror
             </div>
-            <label class="flex cursor-pointer items-start gap-3">
-                <input type="checkbox" name="email_notifications" value="1" @checked(old('email_notifications', $user->email_notifications)) class="mt-0.5 size-5 accent-[var(--accent)]">
-                <span>
-                    <span class="block text-[15px] font-bold">Benachrichtigungen auch per E-Mail</span>
-                    <span class="block text-sm text-muted">z. B. wenn jemand in der Gruppe fragt oder etwas für dich mitbringt. In der App siehst du sie immer.</span>
-                </span>
-            </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>
 
@@ -113,25 +106,14 @@
             @error('name', 'apiToken')<p class="field-error">{{ $message }}</p>@enderror
         </div>
 
-        @if ($pushKey)
-            <div class="card p-5" x-data="pushToggle(@js($pushKey), @js(route('push.store')), @js(route('push.test')))">
-                <p class="card-title flex items-center gap-2"><x-icon name="bell" size="18" class="text-accent" /> Erinnerung am Abfahrtstag</p>
-                <p class="mt-1 text-sm text-muted">Am Morgen der Abreise eine Nachricht, wenn aus „Am Abfahrtstag“ oder „Vor der Abfahrt erledigen“ noch etwas offen ist. Gilt für dieses Gerät.</p>
-                <template x-if="!supported">
-                    <p class="mt-3 rounded-chip bg-line-soft p-3 text-sm font-semibold text-muted">Dieser Browser kann keine Push-Nachrichten. Auf dem iPhone geht es, wenn du Packen über „Teilen → Zum Home-Bildschirm“ hinzufügst und von dort öffnest.</p>
-                </template>
-                <div x-show="supported" class="mt-4 flex flex-wrap items-center gap-2">
-                    <button type="button" role="switch" :aria-checked="active" @click="toggle" :disabled="busy" class="flex min-h-11 items-center gap-3 text-[15px] font-bold">
-                        <span class="relative inline-flex h-6 w-10 rounded-full transition" :class="active ? 'bg-accent' : 'bg-line'">
-                            <span class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition" :class="active && 'translate-x-4'"></span>
-                        </span>
-                        <span x-text="active ? 'Eingeschaltet' : 'Ausgeschaltet'">Ausgeschaltet</span>
-                    </button>
-                    <button type="button" x-show="active" x-cloak @click="test" :disabled="busy" class="btn btn-ghost min-h-11 px-3 text-sm"><x-icon name="send" size="16" /> Probe-Nachricht</button>
-                </div>
-                <p x-show="message" x-cloak x-text="message" class="mt-2 text-sm font-semibold text-muted" role="status"></p>
-            </div>
-        @endif
+        <a href="{{ route('notifications.settings') }}" class="card flex min-h-[64px] items-center gap-3 p-5 hover:bg-line-soft">
+            <x-icon name="bell" size="20" class="text-accent" />
+            <span class="min-w-0 flex-1">
+                <span class="card-title block">Benachrichtigungen</span>
+                <span class="mt-0.5 block text-sm text-muted">Push-Erinnerungen und E-Mails einstellen</span>
+            </span>
+            <x-icon name="chevron-right" size="16" class="text-muted" />
+        </a>
 
         <form method="POST" action="{{ route('logout') }}" class="card flex items-center justify-between gap-4 p-5">
             @csrf

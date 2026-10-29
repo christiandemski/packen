@@ -78,6 +78,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/eintraege', [PacklistController::class, 'store'])->name('store');
         Route::patch('/eintraege/{entry}', [PacklistController::class, 'update'])->name('update');
         Route::patch('/eintraege/{entry}/gepackt', [PacklistController::class, 'toggle'])->name('toggle');
+        Route::patch('/eintraege/{entry}/rueckweg', [PacklistController::class, 'toggleReturn'])->name('return');
         Route::delete('/eintraege/{entry}', [PacklistController::class, 'destroy'])->name('destroy');
         Route::post('/eintraege/{entry}/zurueck', [PacklistController::class, 'restore'])->name('restore');
     });
@@ -88,6 +89,8 @@ Route::middleware('auth')->group(function () {
         ->except('show');
 
     Route::get('/benachrichtigungen', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/benachrichtigungen/einstellungen', [NotificationController::class, 'settings'])->name('notifications.settings');
+    Route::put('/benachrichtigungen/einstellungen', [NotificationController::class, 'updateSettings'])->name('notifications.settings.update');
 
     Route::prefix('/reisen/{trip}')->group(function () {
         Route::post('/gemeinsam', [GroupItemController::class, 'store'])->name('group-items.store');

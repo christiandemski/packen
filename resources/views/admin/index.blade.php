@@ -105,9 +105,9 @@
             </ul>
         </section>
         <section class="card p-5" x-data="{ copied: false }">
-            <p class="card-title flex items-center gap-2"><x-icon name="bell" size="18" class="text-accent" /> Erinnerung am Abfahrtstag</p>
+            <p class="card-title flex items-center gap-2"><x-icon name="bell" size="18" class="text-accent" /> Erinnerungen per Push</p>
             @if ($pushReady && $cronUrl)
-                <p class="mt-1 text-sm text-muted">In Plesk unter <strong>Geplante Aufgaben</strong> eine Aufgabe „URL abrufen“ mit diesem Link anlegen, täglich um 7:00. {{ $pushDevices }} {{ $pushDevices === 1 ? 'Gerät hat' : 'Geräte haben' }} die Erinnerung eingeschaltet.</p>
+                <p class="mt-1 text-sm text-muted">In Plesk unter <strong>Geplante Aufgaben</strong> eine Aufgabe „URL abrufen“ mit diesem Link anlegen, <strong>stündlich</strong> (Vorabend, Abfahrtstag und Rückblick gehen dann zur passenden Uhrzeit raus). {{ $pushDevices }} {{ $pushDevices === 1 ? 'Gerät hat' : 'Geräte haben' }} die Erinnerung eingeschaltet.</p>
                 <div class="mt-3 flex flex-wrap gap-2">
                     <input readonly value="{{ $cronUrl }}" aria-label="Cron-Link" class="input min-w-0 flex-1 font-mono text-xs" @focus="$el.select()">
                     <button type="button" class="btn btn-secondary" @click="navigator.clipboard.writeText(@js($cronUrl)); copied = true"><x-icon name="copy" size="16" /> <span x-text="copied ? 'Kopiert' : 'Kopieren'">Kopieren</span></button>

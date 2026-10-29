@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AuthSource;
+use App\Enums\PushKind;
 use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'active',
         'password',
         'email_notifications',
+        'push_settings',
         'starter_templates_at',
         'last_login_at',
     ];
@@ -42,6 +44,7 @@ class User extends Authenticatable
             'role' => Role::class,
             'active' => 'boolean',
             'email_notifications' => 'boolean',
+            'push_settings' => 'array',
             'last_login_at' => 'datetime',
             'starter_templates_at' => 'datetime',
             'password' => 'hashed',
@@ -124,5 +127,17 @@ class User extends Authenticatable
     public function apiTokens(): HasMany
     {
         return $this->hasMany(ApiToken::class);
+    }
+
+    /** Möchte die Person diese Art von Push-Nachricht? Ohne Einstellung: ja. */
+    public function wantsPush(PushKind $kind): bool
+    {
+        return (bool) ($this->push_settings[$kind->value] ?? true);
+    }
+
+    /** @return HasMany<PushSubscription, $this> */
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
     }
 }

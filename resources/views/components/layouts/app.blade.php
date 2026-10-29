@@ -51,7 +51,10 @@
                          class="fixed inset-x-4 top-[4.25rem] z-40 overflow-hidden rounded-card border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96">
                         <div class="flex items-center justify-between border-b border-line-soft px-4 py-3">
                             <p class="card-title">Benachrichtigungen</p>
-                            <a href="{{ route('notifications.index') }}" class="text-sm font-bold text-accent-ink hover:underline">Alle anzeigen</a>
+                            <span class="flex items-center gap-3">
+                                <a href="{{ route('notifications.index') }}" class="text-sm font-bold text-accent-ink hover:underline">Alle anzeigen</a>
+                                <a href="{{ route('notifications.settings') }}" class="icon-btn -mr-2 size-9 min-h-9 min-w-9" aria-label="Benachrichtigungen einstellen"><x-icon name="settings" size="16" /></a>
+                            </span>
                         </div>
                         <div class="max-h-[min(28rem,70dvh)] overflow-y-auto" x-html="html"></div>
                     </div>
@@ -73,6 +76,7 @@
                         </div>
                         <nav class="py-1" aria-label="Profil">
                             <a href="{{ route('profile.edit') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="user" size="18" class="text-muted" /> Profil &amp; Einstellungen</a>
+                            <a href="{{ route('notifications.settings') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="bell" size="18" class="text-muted" /> Benachrichtigungen</a>
                             @can('admin')
                                 <a href="{{ route('admin.index') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="shield" size="18" class="text-muted" /> Admin</a>
                             @endcan

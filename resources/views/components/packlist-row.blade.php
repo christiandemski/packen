@@ -9,7 +9,7 @@
     $uid = $view.'-'.$entry->id;
     $id = $entry->id;
 @endphp
-<li x-data="{ edit: false }" x-show="removed[{{ $id }}] ? editing : (!onlyOpen || !packed[{{ $id }}])">
+<li x-data="{ edit: false }" x-show="removed[{{ $id }}] ? editing : ({{ $id }} in current && (!onlyOpen || !current[{{ $id }}]))">
     @if ($canEdit)
         {{-- Im Anpassen-Modus entfernt: kurz stehen lassen, damit man es zurückholen kann --}}
         <div x-show="removed[{{ $id }}]" x-cloak class="flex min-h-[52px] items-center gap-3 bg-line-soft/60 py-2 pr-3 pl-5">
@@ -20,15 +20,15 @@
         </div>
     @endif
     <div class="flex min-h-[52px] items-center" x-show="!removed[{{ $id }}]">
-        <button type="button" role="checkbox" :aria-checked="!!packed[{{ $entry->id }}]" aria-checked="{{ $entry->packed ? 'true' : 'false' }}"
-                @click="toggle({{ $entry->id }}, @js($toggleUrl))"
+        <button type="button" role="checkbox" :aria-checked="!!current[{{ $entry->id }}]" aria-checked="{{ $entry->packed ? 'true' : 'false' }}"
+                @click="toggle({{ $entry->id }}, @js($toggleUrl), @js(route('packlist.return', [$trip, $entry])))"
                 class="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-5 text-left">
             <span class="inline-flex size-6 shrink-0 items-center justify-center rounded-[7px] border-2 transition"
-                  :class="packed[{{ $entry->id }}] ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-transparent'">
+                  :class="current[{{ $entry->id }}] ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-transparent'">
                 <x-icon name="check" size="16" :stroke-width="3" />
             </span>
             <span class="min-w-0">
-                <span class="block truncate text-[15px] font-semibold transition" :class="packed[{{ $entry->id }}] && 'text-muted line-through'">{{ $entry->name() }}</span>
+                <span class="block truncate text-[15px] font-semibold transition" :class="current[{{ $entry->id }}] && 'text-muted line-through'">{{ $entry->name() }}</span>
                 @if ($details)
                     <span class="block truncate text-xs font-semibold text-muted">{{ implode(' · ', $details) }}</span>
                 @endif

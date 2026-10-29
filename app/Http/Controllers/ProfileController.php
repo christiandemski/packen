@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Services\AccountService;
 use App\Services\AvatarService;
 use App\Services\SessionLogin;
-use App\Support\WebPush;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -21,7 +20,6 @@ class ProfileController extends Controller
         return view('profile.edit', [
             'user' => $request->user(),
             'apiTokens' => $request->user()->apiTokens()->latest()->get(),
-            'pushKey' => WebPush::publicKey(),
         ]);
     }
 
@@ -29,10 +27,7 @@ class ProfileController extends Controller
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
 
-        $request->user()->update([
-            'name' => trim($data['name']),
-            'email_notifications' => $request->boolean('email_notifications'),
-        ]);
+        $request->user()->update(['name' => trim($data['name'])]);
 
         return redirect()->route('profile.edit')->with('status', 'Gespeichert.');
     }

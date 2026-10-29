@@ -85,7 +85,7 @@ export async function flush() {
             if (response.ok) {
                 const data = await response.json();
                 settle(id, change.changedAt);
-                window.dispatchEvent(new CustomEvent('packlist:synced', { detail: { id: Number(id), packed: data.packed } }));
+                window.dispatchEvent(new CustomEvent('packlist:synced', { detail: { key: id, packed: data.packed } }));
                 synced = true;
             } else if (response.status >= 400 && response.status < 500) {
                 // Eintrag gibt es nicht mehr oder gehört nicht (mehr) dieser Person: verwerfen.
@@ -106,7 +106,7 @@ export async function flush() {
 /** Gecachte Fassung einer Seite auffrischen, damit sie offline den aktuellen Stand zeigt. */
 let refreshTimer = null;
 function refreshCachedPage(path) {
-    if (!('caches' in window) || !/^\/(reisen\/\d+)?$/.test(path)) return;
+    if (!('caches' in window) || !/^\/(reisen\/(?!neu$)[a-z0-9-]+)?$/.test(path)) return;
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(async () => {
         try {

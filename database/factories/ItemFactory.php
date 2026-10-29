@@ -17,7 +17,8 @@ class ItemFactory extends Factory
         return [
             'owner_id' => User::factory(),
             'name' => fake()->unique()->words(2, true),
-            'category' => fake()->randomElement(ItemCategory::cases()),
+            // Aufgaben („Herd aus“) verhalten sich anders (kein Gewicht, kein Behältnis) – nur ausdrücklich
+            'category' => fake()->randomElement(array_filter(ItemCategory::cases(), fn (ItemCategory $c) => ! $c->isTask())),
             'weight_g' => fake()->optional()->numberBetween(10, 2000),
         ];
     }

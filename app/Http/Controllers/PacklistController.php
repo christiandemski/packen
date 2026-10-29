@@ -129,6 +129,24 @@ class PacklistController extends Controller
     }
 
     /** Entfernen – als Formular oder per fetch aus „Liste anpassen“. */
+    /** Rückreise-Check: „wieder eingepackt“ – gleiche Form wie toggle(), damit die Offline-Warteschlange passt. */
+    public function toggleReturn(Request $request, Trip $trip, PacklistEntry $entry): JsonResponse
+    {
+        Gate::authorize('toggle', $entry);
+
+        $request->validate([
+            'packed' => ['required', 'boolean'],
+            'changed_at' => ['nullable', 'date'],
+        ]);
+
+        $applied = $entry->setReturned(
+            $request->boolean('packed'),
+            $request->filled('changed_at') ? Carbon::parse($request->input('changed_at')) : null,
+        );
+
+        return response()->json(['applied' => $applied, 'packed' => $entry->fresh()->returned]);
+    }
+
     public function destroy(Request $request, Trip $trip, PacklistEntry $entry): RedirectResponse|JsonResponse
     {
         Gate::authorize('delete', $entry);
