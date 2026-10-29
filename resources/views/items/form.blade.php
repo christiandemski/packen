@@ -1,4 +1,4 @@
-@php use App\Enums\ItemCategory; $editing = $item->exists; @endphp
+@php use App\Enums\ItemCategory; $editing = $item->exists; $clothing = collect(ItemCategory::clothing())->pluck('value')->all(); @endphp
 <x-layouts.app :title="$editing ? $item->name : 'Neuer Gegenstand'">
     <div class="mx-auto max-w-2xl">
         <div class="mb-6 flex items-center gap-2">
@@ -7,7 +7,7 @@
         </div>
 
         <form method="POST" action="{{ $editing ? route('items.update', $item) : route('items.store') }}" class="space-y-4"
-              x-data="{ category: @js(old('category', $item->category?->value)), clothing: @js(collect(ItemCategory::clothing())->pluck('value')), rain: @js((bool) old('rain_protection', $item->rain_protection)), rainTouched: @js($editing || old('name') !== null) }">
+              x-data="{ category: @js(old('category', $item->category_id ? App\Models\Category::PREFIX.$item->category_id : $item->category?->value)), clothing: @js($clothing), rain: @js((bool) old('rain_protection', $item->rain_protection)), rainTouched: @js($editing || old('name') !== null) }">
             @csrf
             @if ($editing) @method('PUT') @endif
 
@@ -23,22 +23,22 @@
                     <legend class="label">Kategorie</legend>
                     <p class="mb-2 text-xs font-bold text-muted">Kleidung</p>
                     <div class="flex flex-wrap gap-2">
-                        @foreach (ItemCategory::clothing() as $case)
+                        @foreach ($categories->filter(fn ($g) => in_array($g->key, $clothing, true)) as $group)
                             <label class="choice">
-                                <input type="radio" name="category" value="{{ $case->value }}" x-model="category" class="sr-only" required>
-                                <x-icon :name="$case->icon()" size="16" /> {{ $case->label() }}
+                                <input type="radio" name="category" value="{{ $group->key }}" x-model="category" class="sr-only" required>
+                                <x-icon :name="$group->icon" size="16" /> {{ $group->label }}
                             </label>
                         @endforeach
                     </div>
                     <p class="mt-4 mb-2 text-xs font-bold text-muted">Alles andere</p>
                     <div class="flex flex-wrap gap-2">
-                        @foreach (ItemCategory::cases() as $case)
-                            @continue($case->isClothing())
+                        @foreach ($categories->reject(fn ($g) => in_array($g->key, $clothing, true)) as $group)
                             <label class="choice">
-                                <input type="radio" name="category" value="{{ $case->value }}" x-model="category" class="sr-only">
-                                <x-icon :name="$case->icon()" size="16" /> {{ $case->label() }}
+                                <input type="radio" name="category" value="{{ $group->key }}" x-model="category" class="sr-only">
+                                <x-icon :name="$group->icon" size="16" /> {{ $group->label }}
                             </label>
                         @endforeach
+                        <a href="{{ route('categories.index') }}" class="choice border-dashed text-muted"><x-icon name="plus" size="16" /> Eigene Kategorie</a>
                     </div>
                     @error('category')<p class="field-error">{{ $message }}</p>@enderror
                 </fieldset>

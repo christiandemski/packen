@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\EntrySource;
 use App\Enums\PacklistGroup;
+use App\Models\Category;
 use App\Models\Item;
 use App\Models\PacklistEntry;
 use App\Models\Template;
@@ -156,7 +157,7 @@ class PacklistService
             'trip_id' => $trip->id,
             'user_id' => $user->id,
             'custom_name' => trim((string) $data['custom_name']),
-            'group' => PacklistGroup::tryFrom((string) ($data['group'] ?? ''))?->value ?? PacklistGroup::Misc->value,
+            'group' => Category::packlistChoices($user)->firstWhere('key', $data['group'] ?? null)?->key ?? PacklistGroup::Misc->value,
             'quantity' => $quantity,
             'source' => EntrySource::Manual,
             'note' => $data['note'] ?? null,
@@ -176,6 +177,29 @@ class PacklistService
         } else {
             $entry->delete();
         }
+    }
+
+    /** Bewusst entfernten Vorlagen-Eintrag wieder auf die Liste holen (Menge wieder aus der Vorlage). */
+    public function restoreEntry(PacklistEntry $entry): void
+    {
+        $entry->update(['excluded' => false, 'quantity_locked' => false]);
+        $this->sync($entry->trip, $entry->user);
+    }
+
+    /**
+     * Was jemand für diese Reise bewusst weggelassen hat – ohne die Einträge,
+     * die gerade als Anfrage bei der Gruppe liegen.
+     *
+     * @return Collection<int, PacklistEntry>
+     */
+    public function excludedEntries(Trip $trip, User $user): Collection
+    {
+        return PacklistEntry::with('item')
+            ->where(['trip_id' => $trip->id, 'user_id' => $user->id, 'excluded' => true, 'source' => EntrySource::Template])
+            ->whereNotIn('id', DB::table('group_items')->where('trip_id', $trip->id)->whereNotNull('source_entry_id')->select('source_entry_id'))
+            ->get()
+            ->sortBy(fn (PacklistEntry $e) => mb_strtolower($e->name()))
+            ->values();
     }
 
     /**
@@ -266,7 +290,7 @@ class PacklistService
     {
         $taken = PacklistEntry::where(['trip_id' => $trip->id, 'user_id' => $user->id])->visible()->whereNotNull('item_id')->pluck('item_id');
 
-        return Item::accessibleBy($user)->whereNotIn('id', $taken)->orderBy('name')->get();
+        return Item::accessibleBy($user)->with('customCategory')->whereNotIn('id', $taken)->orderBy('name')->get();
     }
 
     /** @return array<int, int> item_id => Menge */

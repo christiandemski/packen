@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Item;
 use App\Models\Template;
 use App\Services\PacklistService;
@@ -41,8 +42,8 @@ class TemplateController extends Controller
     {
         Gate::authorize('view', $template);
 
-        $template->load('items');
-        $available = Item::accessibleBy($request->user())
+        $template->load('items.customCategory');
+        $available = Item::accessibleBy($request->user())->with('customCategory')
             ->whereNotIn('id', $template->items->modelKeys())
             ->orderBy('name')
             ->get();
@@ -50,8 +51,9 @@ class TemplateController extends Controller
         return view('templates.show', [
             'template' => $template,
             'groups' => $template->items
-                ->sortBy([fn (Item $item) => $item->category->position(), 'name'])
-                ->groupBy(fn (Item $item) => $item->category->value),
+                ->sortBy([fn (Item $item) => $item->categoryGroup()->sortKey(), 'name'])
+                ->groupBy(fn (Item $item) => $item->categoryGroup()->key),
+            'categories' => Category::choices($request->user()),
             'available' => $available,
         ]);
     }

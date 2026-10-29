@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContainerController;
 use App\Http\Controllers\GroupItemController;
 use App\Http\Controllers\HomeController;
@@ -70,6 +71,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/eintraege/{entry}', [PacklistController::class, 'update'])->name('update');
         Route::patch('/eintraege/{entry}/gepackt', [PacklistController::class, 'toggle'])->name('toggle');
         Route::delete('/eintraege/{entry}', [PacklistController::class, 'destroy'])->name('destroy');
+        Route::post('/eintraege/{entry}/zurueck', [PacklistController::class, 'restore'])->name('restore');
     });
 
     Route::resource('katalog', ItemController::class)
@@ -104,6 +106,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/outfits/slots/{slot}/teile/{item}', [OutfitController::class, 'destroyItem'])->name('items.destroy');
         Route::post('/outfits/uebernehmen', [OutfitController::class, 'apply'])->name('apply');
     });
+
+    Route::resource('kategorien', CategoryController::class)
+        ->parameters(['kategorien' => 'category'])
+        ->names('categories')
+        ->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('behaeltnisse', ContainerController::class)
         ->parameters(['behaeltnisse' => 'container'])

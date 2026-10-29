@@ -179,17 +179,108 @@ Alpine.data('packlist', (packed = {}, view = 'groups') => ({
         return this.total ? Math.round((this.done / this.total) * 100) : 0;
     },
     openIn(ids) {
-        return ids.filter((id) => !this.packed[id]).length;
+        return ids.filter((id) => id in this.packed && !this.packed[id]).length;
     },
     toggleOnlyOpen() {
         this.onlyOpen = !this.onlyOpen;
         storage.set('packen.onlyOpen', this.onlyOpen ? '1' : '0');
     },
     toggle(id, url) {
+        if (this.removed[id]) return;
         const next = !this.packed[id];
         this.packed[id] = next;
         enqueue(id, url, next);
         flush();
+    },
+    // „Liste anpassen“: Einträge für diese Reise weglassen, ohne die Vorlage zu ändern.
+    editing: false,
+    removed: {},
+    removeError: '',
+    present(ids) {
+        return ids.filter((id) => id in this.packed);
+    },
+    async remove(id, url) {
+        this.removeError = '';
+        const before = this.packed[id];
+        this.removed[id] = { restorable: false, pending: true };
+        delete this.packed[id];
+        try {
+            const response = await sendJson(url, 'DELETE');
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            this.removed[id] = { restorable: data.restorable, pending: false };
+        } catch {
+            delete this.removed[id];
+            this.packed[id] = before;
+            this.removeError = 'Entfernen hat nicht geklappt – bitte noch einmal.';
+        }
+    },
+    async restore(id, url) {
+        try {
+            const response = await sendJson(url, 'POST');
+            if (!response.ok) throw new Error();
+            delete this.removed[id];
+            this.packed[id] = false;
+        } catch {
+            this.removeError = 'Zurückholen hat nicht geklappt – bitte noch einmal.';
+        }
+    },
+}));
+
+let csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+/** JSON an die App schicken; ein abgelaufener CSRF-Token wird einmal erneuert. */
+async function sendJson(url, method, body = {}) {
+    const send = () =>
+        fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify(body),
+        });
+
+    let response = await send();
+    if (response.status === 419) {
+        const fresh = await fetch('/csrf-token', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (fresh.ok) {
+            csrf = (await fresh.json()).token;
+            response = await send();
+        }
+    }
+    return response;
+}
+
+const errorText = (data) => Object.values(data?.errors ?? {})[0]?.[0] ?? data?.message ?? 'Das hat nicht geklappt.';
+
+/**
+ * Schnelleingabe im Katalog: Enter legt den Gegenstand in dieser Kategorie an,
+ * das Feld bleibt fokussiert (Tastatur bleibt offen) für den nächsten.
+ */
+Alpine.data('quickAdd', (url, category) => ({
+    name: '',
+    added: [],
+    error: '',
+    busy: false,
+    async add() {
+        const name = this.name.trim();
+        if (!name || this.busy) return;
+        this.busy = true;
+        this.error = '';
+        try {
+            const response = await sendJson(url, 'POST', { name, category });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok) {
+                this.added.push(data);
+                // Nur leeren, wenn inzwischen nichts Neues getippt wurde
+                if (this.name.trim() === name) this.name = '';
+            } else {
+                this.error = errorText(data);
+            }
+        } catch {
+            this.error = 'Keine Verbindung – bitte gleich noch einmal.';
+        } finally {
+            this.busy = false;
+            this.$refs.input.focus();
+        }
     },
 }));
 

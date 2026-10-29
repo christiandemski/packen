@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EntrySource;
 use App\Enums\PacklistGroup;
+use App\Support\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -82,17 +83,13 @@ class PacklistEntry extends Model
         return $this->item?->name ?? $this->custom_name ?? 'Unbenannt';
     }
 
-    public function packlistGroup(): PacklistGroup
+    public function packlistGroup(): Group
     {
         if ($this->group_item_id !== null) {
-            return PacklistGroup::Shared;
+            return Group::packlist(PacklistGroup::Shared);
         }
 
-        if ($this->item === null) {
-            return PacklistGroup::tryFrom((string) $this->group) ?? PacklistGroup::Misc;
-        }
-
-        return $this->item->pack_last ? PacklistGroup::DepartureDay : PacklistGroup::forCategory($this->item->category);
+        return $this->item?->packlistGroup() ?? Group::fromPacklistKey($this->group);
     }
 
     /**

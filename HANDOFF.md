@@ -77,6 +77,7 @@ users             id, name, email, auth_source (bearid|local), bearid_sub (nulla
 invitations       id, email, name, invited_by, token_hash, expires_at, accepted_at
 
 items             id, owner_id, name, category (feste Liste, siehe App\Enums\ItemCategory),
+                  category_id (nullable → eigene Kategorie; category steht dann auf misc),
                   weight_g (nullable),
                   is_clothing (bool, aus Kategorie abgeleitet), per_day (bool),   // per_day z. B. Socken, Tageslinsen
                   pack_last (bool),                       // landet in „Am Abfahrtstag“
@@ -120,7 +121,7 @@ Hinweise:
 
 - `item_id` in `packlist_entries` ist nullable für spontane Freitext-Einträge.
 - `container_id` und `quantity` hängen am Eintrag, nicht am Gegenstand: dasselbe Teil kann je Reise in unterschiedlichen Behältnissen landen. `default_container_id` am Gegenstand ist nur der Vorschlag.
-- Zusammenführen mehrerer Module: pro Gegenstand zählt die **größte** Menge (nicht die Summe); „pro Tag“ = Menge × Reisetage. Von Hand geänderte Mengen setzen `quantity_locked`, entfernte Vorlagen-Einträge werden nur `excluded` – beides übersteht jedes Neuberechnen. Gruppe ergibt sich aus dem Gegenstand (`pack_last` → „Am Abfahrtstag“, Kleidungskategorien → „Kleidung“), nur Freitext speichert `group`.
+- Zusammenführen mehrerer Module: pro Gegenstand zählt die **größte** Menge (nicht die Summe); „pro Tag“ = Menge × Reisetage. Von Hand geänderte Mengen setzen `quantity_locked`, entfernte Vorlagen-Einträge werden nur `excluded` – beides übersteht jedes Neuberechnen. Gruppe ergibt sich aus dem Gegenstand (`pack_last` → „Am Abfahrtstag“, Kleidungskategorien → „Kleidung“), nur Freitext speichert `group`. Eigene Kategorien (`categories`: owner_id, name, icon) bekommen eine eigene Karte vor „Sonstiges“, Schlüssel `c:<id>`. Weggelassene Vorlagen-Einträge zeigt die Reise unter „Diesmal nicht dabei“ und holt sie auf Wunsch zurück („Liste anpassen“).
 - Kleidungsmengen werden aus den Outfits **berechnet** (siehe 5.4) und als Einträge mit `source = outfit` gepflegt. Manuelle Korrekturen dürfen nicht beim nächsten Neuberechnen verloren gehen.
 
 ---

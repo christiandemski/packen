@@ -1,4 +1,4 @@
-@php use App\Enums\ItemCategory; use App\Http\Controllers\TemplateItemController; use Illuminate\Support\Str; @endphp
+@php use App\Http\Controllers\TemplateItemController; use Illuminate\Support\Str; @endphp
 <x-layouts.app :title="$template->name">
     <div class="mx-auto max-w-2xl">
         <div class="mb-5 flex items-start gap-2" x-data="{ renaming: {{ $errors->has('name') ? 'true' : 'false' }} }">
@@ -32,10 +32,10 @@
         </div>
 
         <div class="space-y-4">
-            @forelse ($groups as $category => $items)
-                @php($cat = ItemCategory::from($category))
+            @forelse ($groups as $items)
+                @php($cat = $items->first()->categoryGroup())
                 <section class="card overflow-hidden">
-                    <h2 class="card-title flex items-center gap-2 px-5 pt-4 pb-2"><x-icon :name="$cat->icon()" size="18" class="text-accent" /> {{ $cat->label() }}</h2>
+                    <h2 class="card-title flex items-center gap-2 px-5 pt-4 pb-2"><x-icon :name="$cat->icon" size="18" class="text-accent" /> {{ $cat->label }}</h2>
                     <ul class="divide-y divide-line-soft">
                         @foreach ($items as $item)
                             @php($qty = $item->pivot->quantity)
@@ -100,7 +100,7 @@
                                 <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
                                     <label class="flex min-h-[48px] cursor-pointer items-center gap-3 rounded-chip px-2 hover:bg-line-soft">
                                         <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" x-model="selected" class="size-5 accent-[var(--accent)]">
-                                        <x-icon :name="$item->category->icon()" size="16" class="text-muted" />
+                                        <x-icon :name="$item->categoryGroup()->icon" size="16" class="text-muted" />
                                         <span class="text-[15px] font-semibold">{{ $item->name }}</span>
                                     </label>
                                 </li>
@@ -119,8 +119,8 @@
                     <div class="flex flex-col gap-2 sm:flex-row">
                         <input name="new_name" value="{{ old('new_name') }}" required maxlength="120" placeholder="Name" aria-label="Name des neuen Gegenstands" class="input flex-1">
                         <select name="new_category" required aria-label="Kategorie" class="input sm:w-56">
-                            @foreach (ItemCategory::cases() as $case)
-                                <option value="{{ $case->value }}" @selected(old('new_category', 'misc') === $case->value)>{{ $case->label() }}</option>
+                            @foreach ($categories as $choice)
+                                <option value="{{ $choice->key }}" @selected(old('new_category', 'misc') === $choice->key)>{{ $choice->label }}</option>
                             @endforeach
                         </select>
                         <button type="submit" class="btn btn-secondary"><x-icon name="plus" size="18" /> Anlegen</button>

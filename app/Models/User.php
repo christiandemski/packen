@@ -96,6 +96,12 @@ class User extends Authenticatable
         return $this->hasMany(Item::class, 'owner_id');
     }
 
+    /** @return HasMany<Category, $this> */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class, 'owner_id');
+    }
+
     /** @return HasMany<Container, $this> */
     public function containers(): HasMany
     {

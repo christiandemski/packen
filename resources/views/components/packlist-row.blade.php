@@ -7,9 +7,19 @@
     $containerName = $view === 'groups' ? $containers->firstWhere('id', $entry->container_id)?->name : null;
     $details = array_filter([$entry->note, $perDayHint ? $trip->days().' Tage' : null, $containerName ? 'in: '.$containerName : null, $entry->packed && $entry->packer ? 'gepackt von '.$entry->packer->name : null]);
     $uid = $view.'-'.$entry->id;
+    $id = $entry->id;
 @endphp
-<li x-data="{ edit: false }" x-show="!onlyOpen || !packed[{{ $entry->id }}]">
-    <div class="flex min-h-[52px] items-center">
+<li x-data="{ edit: false }" x-show="removed[{{ $id }}] ? editing : (!onlyOpen || !packed[{{ $id }}])">
+    @if ($canEdit)
+        {{-- Im Anpassen-Modus entfernt: kurz stehen lassen, damit man es zurückholen kann --}}
+        <div x-show="removed[{{ $id }}]" x-cloak class="flex min-h-[52px] items-center gap-3 bg-line-soft/60 py-2 pr-3 pl-5">
+            <span class="min-w-0 flex-1 truncate text-[15px] font-semibold text-muted line-through">{{ $entry->name() }}</span>
+            <button type="button" x-show="removed[{{ $id }}]?.restorable" @click="restore({{ $id }}, @js(route('packlist.restore', [$trip, $entry])))"
+                    class="min-h-11 px-2 text-sm font-bold text-accent-ink hover:underline">Doch mitnehmen</button>
+            <span x-show="removed[{{ $id }}] && !removed[{{ $id }}].restorable && !removed[{{ $id }}].pending" class="text-xs font-bold text-muted">entfernt</span>
+        </div>
+    @endif
+    <div class="flex min-h-[52px] items-center" x-show="!removed[{{ $id }}]">
         <button type="button" role="checkbox" :aria-checked="!!packed[{{ $entry->id }}]" aria-checked="{{ $entry->packed ? 'true' : 'false' }}"
                 @click="toggle({{ $entry->id }}, @js($toggleUrl))"
                 class="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-5 text-left">
@@ -28,7 +38,13 @@
             <span class="text-xs font-semibold text-muted">{{ \App\Models\Container::kg($entry->weight()) }}</span>
         @endif
         @if ($canEdit)
-        <button type="button" @click="edit = !edit" :aria-expanded="edit" class="mr-3 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2" aria-label="{{ $entry->name() }} bearbeiten">
+        <span x-show="editing" x-cloak class="ml-2 rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold">{{ $entry->quantity }}×</span>
+        <button type="button" x-show="editing" x-cloak @click="remove({{ $id }}, @js(route('packlist.destroy', [$trip, $entry])))"
+                class="mr-1 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip text-muted hover:bg-warn/10 hover:text-warn-ink"
+                aria-label="{{ $entry->name() }} für diese Reise weglassen" title="Für diese Reise weglassen">
+            <x-icon name="x" size="20" />
+        </button>
+        <button type="button" x-show="!editing" @click="edit = !edit" :aria-expanded="edit" class="mr-3 ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-chip px-2" aria-label="{{ $entry->name() }} bearbeiten">
             <span class="rounded-full bg-line-soft px-2.5 py-1 text-[13px] font-extrabold {{ $entry->quantity_locked ? 'text-accent-ink' : 'text-ink' }}">{{ $entry->quantity }}×</span>
         </button>
         @else
@@ -36,7 +52,7 @@
         @endif
     </div>
     @if ($canEdit)
-    <div x-show="edit" x-cloak class="flex flex-wrap items-end gap-2 bg-line-soft/60 px-5 py-3">
+    <div x-show="edit && !editing && !removed[{{ $id }}]" x-cloak class="flex flex-wrap items-end gap-2 bg-line-soft/60 px-5 py-3">
         <form method="POST" action="{{ route('packlist.update', [$trip, $entry]) }}" data-keep-scroll class="flex flex-1 flex-wrap items-end gap-2">
             @csrf @method('PATCH')
             <input type="hidden" name="ansicht" value="{{ $view === 'containers' ? 'behaeltnisse' : '' }}">

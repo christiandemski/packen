@@ -121,7 +121,12 @@
                                 <x-icon name="plus" size="12" /> Modul
                             </button>
                         </div>
-                        <div class="flex items-center gap-1">
+                        <div class="flex flex-wrap items-center gap-1">
+                        @if ($canEdit)
+                            <button type="button" class="btn min-h-11 px-3 text-sm" :class="editing ? 'btn-primary' : 'btn-ghost'" @click="editing = !editing" :aria-pressed="editing">
+                                <x-icon name="pencil" size="16" /> <span x-text="editing ? 'Fertig' : 'Anpassen'">Anpassen</span>
+                            </button>
+                        @endif
                         <button type="button" class="btn btn-ghost min-h-11 px-3 text-sm" @click="$dispatch('open-sheet', 'export')"><x-icon name="share" size="16" /> Exportieren</button>
                         <button type="button" role="switch" :aria-checked="onlyOpen" @click="toggleOnlyOpen" class="flex min-h-11 items-center gap-2 text-sm font-bold">
                             Nur offene
@@ -134,6 +139,13 @@
                 </div>
 
 
+                @if ($canEdit)
+                    <div x-show="editing" x-cloak class="mt-4 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
+                        <p class="flex items-start gap-2"><x-icon name="pencil" size="16" class="mt-0.5" /> Tipp auf <x-icon name="x" size="14" class="mt-0.5 inline" />, was du diesmal nicht brauchst. Deine Vorlagen und der Katalog bleiben, wie sie sind.</p>
+                        <p x-show="removeError" x-text="removeError" class="mt-2 text-warn-ink" role="alert"></p>
+                    </div>
+                @endif
+
                 @if ($userContainers->isNotEmpty())
                     <div class="segment mt-4" role="group" aria-label="Ansicht der Packliste">
                         <button type="button" class="segment-item" :aria-pressed="view === 'groups'" @click="view = 'groups'"><x-icon name="list-checks" size="16" /> Nach Gruppe</button>
@@ -143,20 +155,20 @@
 
                 {{-- Nach Gruppe --}}
                 <div class="mt-4 space-y-4" x-show="view === 'groups'">
-                    @foreach ($groups as $groupKey => $entries)
-                        @php($group = PacklistGroup::from($groupKey))
+                    @foreach ($groups as $entries)
+                        @php($group = $entries->first()->packlistGroup())
                         @php($ids = $entries->pluck('id')->values())
-                        <section class="card overflow-hidden" x-show="!onlyOpen || openIn(@js($ids)) > 0">
+                        <section class="card overflow-hidden" x-show="editing || (present(@js($ids)).length && (!onlyOpen || openIn(@js($ids)) > 0))">
                             <div class="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
                                 <h2 class="card-title flex items-center gap-2">
-                                    <x-icon :name="$group->icon()" size="18" class="text-accent" /> {{ $group->label() }}
-                                    @if ($group === PacklistGroup::DepartureDay)
+                                    <x-icon :name="$group->icon" size="18" class="text-accent" /> {{ $group->label }}
+                                    @if ($group->is(PacklistGroup::DepartureDay))
                                         <span class="chip bg-accent-soft text-accent-ink">Zuletzt</span>
-                                    @elseif ($group === PacklistGroup::Clothing && $hasOutfitEntries)
+                                    @elseif ($group->is(PacklistGroup::Clothing) && $hasOutfitEntries)
                                         <button type="button" @click="tab = 'outfits'; window.scrollTo({ top: 0, behavior: 'smooth' })" class="chip bg-accent-soft text-accent-ink hover:bg-accent hover:text-white">Aus Outfits</button>
                                     @endif
                                 </h2>
-                                <span class="text-xs font-bold text-muted"><span x-text="{{ $ids->count() }} - openIn(@js($ids))"></span>/{{ $ids->count() }}</span>
+                                <span class="text-xs font-bold text-muted" x-text="`${present(@js($ids)).length - openIn(@js($ids))}/${present(@js($ids)).length}`">{{ $entries->where('packed', true)->count() }}/{{ $ids->count() }}</span>
                             </div>
                             <ul class="divide-y divide-line-soft">
                                 @foreach ($entries as $entry)
@@ -166,6 +178,31 @@
                         </section>
                     @endforeach
                 </div>
+
+                {{-- Für diese Reise weggelassen --}}
+                @if ($excluded->isNotEmpty())
+                    <section class="card mt-4 overflow-hidden" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" :aria-expanded="open" class="flex min-h-[56px] w-full items-center gap-3 px-5 py-3 text-left">
+                            <x-icon name="ban" size="18" class="text-muted" />
+                            <span class="flex-1">
+                                <span class="block text-[15px] font-bold">Diesmal nicht dabei</span>
+                                <span class="block text-xs font-semibold text-muted">{{ $excluded->count() }} {{ $excluded->count() === 1 ? 'Eintrag' : 'Einträge' }} aus deinen Vorlagen weggelassen</span>
+                            </span>
+                            <x-icon name="chevron-right" size="16" class="text-muted transition" ::class="open && 'rotate-90'" />
+                        </button>
+                        <ul x-show="open" x-cloak class="divide-y divide-line-soft border-t border-line-soft">
+                            @foreach ($excluded as $entry)
+                                <li class="flex min-h-[52px] items-center gap-3 py-1.5 pr-3 pl-5">
+                                    <span class="min-w-0 flex-1 truncate text-[15px] font-semibold text-muted">{{ $entry->name() }}</span>
+                                    <form method="POST" action="{{ route('packlist.restore', [$trip, $entry]) }}" data-keep-scroll>
+                                        @csrf
+                                        <button type="submit" class="min-h-11 px-2 text-sm font-bold text-accent-ink hover:underline">Doch mitnehmen</button>
+                                    </form>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
 
                 {{-- Nach Behältnis --}}
                 @if ($userContainers->isNotEmpty())
@@ -197,7 +234,7 @@
                                         </p>
                                     </div>
                                     @if ($ids->isNotEmpty())
-                                        <span class="text-xs font-bold text-muted"><span x-text="{{ $ids->count() }} - openIn(@js($ids))"></span>/{{ $ids->count() }}</span>
+                                        <span class="text-xs font-bold text-muted" x-text="`${present(@js($ids)).length - openIn(@js($ids))}/${present(@js($ids)).length}`">{{ $row['entries']->where('packed', true)->count() }}/{{ $ids->count() }}</span>
                                     @endif
                                 </div>
                                 @if ($row['container']->max_weight_g)
@@ -387,7 +424,7 @@
                         <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
                             <button type="button" @click="$refs.pickId.value = {{ $item->id }}; $refs.pickForm.submit()"
                                     class="flex min-h-[48px] w-full items-center gap-3 rounded-chip px-2 text-left hover:bg-line-soft">
-                                <x-icon :name="$item->category->icon()" size="16" class="text-muted" />
+                                <x-icon :name="$item->categoryGroup()->icon" size="16" class="text-muted" />
                                 <span class="flex-1 text-[15px] font-semibold">{{ $item->name }}</span>
                                 @if ($item->per_day)<span class="text-xs font-bold text-accent-ink">pro Tag</span>@endif
                             </button>
@@ -530,7 +567,7 @@
                         <li x-show="!q || @js(Str::lower($item->name)).includes(q.toLowerCase())">
                             <button type="button" @click="$refs.itemId.value = {{ $item->id }}; $refs.catalogForm.submit()"
                                     class="flex min-h-[48px] w-full items-center gap-3 rounded-chip px-2 text-left hover:bg-line-soft">
-                                <x-icon :name="$item->category->icon()" size="16" class="text-muted" />
+                                <x-icon :name="$item->categoryGroup()->icon" size="16" class="text-muted" />
                                 <span class="flex-1 text-[15px] font-semibold">{{ $item->name }}</span>
                                 <x-icon name="plus" size="16" class="text-accent" />
                             </button>
@@ -545,8 +582,8 @@
                 <input name="custom_name" required maxlength="120" :value="q" placeholder="z. B. Geschenk für Oma" aria-label="Name" class="input">
                 <div class="mt-2 flex gap-2">
                     <select name="group" aria-label="Gruppe" class="input flex-1">
-                        @foreach (PacklistGroup::cases() as $case)
-                            <option value="{{ $case->value }}" @selected($case === PacklistGroup::Misc)>{{ $case->label() }}</option>
+                        @foreach ($entryGroups as $choice)
+                            <option value="{{ $choice->key }}" @selected($choice->is(PacklistGroup::Misc))>{{ $choice->label }}</option>
                         @endforeach
                     </select>
                     <input name="quantity" type="number" min="1" max="999" value="1" aria-label="Menge" class="input w-20">
