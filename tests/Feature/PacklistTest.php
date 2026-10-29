@@ -288,6 +288,9 @@ it('führt Aufgaben vor der Abfahrt als eigene Karte ohne Behältnis und Gewicht
     app(ContainerService::class)->setForTrip($this->trip, $this->anna, [$suitcase->id]);
     app(PacklistService::class)->setTemplates($this->trip, $this->anna, [$this->basis->id]);
     app(PacklistService::class)->addEntry($this->trip, $this->anna, ['item_id' => $task->id]);
+    // Nur die Aufgabe hat ein Gewicht – zählt sie mit, wäre die Summe nicht 0.
+    Item::whereKeyNot($task->id)->update(['weight_g' => null]);
+    $suitcase->update(['empty_weight_g' => null]);
 
     expect(entryFor($task)->isTask())->toBeTrue()
         ->and(entryFor($task)->packlistGroup()->key)->toBe(PacklistGroup::Tasks->value);
@@ -295,7 +298,7 @@ it('führt Aufgaben vor der Abfahrt als eigene Karte ohne Behältnis und Gewicht
     $this->actingAs($this->anna)->get(route('trips.show', $this->trip))
         ->assertSeeInOrder(['Am Abfahrtstag', 'Vor der Abfahrt erledigen', 'Herd aus', 'Kleidung'])
         ->assertViewHas('unassigned', fn ($entries) => ! $entries->contains('item_id', $task->id))
-        ->assertViewHas('weight', fn ($weight) => $weight['total'] < 500);
+        ->assertViewHas('weight', fn ($weight) => $weight['total'] === 0);
 });
 
 it('legt per Schnelleingabe Gegenstände direkt in der Vorlage an', function () {

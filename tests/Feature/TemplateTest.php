@@ -72,12 +72,16 @@ it('verbietet den Zugriff auf fremde Vorlagen', function () {
     $annasItem = Item::factory()->for($this->anna, 'owner')->create();
 
     $this->actingAs($this->anna)->get(route('templates.index'))->assertDontSee('Max’ Geheimvorlage');
-    $this->actingAs($this->anna)->get(route('templates.show', $template))->assertForbidden();
-    $this->actingAs($this->anna)->put(route('templates.update', $template), ['name' => 'X'])->assertForbidden();
-    $this->actingAs($this->anna)->delete(route('templates.destroy', $template))->assertForbidden();
-    $this->actingAs($this->anna)->post(route('templates.items.store', $template), ['item_ids' => [$annasItem->id]])->assertForbidden();
-    $this->actingAs($this->anna)->patch(route('templates.items.update', [$template, $item]), ['quantity' => 5])->assertForbidden();
-    $this->actingAs($this->anna)->delete(route('templates.items.destroy', [$template, $item]))->assertForbidden();
+    // Über die Adresse (je Person) nicht auffindbar, über die alte Nummer gesperrt
+    $this->actingAs($this->anna)->get(route('templates.show', $template))->assertNotFound();
+    $this->actingAs($this->anna)->put(route('templates.update', $template), ['name' => 'X'])->assertNotFound();
+    $this->actingAs($this->anna)->delete(route('templates.destroy', $template))->assertNotFound();
+    $this->actingAs($this->anna)->post(route('templates.items.store', $template), ['item_ids' => [$annasItem->id]])->assertNotFound();
+    $this->actingAs($this->anna)->patch(route('templates.items.update', [$template, $item]), ['quantity' => 5])->assertNotFound();
+    $this->actingAs($this->anna)->delete(route('templates.items.destroy', [$template, $item]))->assertNotFound();
+
+    $this->actingAs($this->anna)->get('/vorlagen/'.$template->id)->assertForbidden();
+    $this->actingAs($this->anna)->delete('/vorlagen/'.$template->id)->assertForbidden();
 
     expect($template->items()->count())->toBe(1);
 });
@@ -150,4 +154,26 @@ it('zeigt Übersicht und Detailseite an', function () {
 
     $this->actingAs($this->anna)->get(route('templates.index'))->assertOk()->assertSee('Basis');
     $this->actingAs($this->anna)->get(route('templates.show', $template))->assertOk()->assertSee('Zahnbürste');
+});
+
+it('hat lesbare Adressen je Person, die auch nach dem Umbenennen funktionieren', function () {
+    $anna = User::factory()->create();
+    $max = User::factory()->create();
+    $first = Template::factory()->for($anna, 'owner')->create(['name' => 'Städtetrip']);
+    $second = Template::factory()->for($anna, 'owner')->create(['name' => 'Staedtetrip']);
+    $maxs = Template::factory()->for($max, 'owner')->create(['name' => 'Städtetrip']);
+
+    expect([$first->slug, $second->slug, $maxs->slug])->toBe(['staedtetrip', 'staedtetrip-2', 'staedtetrip'])
+        ->and(route('templates.show', $first))->toEndWith('/vorlagen/staedtetrip');
+
+    // Jede Person landet bei ihrer eigenen Vorlage
+    $this->actingAs($anna)->get('/vorlagen/staedtetrip')->assertOk()->assertViewHas('template', fn ($t) => $t->is($first));
+    $this->actingAs($max)->get('/vorlagen/staedtetrip')->assertOk()->assertViewHas('template', fn ($t) => $t->is($maxs));
+    $this->actingAs($max)->get('/vorlagen/staedtetrip-2')->assertNotFound();
+    $this->actingAs($max)->get('/vorlagen/'.$first->id)->assertForbidden();
+
+    // Alte Nummer und alter Name leiten weiter
+    $this->actingAs($anna)->get('/vorlagen/'.$first->id)->assertRedirect('/vorlagen/staedtetrip');
+    $this->actingAs($anna)->put(route('templates.update', $first), ['name' => 'Wochenende'])->assertRedirect('/vorlagen/wochenende');
+    $this->actingAs($anna)->get('/vorlagen/staedtetrip')->assertRedirect('/vorlagen/wochenende');
 });

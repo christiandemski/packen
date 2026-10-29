@@ -40,9 +40,14 @@ class TemplateController extends Controller
         return redirect()->route('templates.show', $template)->with('status', 'Vorlage angelegt – jetzt Gegenstände hinzufügen.');
     }
 
-    public function show(Request $request, Template $template): View
+    public function show(Request $request, Template $template): View|RedirectResponse
     {
         Gate::authorize('view', $template);
+
+        // Alte Nummer oder früherer Name in der Adresse → auf die aktuelle umleiten
+        if ($request->route()->originalParameter('template') !== $template->slug) {
+            return redirect()->route('templates.show', [$template, ...$request->query()], 301);
+        }
 
         $template->load('items.customCategory');
         $available = Item::accessibleBy($request->user())->with('customCategory')
