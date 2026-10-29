@@ -24,7 +24,7 @@
     "src": "node_modules/@fontsource-variable/manrope/files/manrope-vietnamese-wght-normal.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BK2D0DA-.css",
+    "file": "assets/app-q1pmuTB6.css",
     "name": "app",
     "names": [
       "app.css"
@@ -41,7 +41,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CmZdnFsv.js",
+    "file": "assets/app-Cotk8U7j.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

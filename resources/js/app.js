@@ -313,6 +313,28 @@ Alpine.data('quickAdd', (url, category, fields = { name: 'name', category: 'cate
     },
 }));
 
+/** Popup mit Inhalt, der beim ersten Öffnen nachgeladen wird (z. B. Benachrichtigungen). */
+Alpine.data('popover', (url) => ({
+    open: false,
+    loaded: false,
+    html: '<p class="px-4 py-8 text-center text-sm font-semibold text-muted">Wird geladen …</p>',
+    async toggle() {
+        this.open = !this.open;
+        if (!this.open || this.loaded) return;
+        try {
+            const response = await fetch(url, { headers: { Accept: 'text/html' }, cache: 'no-store' });
+            if (!response.ok) throw new Error();
+            this.html = await response.text();
+            this.loaded = true;
+        } catch {
+            this.html = '<p class="px-4 py-8 text-center text-sm font-semibold text-muted">Gerade nicht erreichbar – bitte später noch einmal.</p>';
+        }
+    },
+    close() {
+        this.open = false;
+    },
+}));
+
 /** Erinnerung am Abfahrtstag per Push für dieses Gerät ein- und ausschalten. */
 Alpine.data('pushToggle', (publicKey, url, testUrl) => ({
     supported: 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
