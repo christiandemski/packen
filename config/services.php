@@ -28,6 +28,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Erinnerung am Abfahrtstag per Web Push (siehe App\Support\WebPush, packen:push-einrichten)
+    'webpush' => [
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:'.env('MAIL_FROM_ADDRESS', 'packen@allpixx.de')),
+    ],
+
+    // Geheimer Schlüssel für /cron/… (Plesk: geplante Aufgabe „URL abrufen“)
+    'cron' => [
+        'token' => env('CRON_TOKEN'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

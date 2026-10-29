@@ -9,7 +9,7 @@
  *
  * Beim Abmelden löscht die Seite die Caches (siehe resources/js/offline.js).
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const STATIC = `packen-static-${VERSION}`;
 const PAGES = 'packen-pages';
 const IMAGES = 'packen-images';
@@ -89,3 +89,41 @@ async function staleWhileRevalidate(request, cacheName) {
         .catch(() => cached);
     return cached ?? network;
 }
+
+/*
+ * Push: Der Server schickt nur ein leeres Signal, den Text holen wir hier bei der App ab
+ * (mit dem Sitzungs-Cookie). Klappt das nicht, zeigen wir einen allgemeinen Hinweis –
+ * ein Push ohne sichtbare Nachricht ist nicht erlaubt.
+ */
+self.addEventListener('push', (event) => {
+    event.waitUntil(
+        (async () => {
+            let messages = [];
+            try {
+                const response = await fetch('/push/hinweise', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+                if (response.ok) messages = (await response.json()).data ?? [];
+            } catch {
+                // offline oder abgemeldet
+            }
+            if (!messages.length) {
+                messages = [{ title: 'Packen', body: 'Heute geht es los – schau noch einmal in deine Packliste.', url: '/', tag: 'packen' }];
+            }
+            await Promise.all(
+                messages.map((m) =>
+                    self.registration.showNotification(m.title, { body: m.body, tag: m.tag, icon: '/app-icons/icon-192.png', data: { url: m.url } }),
+                ),
+            );
+        })(),
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = event.notification.data?.url ?? '/';
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+            const open = windows.find((w) => 'focus' in w);
+            return open ? open.navigate(url).then((w) => (w ?? open).focus()) : self.clients.openWindow(url);
+        }),
+    );
+});

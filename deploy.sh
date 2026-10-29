@@ -19,6 +19,9 @@ if ! grep -qE '^APP_KEY=.+' .env; then
     "$PHP_BIN" artisan key:generate --force
 fi
 
+# Schlüssel für die Push-Erinnerung und das Cron-Token einmalig erzeugen (stehen danach in der .env).
+"$PHP_BIN" artisan packen:push-einrichten || echo "WARNUNG: Push nicht eingerichtet." >&2
+
 # Laravel braucht diese Verzeichnisse beschreibbar; Git legt leere Ordner nicht an.
 mkdir -p storage/framework/{cache/data,sessions,views} storage/logs storage/app/private bootstrap/cache
 

@@ -3,9 +3,11 @@
 use App\Enums\AuthSource;
 use App\Enums\Role;
 use App\Models\User;
+use App\Services\DepartureReminder;
 use App\Services\MagicLinkService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 use function Laravel\Prompts\password;
 use function Laravel\Prompts\text;
@@ -62,3 +64,44 @@ Artisan::command('packen:admin {email?} {name?} {--from-env : Ohne Rückfragen a
 
     $this->info("Admin {$user->email} ist eingerichtet.");
 })->purpose('Lokalen Admin anlegen oder dessen Passwort setzen');
+
+Artisan::command('packen:push-einrichten', function () {
+    $path = app()->environmentFilePath();
+    $env = is_file($path) ? file_get_contents($path) : '';
+    $missing = [];
+
+    if (! preg_match('/^VAPID_PRIVATE_KEY=.+$/m', $env)) {
+        $key = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+        if ($key === false) {
+            $this->error('OpenSSL kann keinen Schlüssel erzeugen (fehlt die openssl.cnf?).');
+
+            return 1;
+        }
+        openssl_pkey_export($key, $pem);
+        $missing['VAPID_PRIVATE_KEY'] = base64_encode($pem);
+    }
+    if (! preg_match('/^CRON_TOKEN=.+$/m', $env)) {
+        $missing['CRON_TOKEN'] = Str::random(40);
+    }
+
+    if ($missing === []) {
+        $this->line('Push ist eingerichtet.');
+
+        return 0;
+    }
+
+    // Leere Zeilen „KEY=“ ersetzen, sonst anhängen
+    foreach ($missing as $name => $value) {
+        $env = preg_match("/^{$name}=\$/m", $env)
+            ? preg_replace("/^{$name}=\$/m", "{$name}={$value}", $env)
+            : rtrim($env).PHP_EOL."{$name}={$value}".PHP_EOL;
+    }
+    file_put_contents($path, $env);
+    $this->info('In die .env geschrieben: '.implode(', ', array_keys($missing)).'. Den Cron-Link zeigt die Admin-Seite.');
+
+    return 0;
+})->purpose('Schlüssel für Web Push und Cron-Token erzeugen, falls sie in der .env fehlen');
+
+Artisan::command('packen:abfahrt-erinnern', function (DepartureReminder $reminder) {
+    $this->info($reminder->run().' Erinnerungen verschickt.');
+})->purpose('Erinnerung am Abfahrtstag per Push verschicken (einmal täglich morgens)');
