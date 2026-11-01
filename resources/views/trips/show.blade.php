@@ -13,9 +13,43 @@
     <div class="mx-auto max-w-2xl" x-data="{ tab: @js($initialTab) }">
         {{-- Leiste außerhalb des Bildes, sonst schneidet es das Menü ab --}}
         <div class="relative -mx-4 -mt-6 mb-5 sm:mx-0 sm:mt-0">
-            <x-trip-cover :trip="$trip" :icon-size="120" class="h-36 sm:rounded-card">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10"></div>
-                <span class="chip absolute bottom-3 left-4 bg-white/95 text-ink"><x-icon :name="$trip->mode->icon()" size="14" /> {{ $trip->mode->label() }}</span>
+            @php($status = $trip->status())
+            <x-trip-cover :trip="$trip" :icon-size="160" class="h-72 sm:rounded-card">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-45% to-black/25"></div>
+                <div class="absolute inset-x-4 bottom-4 text-white">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span class="chip bg-white/95 text-ink"><x-icon :name="$trip->mode->icon()" size="14" /> {{ $trip->mode->label() }}</span>
+                        <span @class([
+                            'chip',
+                            'bg-accent text-white' => $status === 'running',
+                            'bg-white/95 text-ink' => $status === 'upcoming',
+                            'bg-warn-soft text-warn-ink' => $status === 'ended',
+                            'bg-black/55 text-white' => $status === 'past',
+                        ])>
+                            @if ($status === 'running')<span class="size-1.5 rounded-full bg-white"></span>@endif
+                            {{ $trip->countdownLabel() }}
+                        </span>
+                    </div>
+                    <p class="mt-3 flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-white/85 uppercase"><x-icon :name="$trip->type->icon()" size="14" /> {{ $trip->type->label() }}</p>
+                    <h1 class="page-title mt-1 [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">{{ $trip->name }}</h1>
+                    <div class="mt-2 flex items-end justify-between gap-3">
+                        <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-white/90">
+                            <span class="inline-flex items-center gap-1.5"><x-icon name="calendar" size="15" /> {{ $trip->dateRangeLabel() }}</span>
+                            <span class="inline-flex items-center gap-1.5"><x-icon name="clock" size="15" /> {{ $trip->durationLabel() }}</span>
+                            @if ($trip->location)<span class="inline-flex items-center gap-1.5"><x-icon name="map-pin" size="15" /> {{ $trip->location }}</span>@endif
+                        </p>
+                        @if ($trip->isGroup())
+                            <div class="flex shrink-0 -space-x-2" aria-label="{{ $trip->members->count() }} Mitreisende">
+                                @foreach ($trip->members->take(4) as $member)
+                                    <x-avatar :user="$member" size="sm" class="ring-2 ring-white/90" />
+                                @endforeach
+                                @if ($trip->members->count() > 4)
+                                    <span class="inline-flex size-7 items-center justify-center rounded-full bg-line-soft text-[11px] font-extrabold text-muted ring-2 ring-white/90">+{{ $trip->members->count() - 4 }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </x-trip-cover>
             <div class="absolute inset-x-3 top-3 flex items-center justify-between">
                 <a href="{{ route('home') }}" class="icon-btn bg-white/95 text-ink hover:bg-white" aria-label="Zurück zur Übersicht"><x-icon name="arrow-left" /></a>
@@ -49,14 +83,8 @@
             </div>
         </div>
 
-        <h1 class="page-title">{{ $trip->name }}</h1>
-        <p class="mt-1.5 text-[15px] font-semibold text-muted">
-            {{ $trip->dateRangeLabel() }} · {{ $trip->durationLabel() }} · {{ $trip->type->label() }}
-            @if ($trip->isCompleted()) · <span class="text-accent-ink">Abgehakt</span> @endif
-        </p>
-
-        @if ($trip->status() === 'ended')
-            <div class="card mt-4 flex flex-wrap items-center gap-3 border-accent/40 bg-accent-soft/40 p-4">
+        @if ($status === 'ended')
+            <div class="card mb-5 flex flex-wrap items-center gap-3 border-accent/40 bg-accent-soft/40 p-4">
                 <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-chip bg-accent text-white"><x-icon name="check" /></span>
                 <p class="min-w-0 flex-1 text-sm font-semibold">
                     <span class="block text-[15px] font-bold">Die Reise ist vorbei</span>
@@ -75,7 +103,7 @@
             </div>
         @endif
 
-        <div class="segment mt-5" role="tablist" aria-label="Bereiche der Reise">
+        <div class="segment" role="tablist" aria-label="Bereiche der Reise">
             @foreach (['packlist' => ['list-checks', 'Packliste'], 'outfits' => ['shirt', 'Outfits'], 'review' => ['history', 'Rückblick']] as $key => [$icon, $label])
                 <button type="button" role="tab" class="segment-item" :aria-selected="tab === '{{ $key }}'" @click="tab = '{{ $key }}'">
                     <x-icon :name="$icon" size="16" /> {{ $label }}

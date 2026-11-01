@@ -1,6 +1,6 @@
 <x-layouts.app title="Reisen">
     {{-- Laufende und kommende Reisen werden für unterwegs (offline) vorgeladen. --}}
-    <div x-data="tripOverview" data-offline-prefetch="{{ json_encode($upcoming->map(fn ($trip) => route('trips.show', $trip, false))->values()) }}">
+    <div data-offline-prefetch="{{ json_encode($upcoming->map(fn ($trip) => route('trips.show', $trip, false))->values()) }}">
         <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="eyebrow">Hallo {{ auth()->user()->name }}</p>
@@ -8,17 +8,6 @@
             </div>
 
             <div class="flex items-center gap-2">
-                @if ($upcoming->isNotEmpty() || $past->isNotEmpty())
-                    <div class="segment" role="group" aria-label="Ansicht">
-                        <button type="button" class="segment-item" :aria-pressed="view === 'tiles'" @click="setView('tiles')" aria-label="Kacheln">
-                            <x-icon name="grid" size="18" />
-                        </button>
-                        <button type="button" class="segment-item" :aria-pressed="view === 'list'" @click="setView('list')" aria-label="Liste">
-                            <x-icon name="list" size="18" />
-                        </button>
-                    </div>
-                @endif
-
                 <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
                     <button type="button" class="btn btn-primary" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
                         <x-icon name="plus" size="18" /> Neue Liste
@@ -71,15 +60,9 @@
             <section class="mb-10" aria-labelledby="section-{{ $loop->index }}">
                 <h2 id="section-{{ $loop->index }}" class="eyebrow mb-3">{{ $heading }} · {{ $trips->count() }}</h2>
 
-                <div x-show="view === 'tiles'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="grid gap-3 md:grid-cols-2 md:gap-4">
                     @foreach ($trips as $trip)
-                        <x-trip-tile :trip="$trip" :progress="$progress[$trip->id] ?? null" />
-                    @endforeach
-                </div>
-
-                <div x-cloak x-show="view === 'list'" class="card divide-y divide-line-soft overflow-hidden">
-                    @foreach ($trips as $trip)
-                        <x-trip-row :trip="$trip" :progress="$progress[$trip->id] ?? null" />
+                        <x-trip-card :trip="$trip" :progress="$progress[$trip->id] ?? null" />
                     @endforeach
                 </div>
             </section>

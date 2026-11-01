@@ -20,14 +20,6 @@ const storage = {
     },
 };
 
-Alpine.data('tripOverview', () => ({
-    view: storage.get('packen.tripView', 'tiles'),
-    setView(view) {
-        this.view = view;
-        storage.set('packen.tripView', view);
-    },
-}));
-
 Alpine.data('coverPicker', (initialUrl = null) => ({
     preview: initialUrl,
     removed: false,
