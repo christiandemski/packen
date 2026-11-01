@@ -90,13 +90,14 @@ class PacklistService
         }
     }
 
-    /** Nach Änderungen an einer Vorlage alle noch nicht vergangenen Reisen nachziehen. */
+    /** Nach Änderungen an einer Vorlage alle noch nicht vergangenen oder abgehakten Reisen nachziehen. */
     public function syncTemplate(Template $template): void
     {
         DB::table('trip_templates')
             ->join('trips', 'trips.id', '=', 'trip_templates.trip_id')
             ->where('trip_templates.template_id', $template->id)
             ->where('trips.end_date', '>=', today()->toDateString())
+            ->whereNull('trips.completed_at')
             ->select('trip_templates.trip_id', 'trip_templates.user_id')
             ->get()
             ->each(fn ($row) => $this->sync(Trip::find($row->trip_id), User::find($row->user_id)));

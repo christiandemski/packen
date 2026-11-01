@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
         ->names('trips')
         ->except('index');
     Route::get('/reisen/{trip}/bild', [TripController::class, 'cover'])->name('trips.cover');
+    Route::patch('/reisen/{trip}/abhaken', [TripController::class, 'complete'])->name('trips.complete');
+    Route::delete('/reisen/{trip}/abhaken', [TripController::class, 'reopen'])->name('trips.reopen');
 
     Route::prefix('/reisen/{trip}')->name('packlist.')->scopeBindings()->group(function () {
         Route::put('/module', [PacklistController::class, 'templates'])->name('templates');

@@ -113,8 +113,24 @@
             <section class="card p-5" id="hinzufuegen" x-data="{ q: '', selected: [] }">
                 <h2 class="card-title">Gegenstände hinzufügen</h2>
 
-                @if ($available->isNotEmpty())
+                @if ($availableCategories->isNotEmpty())
                     <form method="POST" action="{{ route('templates.items.store', $template) }}" data-keep-scroll class="mt-3">
+                        @csrf
+                        <p class="label">Ganze Kategorie</p>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($availableCategories as ['group' => $cat, 'count' => $count])
+                                <button type="submit" name="category" value="{{ $cat->key }}" class="chip min-h-10 border border-line bg-surface hover:border-accent hover:bg-accent-soft/50" aria-label="Alle {{ $count }} aus {{ $cat->label }} hinzufügen">
+                                    <x-icon name="plus" size="12" class="text-accent" /> {{ $cat->label }} <span class="font-semibold text-muted">{{ $count }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                        <p class="mt-2 text-xs font-semibold text-muted">Übernimmt alle Gegenstände der Kategorie, die noch nicht in der Vorlage stehen. Einzelne entfernst du danach mit ✕.</p>
+                    </form>
+                @endif
+
+                @if ($available->isNotEmpty())
+                    <form method="POST" action="{{ route('templates.items.store', $template) }}" data-keep-scroll class="mt-5 border-t border-line-soft pt-4">
+                        <p class="label">Einzelne Gegenstände</p>
                         @csrf
                         <div class="relative">
                             <x-icon name="search" size="18" class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />

@@ -61,6 +61,11 @@ class TemplateController extends Controller
             'sections' => $this->sections($request, $template),
             'categories' => Category::choices($request->user()),
             'available' => $available,
+            // Für „Ganze Kategorie hinzufügen“: Kategorien mit noch nicht aufgenommenen Gegenständen
+            'availableCategories' => Category::choices($request->user(), withHidden: true)
+                ->map(fn ($group) => ['group' => $group, 'count' => $available->filter(fn (Item $item) => $item->categoryGroup()->key === $group->key)->count()])
+                ->where('count', '>', 0)
+                ->values(),
         ]);
     }
 

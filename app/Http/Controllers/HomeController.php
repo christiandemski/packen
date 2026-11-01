@@ -12,7 +12,8 @@ class HomeController extends Controller
     {
         $trips = $request->user()->trips()->with('members')->orderBy('start_date')->get();
 
-        [$past, $upcoming] = $trips->partition(fn ($trip) => $trip->status() === 'past');
+        // Erst abgehakte Reisen wandern nach „Zurückliegend“; vorbei, aber offen, bleibt oben stehen.
+        [$past, $upcoming] = $trips->partition(fn ($trip) => $trip->isCompleted());
 
         return view('home', [
             'upcoming' => $upcoming->values(),

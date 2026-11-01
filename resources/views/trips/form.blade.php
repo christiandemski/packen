@@ -5,21 +5,33 @@
     use App\Enums\TripType;
 
     $editing = $trip->exists;
+    $source ??= null;
     $mode = old('mode', $trip->mode?->value ?? 'solo');
-    $selectedMembers = collect(old('members', $trip->exists ? $trip->members->pluck('id')->all() : []))->map(fn ($id) => (int) $id);
-    $coverUrl = $trip->cover_path ? route('trips.cover', ['trip' => $trip, 'v' => $trip->updated_at?->timestamp]) : null;
+    $selectedMembers = collect(old('members', $trip->relationLoaded('members') ? $trip->members->pluck('id')->all() : []))->map(fn ($id) => (int) $id);
+    $coverTrip = $source ?? $trip;
+    $coverUrl = $coverTrip->cover_path ? route('trips.cover', ['trip' => $coverTrip, 'v' => $coverTrip->updated_at?->timestamp]) : null;
+    $title = $editing ? 'Reise bearbeiten' : ($source ? 'Reise duplizieren' : 'Neue Liste');
+    $backUrl = $editing ? route('trips.show', $trip) : ($source ? route('trips.show', $source) : route('home'));
 @endphp
-<x-layouts.app :title="$editing ? 'Reise bearbeiten' : 'Neue Liste'">
+<x-layouts.app :title="$title">
     <div class="mx-auto max-w-2xl">
         <div class="mb-6 flex items-center gap-2">
-            <a href="{{ $editing ? route('trips.show', $trip) : route('home') }}" class="icon-btn -ml-2" aria-label="Zurück"><x-icon name="arrow-left" /></a>
-            <h1 class="page-title">{{ $editing ? 'Reise bearbeiten' : 'Neue Liste' }}</h1>
+            <a href="{{ $backUrl }}" class="icon-btn -ml-2" aria-label="Zurück"><x-icon name="arrow-left" /></a>
+            <h1 class="page-title">{{ $title }}</h1>
         </div>
+
+        @if ($source)
+            <p class="mb-4 flex items-start gap-2 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
+                <x-icon name="copy" size="16" class="mt-0.5 shrink-0" />
+                <span>Vorlage ist „{{ $source->name }}“. Trag den neuen Zeitraum ein – deine Packliste mit Modulen und Behältnissen wird übernommen, Abgehaktes startet wieder offen.</span>
+            </p>
+        @endif
 
         <form method="POST" action="{{ $editing ? route('trips.update', $trip) : route('trips.store') }}" enctype="multipart/form-data"
               class="space-y-4" x-data="{ mode: @js($mode) }">
             @csrf
             @if ($editing) @method('PUT') @endif
+            @if ($source)<input type="hidden" name="source_trip" value="{{ $source->slug }}">@endif
 
             {{-- Art der Liste --}}
             <fieldset class="card p-5">
@@ -167,8 +179,8 @@
             </div>
 
             <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-                <a href="{{ $editing ? route('trips.show', $trip) : route('home') }}" class="btn btn-secondary">Abbrechen</a>
-                <button type="submit" class="btn btn-primary">{{ $editing ? 'Speichern' : 'Liste anlegen' }}</button>
+                <a href="{{ $backUrl }}" class="btn btn-secondary">Abbrechen</a>
+                <button type="submit" class="btn btn-primary">{{ $editing ? 'Speichern' : ($source ? 'Duplikat anlegen' : 'Liste anlegen') }}</button>
             </div>
         </form>
 

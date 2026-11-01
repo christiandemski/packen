@@ -19,6 +19,7 @@
                 'bg-accent text-white' => $status === 'running',
                 'bg-white/95 text-ink' => $status === 'upcoming',
                 'bg-black/55 text-white' => $status === 'past',
+                'bg-warn-soft text-warn-ink' => $status === 'ended',
             ])>
                 @if ($status === 'running')<span class="size-1.5 rounded-full bg-white"></span>@endif
                 {{ $trip->countdownLabel() }}
@@ -48,7 +49,7 @@
             @endif
         </div>
 
-        @if ($progress && $progress['total'] > 0 && $status !== 'past')
+        @if ($progress && $progress['total'] > 0 && in_array($status, ['upcoming', 'running'], true))
             @php($percent = (int) round($progress['packed'] / $progress['total'] * 100))
             <div>
                 <div class="flex justify-between text-xs font-bold text-muted">

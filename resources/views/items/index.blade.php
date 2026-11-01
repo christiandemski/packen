@@ -1,4 +1,4 @@
-@php use Illuminate\Support\Str; @endphp
+@php use Illuminate\Support\Js; use Illuminate\Support\Str; @endphp
 <x-layouts.app title="Katalog">
     <div x-data="{ q: '', shown: [], added: 0, total: {{ $total }} }" x-on:quick-added="added++">
         <div class="mb-5">
@@ -43,9 +43,24 @@
             @endif
         @endif
 
+        {{-- Schnellnavigation zu den Kategorien, bleibt beim Scrollen oben stehen --}}
+        @if ($total > 0)
+            <nav class="sticky top-16 z-10 -mx-4 mb-4 border-b border-line bg-bg/95 px-4 py-2 backdrop-blur" aria-label="Kategorien">
+                <div class="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    @foreach ($sections as ['group' => $group, 'items' => $items, 'hidden' => $hidden])
+                        <a href="#kat-{{ $group->key }}" class="chip min-h-9 shrink-0 border border-line bg-surface whitespace-nowrap hover:border-ink"
+                           @click.prevent="document.getElementById(@js('kat-'.$group->key)).scrollIntoView({ behavior: 'smooth', block: 'start' })"
+                           x-show="{{ $hidden ? 'shown.includes('.Js::from($group->key).') && ' : '' }}(!q || @js($items->map(fn ($i) => Str::lower($i->name))->values()).some(n => n.includes(q.toLowerCase())))">
+                            <x-icon :name="$group->icon" size="14" class="text-accent" /> {{ $group->label }}
+                        </a>
+                    @endforeach
+                </div>
+            </nav>
+        @endif
+
         <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
             @foreach ($sections as ['group' => $group, 'items' => $items, 'hidden' => $hidden])
-                <section class="card overflow-hidden" x-data="quickAdd(@js(route('items.store')), @js($group->key))"
+                <section id="kat-{{ $group->key }}" class="card scroll-mt-32 overflow-hidden" x-data="quickAdd(@js(route('items.store')), @js($group->key))"
                          @if ($hidden) x-cloak @endif
                          x-on:catalog-reveal.window="$event.detail === category && $nextTick(() => { $el.scrollIntoView({ block: 'center', behavior: 'smooth' }); $refs.input.focus({ preventScroll: true }) })"
                          x-show="{{ $hidden ? 'shown.includes(category) && ' : '' }}(!q || added.length || @js($items->map(fn ($i) => Str::lower($i->name))->values()).some(n => n.includes(q.toLowerCase())))">

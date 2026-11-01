@@ -40,21 +40,56 @@ class TripController extends Controller
             'mode' => $request->query('mode') === TripMode::Group->value ? TripMode::Group : TripMode::Solo,
         ]);
 
-        return view('trips.form', ['trip' => $trip, 'friends' => $this->friendsOf($request->user())]);
+        // Duplizieren: alles außer Zeitraum, Etappen und Abhaken übernehmen
+        $source = $this->duplicateSource($request->query('von'), $request->user());
+        if ($source) {
+            $trip = new Trip($source->only(['name', 'location', 'type', 'mode', 'accommodation', 'transports']));
+            $trip->setRelation('members', $source->members);
+        }
+
+        return view('trips.form', ['trip' => $trip, 'source' => $source, 'friends' => $this->friendsOf($request->user())]);
     }
 
     public function store(TripRequest $request): RedirectResponse
     {
         Gate::authorize('create', Trip::class);
 
+        $source = $this->duplicateSource($request->input('source_trip'), $request->user());
+
         $trip = $this->trips->create(
             $request->user(),
             $request->validated(),
             $request->file('cover'),
             $request->memberIds(),
+            $source && ! $request->boolean('remove_cover') ? $source : null,
         );
 
+        if ($source) {
+            app(PacklistService::class)->copyFrom($source, $trip, $request->user());
+
+            return redirect()->route('trips.show', $trip)->with('status', "Reise dupliziert – deine Packliste von „{$source->name}“ ist übernommen.");
+        }
+
         return redirect()->route('trips.show', $trip)->with('status', 'Reise angelegt.');
+    }
+
+    /** Abhaken: Die Reise wandert in der Übersicht nach „Zurückliegend“. */
+    public function complete(Trip $trip): RedirectResponse
+    {
+        Gate::authorize('update', $trip);
+
+        $trip->update(['completed_at' => now()]);
+
+        return redirect()->route('home')->with('status', "„{$trip->name}“ abgehakt.");
+    }
+
+    public function reopen(Trip $trip): RedirectResponse
+    {
+        Gate::authorize('update', $trip);
+
+        $trip->update(['completed_at' => null]);
+
+        return redirect()->route('trips.show', $trip)->with('status', 'Reise wieder aufgenommen.');
     }
 
     public function show(Request $request, Trip $trip, PacklistService $packlists, ContainerService $containers, OutfitService $outfits, WeatherService $weather): View|RedirectResponse
@@ -204,6 +239,17 @@ class TripController extends Controller
         return $disk->response($trip->cover_path, headers: [
             'Cache-Control' => 'private, max-age=604800',
         ]);
+    }
+
+    /** Vorlage fürs Duplizieren – nur Reisen, auf denen man selbst mitpackt. */
+    private function duplicateSource(mixed $slug, User $user): ?Trip
+    {
+        if (! is_string($slug) || $slug === '') {
+            return null;
+        }
+        $source = (new Trip)->resolveRouteBinding($slug);
+
+        return $source && Gate::forUser($user)->allows('pack', $source) ? $source->load('members') : null;
     }
 
     /** @return Collection<int, User> */

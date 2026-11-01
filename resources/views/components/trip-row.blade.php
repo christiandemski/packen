@@ -15,7 +15,8 @@
         <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs font-bold text-muted">
             <span @class([
                 'whitespace-nowrap sm:hidden',
-                'text-accent-ink' => $status !== 'past',
+                'text-accent-ink' => in_array($status, ['upcoming', 'running'], true),
+                'text-warn-ink' => $status === 'ended',
             ])>{{ $trip->countdownLabel() }}</span>
             <span class="inline-flex items-center gap-1 whitespace-nowrap"><x-icon :name="$trip->mode->icon()" size="13" /> {{ $trip->isGroup() ? $trip->members->count().' Personen' : $trip->mode->label() }}</span>
             <span class="inline-flex items-center gap-1 whitespace-nowrap"><x-icon :name="$trip->type->icon()" size="13" /> {{ $trip->type->label() }}</span>
@@ -28,6 +29,7 @@
         'bg-accent text-white' => $status === 'running',
         'bg-accent-soft text-accent-ink' => $status === 'upcoming',
         'bg-line-soft text-muted' => $status === 'past',
+        'bg-warn-soft text-warn-ink' => $status === 'ended',
     ])>{{ $trip->countdownLabel() }}</span>
     <x-icon name="chevron-right" size="18" class="shrink-0 text-muted" />
 </a>
