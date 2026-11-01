@@ -268,3 +268,15 @@ it('zeigt den Zeitraum kompakt als TT.MM.JJJJ', function () {
         ->and($make('2027-05-14', '2027-05-14'))->toBe('14.05.2027')
         ->and($make('2026-12-28', '2027-01-03'))->toBe('28.12.2026–03.01.2027');
 });
+
+it('speichert den Bildausschnitt und nutzt ihn in der Anzeige', function () {
+    $trip = Trip::factory()->for($this->anna, 'owner')->create(['cover_path' => 'covers/x.jpg']);
+
+    $this->actingAs($this->anna)->put(route('trips.update', $trip), tripInput(['cover_focus_x' => 20, 'cover_focus_y' => 80, 'cover_zoom' => 150]))->assertRedirect();
+    expect($trip->fresh())->cover_focus_x->toBe(20)->cover_focus_y->toBe(80)->cover_zoom->toBe(150)
+        ->and($trip->fresh()->coverStyle())->toBe('object-position: 20% 80%; transform: scale(1.5); transform-origin: 20% 80%');
+
+    $this->actingAs($this->anna)->get(route('home'))->assertSee('object-position: 20% 80%', false);
+
+    $this->actingAs($this->anna)->put(route('trips.update', $trip), tripInput(['cover_zoom' => 400]))->assertSessionHasErrors('cover_zoom');
+});

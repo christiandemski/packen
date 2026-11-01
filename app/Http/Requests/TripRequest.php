@@ -17,6 +17,9 @@ class TripRequest extends FormRequest
     /** Auswahlwert „neue Reiseart anlegen“ */
     public const NEW_TYPE = 'new';
 
+    /** Größter Zoom beim Bildausschnitt in Prozent */
+    public const MAX_COVER_ZOOM = 250;
+
     public function authorize(): bool
     {
         return true; // Rechte prüft der Controller über die TripPolicy.
@@ -52,6 +55,9 @@ class TripRequest extends FormRequest
             'members.*' => ['integer', Rule::exists('users', 'id')->where('active', true)],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'remove_cover' => ['boolean'],
+            'cover_focus_x' => ['nullable', 'integer', 'between:0,100'],
+            'cover_focus_y' => ['nullable', 'integer', 'between:0,100'],
+            'cover_zoom' => ['nullable', 'integer', 'between:100,'.self::MAX_COVER_ZOOM],
             'source_trip' => ['nullable', 'string', 'max:120'],
         ];
     }

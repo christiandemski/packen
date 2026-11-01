@@ -137,7 +137,8 @@ class TripService
     {
         $attributes = collect($data)->only([
             'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id', 'external_url',
-        ])->all();
+            'cover_focus_x', 'cover_focus_y', 'cover_zoom',
+        ])->filter(fn ($value, $key) => ! str_starts_with($key, 'cover_') || $value !== null)->all();
 
         // Eigene Reiseart („t:12“): fest steht dann „Sonstiges“ als Rückfall
         if (array_key_exists('type', $attributes)) {

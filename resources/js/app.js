@@ -20,15 +20,52 @@ const storage = {
     },
 };
 
-Alpine.data('coverPicker', (initialUrl = null) => ({
+/**
+ * Titelbild mit Ausschnitt: Statt fest zuzuschneiden merken wir uns den Bildpunkt, der sichtbar
+ * bleiben soll (x, y in Prozent), und einen Zoom – Card und Reiseseite haben verschiedene Formate.
+ */
+Alpine.data('coverPicker', (initialUrl = null, focus = { x: 50, y: 50, zoom: 100 }) => ({
     preview: initialUrl,
     removed: false,
+    x: focus.x,
+    y: focus.y,
+    zoom: focus.zoom,
+    dragging: false,
+    get imgStyle() {
+        return `object-position: ${this.x}% ${this.y}%; transform: scale(${this.zoom / 100}); transform-origin: ${this.x}% ${this.y}%`;
+    },
     pick(event) {
         const [file] = event.target.files;
         if (!file) return;
         if (this.preview?.startsWith('blob:')) URL.revokeObjectURL(this.preview);
         this.preview = URL.createObjectURL(file);
         this.removed = false;
+        Object.assign(this, { x: 50, y: 50, zoom: 100 });
+    },
+    setFocus(e) {
+        const r = this.$refs.editor.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        const pct = (v) => Math.round(Math.min(100, Math.max(0, v * 100)));
+        this.x = pct((e.clientX - r.left) / r.width);
+        this.y = pct((e.clientY - r.top) / r.height);
+    },
+    down(e) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        this.dragging = true;
+        this.setFocus(e);
+    },
+    move(e) {
+        if (this.dragging) this.setFocus(e);
+    },
+    up() {
+        this.dragging = false;
+    },
+    key(e) {
+        const d = { ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        this.x = Math.min(100, Math.max(0, this.x + d[0]));
+        this.y = Math.min(100, Math.max(0, this.y + d[1]));
     },
     clear() {
         this.$refs.file.value = '';

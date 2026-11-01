@@ -25,7 +25,7 @@ class Trip extends Model
 
     protected $fillable = [
         'owner_id', 'external_id', 'external_url', 'name', 'start_date', 'end_date', 'type', 'custom_trip_type_id', 'mode',
-        'accommodation', 'transports', 'location', 'cover_path', 'completed_at',
+        'accommodation', 'transports', 'location', 'cover_path', 'cover_focus_x', 'cover_focus_y', 'cover_zoom', 'completed_at',
     ];
 
     protected function casts(): array
@@ -38,6 +38,9 @@ class Trip extends Model
             'accommodation' => Accommodation::class,
             'transports' => AsEnumCollection::of(Transport::class),
             'completed_at' => 'datetime',
+            'cover_focus_x' => 'integer',
+            'cover_focus_y' => 'integer',
+            'cover_zoom' => 'integer',
         ];
     }
 
@@ -114,6 +117,16 @@ class Trip extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /** Bildausschnitt fürs Titelbild: Mittelpunkt bleibt in jedem Seitenverhältnis sichtbar. */
+    public function coverStyle(): string
+    {
+        $x = $this->cover_focus_x ?? 50;
+        $y = $this->cover_focus_y ?? 50;
+        $zoom = ($this->cover_zoom ?? 100) / 100;
+
+        return "object-position: {$x}% {$y}%; transform: scale({$zoom}); transform-origin: {$x}% {$y}%";
     }
 
     /** @return BelongsTo<CustomTripType, $this> */
