@@ -8,7 +8,7 @@
 @endphp
 {{-- Bild links, blendet nach rechts ins Weiß aus; Daten daneben. --}}
 <a href="{{ route('trips.show', $trip) }}" @class([
-    'group card relative flex h-40 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(23,33,30,0.35)] sm:h-46',
+    'group card relative flex min-h-40 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(23,33,30,0.35)] sm:min-h-46',
     'opacity-80 hover:opacity-100' => $status === 'past',
 ])>
     <x-trip-cover :trip="$trip" :icon-size="72" class="w-[42%] shrink-0 sm:w-[46%]">
@@ -31,11 +31,9 @@
     <div class="relative -ml-7 flex min-w-0 flex-1 flex-col gap-1 py-3.5 pr-4">
         <span class="eyebrow flex items-center gap-1.5"><x-icon :name="$trip->type->icon()" size="13" /> {{ $trip->type->label() }}</span>
         <h3 class="truncate text-lg leading-tight font-extrabold tracking-tight sm:text-xl">{{ $trip->name }}</h3>
-        <p class="flex items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap">
+        <p class="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap">
             <x-icon name="calendar" size="14" class="text-muted" />
-            {{ $trip->dateRangeLabel() }}
-            <span class="text-muted sm:hidden">· {{ $trip->days() }} {{ $trip->days() === 1 ? 'Tag' : 'Tage' }}</span>
-            <span class="hidden text-muted sm:inline">· {{ $trip->durationLabel() }}</span>
+            <span class="truncate">{{ $trip->dateRangeShortLabel() }} <span class="text-muted">· {{ $trip->days() }} {{ $trip->days() === 1 ? 'Tag' : 'Tage' }}</span></span>
         </p>
         @if ($trip->location)
             <p class="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold"><x-icon name="map-pin" size="14" class="text-muted" /> <span class="truncate">{{ $trip->location }}</span></p>
