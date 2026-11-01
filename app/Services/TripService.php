@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Einziger Weg, Reisen anzulegen und zu ändern – später nutzt auch die API
@@ -27,13 +28,14 @@ class TripService
      *     stages?: list<array{date: string, location: string}>}  $data
      * @param  list<int>  $memberIds
      */
-    public function create(User $owner, array $data, ?UploadedFile $cover = null, array $memberIds = []): Trip
+    /** @param  ?Trip  $coverFrom  Titelbild dieser Reise kopieren, falls kein neues hochgeladen wird (Duplizieren) */
+    public function create(User $owner, array $data, ?UploadedFile $cover = null, array $memberIds = [], ?Trip $coverFrom = null): Trip
     {
-        return DB::transaction(function () use ($owner, $data, $cover, $memberIds) {
+        return DB::transaction(function () use ($owner, $data, $cover, $memberIds, $coverFrom) {
             $trip = Trip::create([
                 ...$this->attributes($data),
                 'owner_id' => $owner->id,
-                'cover_path' => $cover ? $this->storeCover($cover) : null,
+                'cover_path' => $cover ? $this->storeCover($cover) : $this->copyCover($coverFrom),
             ]);
 
             $trip->addMember($owner, TripMemberRole::Owner);
@@ -134,6 +136,20 @@ class TripService
         return collect($data)->only([
             'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id', 'external_url',
         ])->all();
+    }
+
+    /** Eigene Kopie, damit Löschen der einen Reise das Bild der anderen nicht mitnimmt. */
+    private function copyCover(?Trip $source): ?string
+    {
+        $disk = Storage::disk(self::COVER_DISK);
+        if ($source?->cover_path === null || ! $disk->exists($source->cover_path)) {
+            return null;
+        }
+
+        $path = 'covers/'.Str::random(40).'.'.pathinfo($source->cover_path, PATHINFO_EXTENSION);
+        $disk->copy($source->cover_path, $path);
+
+        return $path;
     }
 
     private function storeCover(UploadedFile $cover): string

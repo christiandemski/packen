@@ -66,7 +66,7 @@
             </div>
         @endif
 
-        @foreach (['Demnächst' => $upcoming, 'Vergangen' => $past] as $heading => $trips)
+        @foreach (['Demnächst' => $upcoming, 'Zurückliegend' => $past] as $heading => $trips)
             @continue($trips->isEmpty())
             <section class="mb-10" aria-labelledby="section-{{ $loop->index }}">
                 <h2 id="section-{{ $loop->index }}" class="eyebrow mb-3">{{ $heading }} · {{ $trips->count() }}</h2>

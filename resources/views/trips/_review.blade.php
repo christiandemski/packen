@@ -10,7 +10,7 @@
     $status = $trip->status();
 @endphp
 <div class="space-y-4">
-    @if ($status !== 'past')
+    @if (in_array($status, ['upcoming', 'running'], true))
         <p class="rounded-chip bg-line-soft px-4 py-3 text-sm font-semibold text-muted">
             Der Rückblick ist für nach der Reise gedacht – du kannst aber jederzeit schon Notizen machen.
         </p>

@@ -40,6 +40,7 @@ class TripRequest extends FormRequest
             'members.*' => ['integer', Rule::exists('users', 'id')->where('active', true)],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'remove_cover' => ['boolean'],
+            'source_trip' => ['nullable', 'string', 'max:120'],
         ];
     }
 

@@ -11,21 +11,69 @@
 @endphp
 <x-layouts.app :title="$trip->name">
     <div class="mx-auto max-w-2xl" x-data="{ tab: @js($initialTab) }">
-        <x-trip-cover :trip="$trip" :icon-size="120" class="-mx-4 -mt-6 mb-5 h-36 sm:mx-0 sm:mt-0 sm:rounded-card">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10"></div>
+        {{-- Leiste außerhalb des Bildes, sonst schneidet es das Menü ab --}}
+        <div class="relative -mx-4 -mt-6 mb-5 sm:mx-0 sm:mt-0">
+            <x-trip-cover :trip="$trip" :icon-size="120" class="h-36 sm:rounded-card">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-black/10"></div>
+                <span class="chip absolute bottom-3 left-4 bg-white/95 text-ink"><x-icon :name="$trip->mode->icon()" size="14" /> {{ $trip->mode->label() }}</span>
+            </x-trip-cover>
             <div class="absolute inset-x-3 top-3 flex items-center justify-between">
                 <a href="{{ route('home') }}" class="icon-btn bg-white/95 text-ink hover:bg-white" aria-label="Zurück zur Übersicht"><x-icon name="arrow-left" /></a>
-                @can('update', $trip)
-                    <a href="{{ route('trips.edit', $trip) }}" class="btn bg-white/95 text-ink hover:bg-white"><x-icon name="pencil" size="16" /> Bearbeiten</a>
-                @endcan
+                <div class="flex items-center gap-2">
+                    @can('update', $trip)
+                        <a href="{{ route('trips.edit', $trip) }}" class="btn bg-white/95 text-ink hover:bg-white"><x-icon name="pencil" size="16" /> Bearbeiten</a>
+                    @endcan
+                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                        <button type="button" class="icon-btn bg-white/95 text-ink hover:bg-white" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="Weitere Aktionen"><x-icon name="ellipsis" /></button>
+                        <div x-cloak x-show="open" x-transition.origin.top.right class="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-card border border-line bg-surface p-1.5 text-ink shadow-[0_20px_40px_-16px_rgba(23,33,30,0.35)]">
+                            @can('update', $trip)
+                                <form method="POST" action="{{ $trip->isCompleted() ? route('trips.reopen', $trip) : route('trips.complete', $trip) }}">
+                                    @csrf @method($trip->isCompleted() ? 'DELETE' : 'PATCH')
+                                    <button type="submit" class="flex w-full items-center gap-3 rounded-chip p-3 text-left hover:bg-line-soft">
+                                        <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-chip bg-accent-soft text-accent-ink"><x-icon :name="$trip->isCompleted() ? 'repeat' : 'check'" /></span>
+                                        @if ($trip->isCompleted())
+                                            <span><span class="block text-[15px] font-bold">Wieder aufnehmen</span><span class="block text-xs font-semibold text-muted">Zurück zu den aktuellen Reisen</span></span>
+                                        @else
+                                            <span><span class="block text-[15px] font-bold">Reise abhaken</span><span class="block text-xs font-semibold text-muted">Wandert nach „Zurückliegend“</span></span>
+                                        @endif
+                                    </button>
+                                </form>
+                            @endcan
+                            <a href="{{ route('trips.create', ['von' => $trip->slug]) }}" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
+                                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-chip bg-line-soft"><x-icon name="copy" /></span>
+                                <span><span class="block text-[15px] font-bold">Duplizieren</span><span class="block text-xs font-semibold text-muted">Neue Reise mit deiner Packliste</span></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <span class="chip absolute bottom-3 left-4 bg-white/95 text-ink"><x-icon :name="$trip->mode->icon()" size="14" /> {{ $trip->mode->label() }}</span>
-        </x-trip-cover>
+        </div>
 
         <h1 class="page-title">{{ $trip->name }}</h1>
         <p class="mt-1.5 text-[15px] font-semibold text-muted">
             {{ $trip->dateRangeLabel() }} · {{ $trip->durationLabel() }} · {{ $trip->type->label() }}
+            @if ($trip->isCompleted()) · <span class="text-accent-ink">Abgehakt</span> @endif
         </p>
+
+        @if ($trip->status() === 'ended')
+            <div class="card mt-4 flex flex-wrap items-center gap-3 border-accent/40 bg-accent-soft/40 p-4">
+                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-chip bg-accent text-white"><x-icon name="check" /></span>
+                <p class="min-w-0 flex-1 text-sm font-semibold">
+                    <span class="block text-[15px] font-bold">Die Reise ist vorbei</span>
+                    @can('update', $trip)
+                        Noch kurz in den Rückblick schauen, dann abhaken – sie wandert nach „Zurückliegend“.
+                    @else
+                        {{ $trip->owner->name }} kann sie abhaken, dann wandert sie nach „Zurückliegend“.
+                    @endcan
+                </p>
+                @can('update', $trip)
+                    <form method="POST" action="{{ route('trips.complete', $trip) }}">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-primary"><x-icon name="check" size="18" /> Abhaken</button>
+                    </form>
+                @endcan
+            </div>
+        @endif
 
         <div class="segment mt-5" role="tablist" aria-label="Bereiche der Reise">
             @foreach (['packlist' => ['list-checks', 'Packliste'], 'outfits' => ['shirt', 'Outfits'], 'review' => ['history', 'Rückblick']] as $key => [$icon, $label])

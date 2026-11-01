@@ -25,7 +25,7 @@ class Trip extends Model
 
     protected $fillable = [
         'owner_id', 'external_id', 'external_url', 'name', 'start_date', 'end_date', 'type', 'mode',
-        'accommodation', 'transports', 'location', 'cover_path',
+        'accommodation', 'transports', 'location', 'cover_path', 'completed_at',
     ];
 
     protected function casts(): array
@@ -37,6 +37,7 @@ class Trip extends Model
             'mode' => TripMode::class,
             'accommodation' => Accommodation::class,
             'transports' => AsEnumCollection::of(Transport::class),
+            'completed_at' => 'datetime',
         ];
     }
 
@@ -203,19 +204,35 @@ class Trip extends Model
         return $label;
     }
 
-    /** @return 'upcoming'|'running'|'past' */
+    /**
+     * „ended“: Zeitraum vorbei, aber noch nicht abgehakt. „past“: abgehakt (auch vorzeitig).
+     *
+     * @return 'upcoming'|'running'|'ended'|'past'
+     */
     public function status(?Carbon $today = null): string
     {
         $today ??= today();
 
         return match (true) {
+            $this->isCompleted() => 'past',
             $today->lt($this->start_date) => 'upcoming',
-            $today->gt($this->end_date) => 'past',
+            $today->gt($this->end_date) => 'ended',
             default => 'running',
         };
     }
 
-    /** Kurzer Hinweis wie „in 12 Tagen“, „Tag 2 von 5“ oder „Vorbei“. */
+    public function isCompleted(): bool
+    {
+        return $this->completed_at !== null;
+    }
+
+    /** Reisezeitraum vorbei – unabhängig davon, ob schon abgehakt. */
+    public function isOver(?Carbon $today = null): bool
+    {
+        return ($today ?? today())->gt($this->end_date);
+    }
+
+    /** Kurzer Hinweis wie „in 12 Tagen“, „Tag 2 von 5“, „Vorbei“ oder „Abgehakt“. */
     public function countdownLabel(?Carbon $today = null): string
     {
         $today ??= today();
@@ -223,7 +240,8 @@ class Trip extends Model
         return match ($this->status($today)) {
             'upcoming' => ($days = (int) $today->diffInDays($this->start_date)) === 1 ? 'Morgen' : "in {$days} Tagen",
             'running' => 'Tag '.((int) $this->start_date->diffInDays($today) + 1).' von '.$this->days(),
-            default => 'Vorbei',
+            'ended' => 'Vorbei',
+            default => 'Abgehakt',
         };
     }
 

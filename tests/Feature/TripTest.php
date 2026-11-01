@@ -208,3 +208,55 @@ it('hat lesbare Adressen, die auch nach dem Umbenennen funktionieren', function 
     // Fremde sehen auch über die Adresse nichts.
     $this->actingAs($this->max)->get('/reisen/koeln-im-mai')->assertForbidden();
 });
+
+it('lässt vorbei, aber nicht abgehakte Reisen oben stehen', function () {
+    $ended = Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom', 'start_date' => now()->subDays(6), 'end_date' => now()->subDays(2)]);
+
+    expect($ended->status())->toBe('ended');
+    $this->actingAs($this->anna)->get(route('home'))->assertOk()->assertSeeInOrder(['Demnächst', 'Rom'])->assertDontSee('Zurückliegend');
+    $this->actingAs($this->anna)->get(route('trips.show', $ended))->assertSee('Die Reise ist vorbei');
+});
+
+it('hakt Reisen ab und nimmt sie wieder auf', function () {
+    $trip = Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom']);
+
+    $this->actingAs($this->anna)->patch(route('trips.complete', $trip))->assertRedirect(route('home'));
+    expect($trip->fresh())->status()->toBe('past')->countdownLabel()->toBe('Abgehakt');
+    $this->actingAs($this->anna)->get(route('home'))->assertSeeInOrder(['Zurückliegend', 'Rom']);
+
+    $this->actingAs($this->anna)->delete(route('trips.reopen', $trip))->assertRedirect(route('trips.show', $trip));
+    expect($trip->fresh()->completed_at)->toBeNull();
+});
+
+it('lässt nur den Owner abhaken', function () {
+    $trip = Trip::factory()->for($this->anna, 'owner')->group()->create();
+    $trip->addMember($this->max);
+
+    $this->actingAs($this->max)->patch(route('trips.complete', $trip))->assertForbidden();
+    expect($trip->fresh()->completed_at)->toBeNull();
+});
+
+it('dupliziert eine Reise samt eigener Packliste', function () {
+    $source = Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom', 'completed_at' => now()]);
+    $item = \App\Models\Item::factory()->for($this->anna, 'owner')->create(['name' => 'Reiseadapter']);
+    \App\Models\PacklistEntry::create(['trip_id' => $source->id, 'user_id' => $this->anna->id, 'item_id' => $item->id, 'quantity' => 1, 'source' => 'manual', 'packed' => true]);
+
+    $this->actingAs($this->anna)->get(route('trips.create', ['von' => $source->slug]))
+        ->assertOk()->assertSee('Reise duplizieren')->assertSee('value="Rom"', false);
+
+    $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['name' => 'Rom', 'source_trip' => $source->slug]))->assertRedirect();
+
+    $copy = Trip::latest('id')->first();
+    expect($copy->isNot($source))->toBeTrue()
+        ->and($copy->completed_at)->toBeNull()
+        ->and($copy->slug)->not->toBe($source->slug)
+        ->and($copy->entries()->where('item_id', $item->id)->first())->packed->toBeFalse();
+});
+
+it('dupliziert keine fremden Reisen', function () {
+    $foreign = Trip::factory()->for($this->max, 'owner')->create(['name' => 'Geheim']);
+
+    $this->actingAs($this->anna)->get(route('trips.create', ['von' => $foreign->slug]))->assertOk()->assertDontSee('Geheim');
+    $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['source_trip' => $foreign->slug]))->assertRedirect();
+    expect(Trip::latest('id')->first()->entries()->count())->toBe(0);
+});
