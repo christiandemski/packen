@@ -260,3 +260,11 @@ it('dupliziert keine fremden Reisen', function () {
     $this->actingAs($this->anna)->post(route('trips.store'), tripInput(['source_trip' => $foreign->slug]))->assertRedirect();
     expect(Trip::latest('id')->first()->entries()->count())->toBe(0);
 });
+
+it('zeigt den Zeitraum kompakt als TT.MM.JJJJ', function () {
+    $make = fn ($start, $end) => Trip::factory()->make(['start_date' => $start, 'end_date' => $end])->dateRangeShortLabel();
+
+    expect($make('2027-05-14', '2027-05-17'))->toBe('14.05.–17.05.2027')
+        ->and($make('2027-05-14', '2027-05-14'))->toBe('14.05.2027')
+        ->and($make('2026-12-28', '2027-01-03'))->toBe('28.12.2026–03.01.2027');
+});

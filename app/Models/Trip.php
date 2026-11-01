@@ -267,6 +267,19 @@ class Trip extends Model
         return $start->translatedFormat('j. M Y').' – '.$end->translatedFormat('j. M Y');
     }
 
+    /** Kompakt für Cards: „14.05.–17.05.2027“, „14.05.2027“, „28.12.2026–03.01.2027“. */
+    public function dateRangeShortLabel(): string
+    {
+        $start = $this->start_date;
+        $end = $this->end_date;
+
+        return match (true) {
+            $start->isSameDay($end) => $end->format('d.m.Y'),
+            $start->year === $end->year => $start->format('d.m.').'–'.$end->format('d.m.Y'),
+            default => $start->format('d.m.Y').'–'.$end->format('d.m.Y'),
+        };
+    }
+
     public function addMember(User $user, TripMemberRole $role = TripMemberRole::Member): void
     {
         $this->members()->syncWithoutDetaching([
