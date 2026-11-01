@@ -180,17 +180,81 @@
             </div>
 
             {{-- Titelbild --}}
-            <div class="card p-5" x-data="coverPicker(@js($coverUrl))">
+            @php($focus = [
+                'x' => (int) old('cover_focus_x', $coverTrip->cover_focus_x ?? 50),
+                'y' => (int) old('cover_focus_y', $coverTrip->cover_focus_y ?? 50),
+                'zoom' => (int) old('cover_zoom', $coverTrip->cover_zoom ?? 100),
+            ])
+            <div class="card p-5" x-data="coverPicker(@js($coverUrl), @js($focus))">
                 <p class="card-title">Titelbild <span class="text-sm font-semibold text-muted">(optional)</span></p>
-                <p class="mt-1 text-sm text-muted">Erscheint auf der Kachel. Ohne Bild gibt es einen Farbverlauf passend zur Reiseart.</p>
+                <p class="mt-1 text-sm text-muted">Erscheint in der Übersicht und oben auf der Reiseseite. Ohne Bild gibt es einen Farbverlauf passend zur Reiseart.</p>
 
                 <div class="mt-4 overflow-hidden rounded-chip border border-line bg-line-soft">
-                    <template x-if="preview">
-                        <img :src="preview" alt="Vorschau des Titelbilds" class="h-44 w-full object-cover">
-                    </template>
+                    {{-- Ganzes Bild; antippen oder ziehen legt den Punkt fest, der immer sichtbar bleibt --}}
+                    <div x-show="preview" x-cloak class="p-3">
+                        <div class="relative mx-auto w-fit cursor-crosshair touch-none select-none rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                             tabindex="0" role="group" aria-label="Bildmitte festlegen – Pfeiltasten verschieben"
+                             @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up" @keydown="key">
+                            <img x-ref="editor" :src="preview" alt="Titelbild" draggable="false" class="block max-h-72 max-w-full rounded-[8px]">
+                            <span class="pointer-events-none absolute size-9 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_2px_10px_rgba(0,0,0,0.45)]" :style="`left: ${x}%; top: ${y}%`">
+                                <span class="absolute top-1/2 left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"></span>
+                            </span>
+                        </div>
+                    </div>
                     <div x-show="!preview" class="flex h-44 flex-col items-center justify-center gap-2 text-muted">
                         <x-icon name="image" size="28" />
                         <span class="text-sm font-semibold">Kein Bild ausgewählt</span>
+                    </div>
+                </div>
+
+                <div x-show="preview" x-cloak class="mt-3 space-y-3">
+                    <p class="text-xs font-semibold text-muted">Tipp oder zieh auf den Punkt, der in jeder Ansicht zu sehen sein soll.</p>
+                    <label class="flex items-center gap-3 text-sm font-bold">
+                        <x-icon name="search" size="16" class="text-muted" /> Zoom
+                        <input type="range" min="100" max="{{ TripRequest::MAX_COVER_ZOOM }}" step="5" x-model.number="zoom" class="min-w-0 flex-1 accent-[var(--accent)]" aria-label="Zoom">
+                        <span class="w-12 text-right text-muted" x-text="`${zoom} %`"></span>
+                    </label>
+                    <input type="hidden" name="cover_focus_x" :value="x">
+                    <input type="hidden" name="cover_focus_y" :value="y">
+                    <input type="hidden" name="cover_zoom" :value="zoom">
+
+                    {{-- Vorschau in den echten Seitenverhältnissen --}}
+                    <div class="border-t border-line-soft pt-4">
+                        <p class="label">Vorschau</p>
+                        <div class="grid gap-x-3 gap-y-4 sm:grid-cols-2">
+                            @foreach ([['Übersicht · Handy', 'aspect-[358/160]', 'w-[42%]'], ['Übersicht · Desktop', 'aspect-[552/184]', 'w-[46%]']] as [$caption, $ratio, $width])
+                                <figure>
+                                    <div class="flex {{ $ratio }} overflow-hidden rounded-[12px] border border-line bg-surface">
+                                        <div class="relative {{ $width }} shrink-0 overflow-hidden">
+                                            <img :src="preview" alt="" class="absolute inset-0 size-full object-cover" :style="imgStyle">
+                                            <div class="absolute inset-0 bg-gradient-to-r from-transparent from-30% via-surface/60 via-65% to-surface"></div>
+                                        </div>
+                                        <div class="relative -ml-3 flex min-w-0 flex-1 flex-col gap-1.5 py-3 pr-3" aria-hidden="true">
+                                            <span class="h-1.5 w-1/3 rounded-full bg-line"></span>
+                                            <span class="h-2.5 w-3/4 rounded-full bg-ink/70"></span>
+                                            <span class="h-1.5 w-2/3 rounded-full bg-line"></span>
+                                            <span class="h-1.5 w-1/2 rounded-full bg-line"></span>
+                                            <span class="mt-auto h-1 w-full rounded-full bg-accent/50"></span>
+                                        </div>
+                                    </div>
+                                    <figcaption class="mt-1.5 text-xs font-semibold text-muted">{{ $caption }}</figcaption>
+                                </figure>
+                            @endforeach
+                            @foreach ([['Reiseseite · Handy', 'aspect-[390/288]'], ['Reiseseite · Desktop', 'aspect-[672/288]']] as [$caption, $ratio])
+                                <figure>
+                                    <div class="relative {{ $ratio }} overflow-hidden rounded-[12px]">
+                                        <img :src="preview" alt="" class="absolute inset-0 size-full object-cover" :style="imgStyle">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-45% to-black/25"></div>
+                                        <div class="absolute inset-x-3 bottom-3 flex flex-col gap-1.5" aria-hidden="true">
+                                            <span class="h-2 w-1/4 rounded-full bg-white/90"></span>
+                                            <span class="h-3 w-2/3 rounded-full bg-white"></span>
+                                            <span class="h-1.5 w-1/2 rounded-full bg-white/70"></span>
+                                        </div>
+                                    </div>
+                                    <figcaption class="mt-1.5 text-xs font-semibold text-muted">{{ $caption }}</figcaption>
+                                </figure>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 
