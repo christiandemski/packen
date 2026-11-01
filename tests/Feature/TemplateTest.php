@@ -177,3 +177,18 @@ it('hat lesbare Adressen je Person, die auch nach dem Umbenennen funktionieren',
     $this->actingAs($anna)->put(route('templates.update', $first), ['name' => 'Wochenende'])->assertRedirect('/vorlagen/wochenende');
     $this->actingAs($anna)->get('/vorlagen/staedtetrip')->assertRedirect('/vorlagen/wochenende');
 });
+
+it('fügt eine ganze Kategorie hinzu', function () {
+    $template = Template::factory()->for($this->anna, 'owner')->create();
+    $shirt = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Shirt', 'category' => 'tops', 'category_id' => null]);
+    $hoodie = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Hoodie', 'category' => 'tops', 'category_id' => null]);
+    $soap = Item::factory()->for($this->anna, 'owner')->create(['name' => 'Seife', 'category' => 'toiletries', 'category_id' => null]);
+    $foreign = Item::factory()->for($this->max, 'owner')->create(['category' => 'tops', 'category_id' => null]);
+    $template->items()->attach($shirt->id, ['quantity' => 3]);
+
+    $this->actingAs($this->anna)->post(route('templates.items.store', $template), ['category' => 'tops'])
+        ->assertSessionHas('status', '1 Gegenstand aus „'.$shirt->categoryGroup()->label.'“ hinzugefügt.');
+
+    expect($template->items()->pluck('items.id')->sort()->values()->all())->toBe(collect([$shirt->id, $hoodie->id])->sort()->values()->all())
+        ->and($template->items()->whereKey($shirt->id)->first()->pivot->quantity)->toBe(3);
+});

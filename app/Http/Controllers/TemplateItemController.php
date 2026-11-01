@@ -58,6 +58,30 @@ class TemplateItemController extends Controller
             return back()->with('status', "„{$item->name}“ hinzugefügt.");
         }
 
+        // Ganze Kategorie: alles daraus, was noch nicht in der Vorlage steht
+        if ($request->filled('category')) {
+            $key = (string) $request->input('category');
+            $group = Category::choices($user, withHidden: true)->firstWhere('key', $key);
+            abort_if($group === null, 422);
+
+            $ids = Item::accessibleBy($user)->with('customCategory')
+                ->whereNotIn('id', $template->items()->pluck('items.id'))
+                ->get()
+                ->filter(fn (Item $item) => $item->categoryGroup()->key === $key)
+                ->modelKeys();
+
+            $template->items()->syncWithoutDetaching(collect($ids)->mapWithKeys(fn ($id) => [$id => ['quantity' => 1]])->all());
+            $this->packlists->syncTemplate($template);
+
+            $count = count($ids);
+
+            return back()->with('status', match ($count) {
+                0 => "Aus „{$group->label}“ steht schon alles in der Vorlage.",
+                1 => "1 Gegenstand aus „{$group->label}“ hinzugefügt.",
+                default => "{$count} Gegenstände aus „{$group->label}“ hinzugefügt.",
+            });
+        }
+
         $data = $request->validate([
             'item_ids' => ['required', 'array'],
             'item_ids.*' => ['integer'],
