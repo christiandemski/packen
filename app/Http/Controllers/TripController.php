@@ -7,6 +7,7 @@ use App\Enums\TripMode;
 use App\Http\Requests\TripRequest;
 use App\Models\Category;
 use App\Models\Container;
+use App\Models\CustomTripType;
 use App\Models\GroupItem;
 use App\Models\PacklistEntry;
 use App\Models\Template;
@@ -43,11 +44,11 @@ class TripController extends Controller
         // Duplizieren: alles außer Zeitraum, Etappen und Abhaken übernehmen
         $source = $this->duplicateSource($request->query('von'), $request->user());
         if ($source) {
-            $trip = new Trip($source->only(['name', 'location', 'type', 'mode', 'accommodation', 'transports']));
+            $trip = new Trip($source->only(['name', 'location', 'type', 'custom_trip_type_id', 'mode', 'accommodation', 'transports']));
             $trip->setRelation('members', $source->members);
         }
 
-        return view('trips.form', ['trip' => $trip, 'source' => $source, 'friends' => $this->friendsOf($request->user())]);
+        return view('trips.form', ['trip' => $trip, 'source' => $source, 'friends' => $this->friendsOf($request->user()), 'customTypes' => $this->customTypesOf($request->user())]);
     }
 
     public function store(TripRequest $request): RedirectResponse
@@ -58,7 +59,7 @@ class TripController extends Controller
 
         $trip = $this->trips->create(
             $request->user(),
-            $request->validated(),
+            $request->tripData(),
             $request->file('cover'),
             $request->memberIds(),
             $source && ! $request->boolean('remove_cover') ? $source : null,
@@ -120,7 +121,7 @@ class TripController extends Controller
         $selected = $trip->templatesFor($user)->pluck('templates.id');
 
         // Vorschlag für eine neue Liste: „Basis“ plus die Vorlage, die wie die Reiseart heißt.
-        $suggested = $templates->filter(fn (Template $t) => in_array(mb_strtolower($t->name), ['basis', mb_strtolower($trip->type->label())], true))->pluck('id');
+        $suggested = $templates->filter(fn (Template $t) => in_array(mb_strtolower($t->name), ['basis', mb_strtolower($trip->typeLabel())], true))->pluck('id');
 
         $otherTrips = $user->trips()->whereKeyNot($trip->id)
             ->whereHas('entries', fn ($q) => $q->where('user_id', $user->id))
@@ -201,7 +202,7 @@ class TripController extends Controller
     {
         Gate::authorize('update', $trip);
 
-        return view('trips.form', ['trip' => $trip->load('members'), 'friends' => $this->friendsOf($request->user())]);
+        return view('trips.form', ['trip' => $trip->load('members'), 'friends' => $this->friendsOf($request->user()), 'customTypes' => $this->customTypesOf($request->user())]);
     }
 
     public function update(TripRequest $request, Trip $trip): RedirectResponse
@@ -210,7 +211,7 @@ class TripController extends Controller
 
         $this->trips->update(
             $trip,
-            $request->validated(),
+            $request->tripData(),
             $request->file('cover'),
             $request->boolean('remove_cover'),
             $request->memberIds(),
@@ -250,6 +251,12 @@ class TripController extends Controller
         $source = (new Trip)->resolveRouteBinding($slug);
 
         return $source && Gate::forUser($user)->allows('pack', $source) ? $source->load('members') : null;
+    }
+
+    /** @return Collection<int, CustomTripType> */
+    private function customTypesOf(User $user): Collection
+    {
+        return CustomTripType::accessibleBy($user)->orderBy('name')->get();
     }
 
     /** @return Collection<int, User> */

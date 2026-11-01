@@ -3,6 +3,8 @@
     use App\Enums\Transport;
     use App\Enums\TripMode;
     use App\Enums\TripType;
+    use App\Http\Requests\TripRequest;
+    use Illuminate\Support\Js;
 
     $editing = $trip->exists;
     $source ??= null;
@@ -101,17 +103,43 @@
                         @error('end_date')<p class="field-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
-                <fieldset>
-                    <legend class="label">Reiseart</legend>
+                @php($typeKey = old('type', $trip->typeKey()))
+                <fieldset x-data="{ type: @js($typeKey) }">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <legend class="label">Reiseart</legend>
+                        @if ($customTypes->isNotEmpty())
+                            <a href="{{ route('trip-types.index') }}" class="text-xs font-bold text-muted hover:text-ink hover:underline">Eigene verwalten</a>
+                        @endif
+                    </div>
                     <div class="flex flex-wrap gap-2">
                         @foreach (TripType::cases() as $type)
                             <label class="choice">
-                                <input type="radio" name="type" value="{{ $type->value }}" class="sr-only" required @checked(old('type', $trip->type?->value) === $type->value)>
+                                <input type="radio" name="type" value="{{ $type->value }}" x-model="type" class="sr-only" required @checked($typeKey === $type->value)>
                                 <x-icon :name="$type->icon()" size="16" /> {{ $type->label() }}
                             </label>
                         @endforeach
+                        @foreach ($customTypes as $type)
+                            <label class="choice">
+                                <input type="radio" name="type" value="{{ $type->key() }}" x-model="type" class="sr-only" required @checked($typeKey === $type->key())>
+                                <x-icon :name="$type->icon" size="16" /> {{ $type->name }}
+                            </label>
+                        @endforeach
+                        <label class="choice border-dashed">
+                            <input type="radio" name="type" value="{{ TripRequest::NEW_TYPE }}" x-model="type" class="sr-only" required @checked($typeKey === TripRequest::NEW_TYPE)>
+                            <x-icon name="plus" size="16" /> Eigene
+                        </label>
                     </div>
                     @error('type')<p class="field-error">{{ $message }}</p>@enderror
+
+                    <div x-show="type === @js(TripRequest::NEW_TYPE)" x-cloak class="mt-3 space-y-3 rounded-chip bg-line-soft/60 p-4">
+                        <div>
+                            <label for="new_type_name" class="label">Name der Reiseart</label>
+                            <input id="new_type_name" name="new_type_name" value="{{ old('new_type_name') }}" maxlength="60" placeholder="z. B. Geschäftsreise, Festival, Segeln" class="input" :disabled="type !== @js(TripRequest::NEW_TYPE)">
+                            @error('new_type_name')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
+                        @include('trip-types._fields', ['prefix' => 'new_type_', 'icon' => old('new_type_icon', 'briefcase'), 'color' => old('new_type_color', 'pine'), 'disabled' => 'type !== '.Js::from(TripRequest::NEW_TYPE)])
+                        <p class="text-xs font-semibold text-muted">Wird mit der Reise gespeichert und steht danach bei jeder Reise zur Auswahl.</p>
+                    </div>
                 </fieldset>
             </div>
 

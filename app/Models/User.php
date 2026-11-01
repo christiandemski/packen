@@ -106,6 +106,12 @@ class User extends Authenticatable
         return $this->hasMany(Category::class, 'owner_id');
     }
 
+    /** @return HasMany<CustomTripType, $this> */
+    public function customTripTypes(): HasMany
+    {
+        return $this->hasMany(CustomTripType::class, 'owner_id');
+    }
+
     /** @return HasMany<Container, $this> */
     public function containers(): HasMany
     {

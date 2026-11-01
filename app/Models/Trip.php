@@ -24,7 +24,7 @@ class Trip extends Model
     use HasFactory;
 
     protected $fillable = [
-        'owner_id', 'external_id', 'external_url', 'name', 'start_date', 'end_date', 'type', 'mode',
+        'owner_id', 'external_id', 'external_url', 'name', 'start_date', 'end_date', 'type', 'custom_trip_type_id', 'mode',
         'accommodation', 'transports', 'location', 'cover_path', 'completed_at',
     ];
 
@@ -114,6 +114,33 @@ class Trip extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /** @return BelongsTo<CustomTripType, $this> */
+    public function customType(): BelongsTo
+    {
+        return $this->belongsTo(CustomTripType::class, 'custom_trip_type_id');
+    }
+
+    public function typeLabel(): string
+    {
+        return $this->customType?->name ?? $this->type->label();
+    }
+
+    public function typeIcon(): string
+    {
+        return $this->customType?->icon ?? $this->type->icon();
+    }
+
+    public function typeGradient(): string
+    {
+        return $this->customType?->gradient() ?? $this->type->gradient();
+    }
+
+    /** Wert für die Auswahl im Formular: „hiking“ oder „t:12“. */
+    public function typeKey(): ?string
+    {
+        return $this->custom_trip_type_id ? CustomTripType::PREFIX.$this->custom_trip_type_id : $this->type?->value;
     }
 
     /** @return BelongsToMany<User, $this> */

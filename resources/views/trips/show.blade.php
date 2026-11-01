@@ -30,7 +30,7 @@
                             {{ $trip->countdownLabel() }}
                         </span>
                     </div>
-                    <p class="mt-3 flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-white/85 uppercase"><x-icon :name="$trip->type->icon()" size="14" /> {{ $trip->type->label() }}</p>
+                    <p class="mt-3 flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-white/85 uppercase"><x-icon :name="$trip->typeIcon()" size="14" /> {{ $trip->typeLabel() }}</p>
                     <h1 class="page-title mt-1 [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">{{ $trip->name }}</h1>
                     <div class="mt-2 flex items-end justify-between gap-3">
                         <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-white/90">

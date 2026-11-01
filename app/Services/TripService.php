@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\TripMemberRole;
 use App\Enums\TripMode;
+use App\Enums\TripType;
+use App\Models\CustomTripType;
 use App\Models\PacklistEntry;
 use App\Models\Trip;
 use App\Models\User;
@@ -133,9 +135,21 @@ class TripService
 
     private function attributes(array $data): array
     {
-        return collect($data)->only([
+        $attributes = collect($data)->only([
             'name', 'start_date', 'end_date', 'type', 'mode', 'accommodation', 'transports', 'location', 'external_id', 'external_url',
         ])->all();
+
+        // Eigene Reiseart („t:12“): fest steht dann „Sonstiges“ als Rückfall
+        if (array_key_exists('type', $attributes)) {
+            $type = $attributes['type'];
+            $customId = CustomTripType::idFromKey($type instanceof TripType ? $type->value : $type);
+            $attributes['custom_trip_type_id'] = $customId;
+            if ($customId !== null) {
+                $attributes['type'] = TripType::Other->value;
+            }
+        }
+
+        return $attributes;
     }
 
     /** Eigene Kopie, damit Löschen der einen Reise das Bild der anderen nicht mitnimmt. */

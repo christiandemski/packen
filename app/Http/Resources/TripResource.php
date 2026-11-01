@@ -23,6 +23,7 @@ class TripResource extends JsonResource
             'days' => $this->days(),
             'nights' => $this->nights(),
             'type' => $this->type->value,
+            'type_label' => $this->typeLabel(),
             'mode' => $this->mode->value,
             'accommodation' => $this->accommodation?->value,
             'transports' => ($this->transports ?? collect())->map(fn (Transport $t) => $t->value)->values(),
