@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContainerController;
+use App\Http\Controllers\CustomTripTypeController;
 use App\Http\Controllers\GroupItemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
@@ -132,6 +133,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('kategorien', CategoryController::class)
         ->parameters(['kategorien' => 'category'])
         ->names('categories')
+        ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('reisearten', CustomTripTypeController::class)
+        ->parameters(['reisearten' => 'tripType'])
+        ->names('trip-types')
         ->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('behaeltnisse', ContainerController::class)

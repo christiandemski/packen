@@ -29,7 +29,7 @@
     </x-trip-cover>
 
     <div class="relative -ml-7 flex min-w-0 flex-1 flex-col gap-1 py-3.5 pr-4">
-        <span class="eyebrow flex items-center gap-1.5"><x-icon :name="$trip->type->icon()" size="13" /> {{ $trip->type->label() }}</span>
+        <span class="eyebrow flex items-center gap-1.5"><x-icon :name="$trip->typeIcon()" size="13" /> {{ $trip->typeLabel() }}</span>
         <h3 class="truncate text-lg leading-tight font-extrabold tracking-tight sm:text-xl">{{ $trip->name }}</h3>
         <p class="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap">
             <x-icon name="calendar" size="14" class="text-muted" />

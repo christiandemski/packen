@@ -6,6 +6,7 @@ use App\Enums\Accommodation;
 use App\Enums\Transport;
 use App\Enums\TripMode;
 use App\Enums\TripType;
+use App\Models\CustomTripType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,9 @@ use Illuminate\Validation\Validator;
 
 class TripRequest extends FormRequest
 {
+    /** Auswahlwert „neue Reiseart anlegen“ */
+    public const NEW_TYPE = 'new';
+
     public function authorize(): bool
     {
         return true; // Rechte prüft der Controller über die TripPolicy.
@@ -31,7 +35,15 @@ class TripRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:120'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'type' => ['required', Rule::enum(TripType::class)],
+            'type' => ['required', 'string', Rule::in([
+                ...array_column(TripType::cases(), 'value'),
+                ...CustomTripType::accessibleBy($this->user())->get()->map->key(),
+                self::NEW_TYPE,
+            ])],
+            'new_type_name' => ['nullable', 'required_if:type,'.self::NEW_TYPE, 'string', 'max:60',
+                Rule::unique('custom_trip_types', 'name')->where('owner_id', $this->user()->id)],
+            'new_type_icon' => ['nullable', 'required_if:type,'.self::NEW_TYPE, Rule::in(CustomTripType::ICONS)],
+            'new_type_color' => ['nullable', 'required_if:type,'.self::NEW_TYPE, Rule::in(array_keys(CustomTripType::COLORS))],
             'mode' => ['required', Rule::enum(TripMode::class)],
             'accommodation' => ['nullable', Rule::enum(Accommodation::class)],
             'transports' => ['array'],
@@ -58,6 +70,19 @@ class TripRequest extends FormRequest
             'transports.*' => 'Anreise mit',
             'members' => 'Mitreisende',
             'cover' => 'Bild',
+            'new_type_name' => 'Name der Reiseart',
+            'new_type_icon' => 'Icon',
+            'new_type_color' => 'Farbe',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'new_type_name.unique' => 'Eine Reiseart mit diesem Namen gibt es schon.',
+            'new_type_name.required_if' => 'Bitte gib der neuen Reiseart einen Namen.',
+            'new_type_icon.required_if' => 'Bitte wähle ein Icon.',
+            'new_type_color.required_if' => 'Bitte wähle eine Farbe.',
         ];
     }
 
@@ -72,6 +97,23 @@ class TripRequest extends FormRequest
                 $validator->errors()->add('end_date', 'Eine Reise darf höchstens ein Jahr dauern.');
             }
         }];
+    }
+
+    /** Validierte Daten; „neue Reiseart“ wird dabei angelegt und als „t:12“ eingesetzt. */
+    public function tripData(): array
+    {
+        $data = $this->validated();
+
+        if ($data['type'] === self::NEW_TYPE) {
+            $type = $this->user()->customTripTypes()->create([
+                'name' => trim($data['new_type_name']),
+                'icon' => $data['new_type_icon'],
+                'color' => $data['new_type_color'],
+            ]);
+            $data['type'] = $type->key();
+        }
+
+        return collect($data)->except(['new_type_name', 'new_type_icon', 'new_type_color'])->all();
     }
 
     /** @return list<int> */
