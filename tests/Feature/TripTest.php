@@ -216,6 +216,10 @@ it('lässt vorbei, aber nicht abgehakte Reisen oben stehen', function () {
     $this->actingAs($this->anna)->get(route('trips.show', $ended))->assertSee('Die Reise ist vorbei');
 });
 
+it('zeigt Angemeldeten Fehlerseiten mit Navigation', function () {
+    $this->actingAs($this->anna)->get('/reisen/gibt-es-nicht')->assertNotFound()->assertSee('Nicht gefunden')->assertSee('aria-label="Hauptnavigation"', false);
+});
+
 it('zeigt die laufende Reise groß, nicht die vorbeie', function () {
     Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom', 'start_date' => now()->subDays(6), 'end_date' => now()->subDays(2)]);
     Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Lissabon', 'start_date' => now()->subDay(), 'end_date' => now()->addDays(3)]);

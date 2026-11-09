@@ -1,11 +1,8 @@
 <x-layouts.app title="Reisen">
     {{-- Laufende und kommende Reisen werden für unterwegs (offline) vorgeladen. --}}
     <div data-offline-prefetch="{{ json_encode($upcoming->map(fn ($trip) => route('trips.show', $trip, false))->values()) }}">
-        <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-                <p class="eyebrow">Hallo {{ auth()->user()->name }}</p>
-                <h1 class="page-title mt-1">Deine Reisen</h1>
-            </div>
+        <div class="mb-6 flex items-center justify-between gap-4">
+            <h1 class="page-title">Deine Reisen</h1>
 
             {{-- Für mich oder Gruppe wird im Formular gewählt, deshalb kein Zwischenmenü --}}
             <a href="{{ route('trips.create') }}" class="btn btn-primary"><x-icon name="plus" size="18" /> Neue Reise</a>

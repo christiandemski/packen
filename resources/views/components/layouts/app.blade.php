@@ -76,7 +76,7 @@
                         </div>
                         <nav class="py-1" aria-label="Profil">
                             <a href="{{ route('profile.edit') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="user" size="18" class="text-muted" /> Profil &amp; Einstellungen</a>
-                            <a href="{{ route('notifications.settings') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="bell" size="18" class="text-muted" /> Benachrichtigungen</a>
+                            <a href="{{ route('notifications.settings') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="settings" size="18" class="text-muted" /> Benachrichtigungs-Einstellungen</a>
                             @can('admin')
                                 <a href="{{ route('admin.index') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="shield" size="18" class="text-muted" /> Admin</a>
                             @endcan

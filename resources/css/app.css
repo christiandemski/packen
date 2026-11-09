@@ -108,7 +108,7 @@
     }
 
     .label {
-        @apply mb-1.5 block text-xs font-bold uppercase tracking-[0.06em] text-muted;
+        @apply mb-1.5 block text-sm font-bold text-ink;
     }
 
     .input {
