@@ -3,7 +3,6 @@
     use App\Models\OutfitSlot;
 
     $itemsById = $outfitDays->flatMap(fn ($d) => $d->slots->flatMap->items)->keyBy('id');
-    $scroll = $outfitDays->count() > 7;
 @endphp
 <div x-data="{ day: @js($selectedDay), person: 'me' }" class="space-y-4">
     @if ($trip->isGroup())
@@ -54,7 +53,9 @@
                 @if ($weather['days'])Wetter für {{ $weather['place'] }}.@endif {{ $weather['hint'] }}
             </p>
         @endif
-        <div class="{{ $scroll ? 'overflow-x-auto' : '' }}">
+        {{-- Auf dem Handy passen selten alle Tage: waagerecht scrollen, rechts blendet ein Verlauf an, dass es weitergeht. --}}
+        <div class="relative" x-data="{ more: false, check() { const el = this.$refs.scroller; this.more = el.scrollLeft + el.clientWidth < el.scrollWidth - 4 } }" x-init="$nextTick(() => check())" @resize.window.debounce="check()">
+        <div class="overflow-x-auto" x-ref="scroller" @scroll.passive="check()">
             <table class="w-full border-collapse text-sm">
                 <thead>
                     <tr>
@@ -75,7 +76,7 @@
                                 </button>
                             </th>
                         @endforeach
-                        <th class="px-3 pb-2 text-right text-xs font-bold text-muted">Σ</th>
+                        <th class="px-3 pb-2 text-right text-xs font-bold text-muted">Summe</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,6 +102,8 @@
                 </tbody>
             </table>
         </div>
+            <div x-show="more" x-transition.opacity class="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface to-transparent"></div>
+        </div>
         <p class="flex flex-wrap gap-x-4 gap-y-1 border-t border-line-soft px-5 py-3 text-xs font-semibold text-muted">
             <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-accent"></span> getragen</span>
             <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-accent-soft ring-1 ring-accent/30"></span> Waschtag</span>
@@ -120,8 +123,13 @@
                     <p class="text-lg font-extrabold">
                         {{ $outfitDay->label() }}@if ($outfitDay->title)<span x-show="!editing"> · {{ $outfitDay->title }}</span>@endif
                     </p>
-                    <button type="button" x-show="!editing" @click="editing = true; $nextTick(() => $refs.title.focus())" class="text-sm font-bold text-muted hover:text-ink">
-                        {{ $outfitDay->title ? 'Titel ändern' : '+ Titel, z. B. Alfama & Belém' }}
+                    {{-- Als Feld erkennbar: gestrichelter Rahmen, Beispiel nur als grauer Hinweis --}}
+                    <button type="button" x-show="!editing" @click="editing = true; $nextTick(() => $refs.title.focus())" class="mt-1.5 inline-flex min-h-9 items-center gap-1.5 rounded-chip border border-dashed border-line px-3 text-sm font-bold text-muted hover:border-ink hover:text-ink">
+                        @if ($outfitDay->title)
+                            <x-icon name="pencil" size="14" /> Titel ändern
+                        @else
+                            <x-icon name="plus" size="14" /> Titel <span class="font-semibold text-muted/70">z. B. Alfama &amp; Belém</span>
+                        @endif
                     </button>
                     <div x-show="editing" x-cloak class="mt-2 flex gap-2">
                         <input x-ref="title" name="title" value="{{ $outfitDay->title }}" maxlength="120" placeholder="Was steht an?" aria-label="Titel des Tages" class="input">
@@ -144,8 +152,12 @@
                         @elseif ($stageLocations[$date] ?? null)
                             <span class="flex items-center gap-1.5"><x-icon name="map-pin" size="16" /> {{ $stageLocations[$date] }}</span>
                         @endif
-                        <button type="button" @click="editing = true; $nextTick(() => $refs.location.focus())" class="font-bold hover:text-ink">
-                            {{ $outfitDay->location ? 'Ort ändern' : '+ Anderer Ort, z. B. Tagesausflug' }}
+                        <button type="button" @click="editing = true; $nextTick(() => $refs.location.focus())" class="inline-flex min-h-9 items-center gap-1.5 rounded-chip border border-dashed border-line px-3 font-bold hover:border-ink hover:text-ink">
+                            @if ($outfitDay->location)
+                                <x-icon name="pencil" size="14" /> Ort ändern
+                            @else
+                                <x-icon name="map-pin" size="14" /> Anderer Ort <span class="font-semibold text-muted/70">z. B. Tagesausflug</span>
+                            @endif
                         </button>
                     </div>
                     <form x-show="editing" x-cloak method="POST" action="{{ route('outfits.day', [$trip, $outfitDay]) }}" data-keep-scroll class="mt-1 flex gap-2">

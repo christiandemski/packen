@@ -108,7 +108,7 @@
     }
 
     .label {
-        @apply mb-1.5 block text-xs font-bold uppercase tracking-[0.06em] text-muted;
+        @apply mb-1.5 block text-sm font-bold text-ink;
     }
 
     .input {
@@ -139,5 +139,26 @@
     .segment-item[aria-pressed='true'],
     .segment-item[aria-selected='true'] {
         @apply bg-surface text-ink shadow-sm;
+    }
+
+    .segment-sm {
+        @apply p-0.5;
+    }
+
+    .segment-sm .segment-item {
+        @apply min-h-8 gap-1 px-2.5 text-xs;
+    }
+
+    /* Hauptbereiche einer Seite: Unterstrich statt Kachel, damit sie sich von Umschaltern abheben. */
+    .tabs {
+        @apply flex border-b border-line;
+    }
+
+    .tab {
+        @apply -mb-px flex min-h-12 flex-1 items-center justify-center gap-1.5 border-b-2 border-transparent px-3 text-[15px] font-bold text-muted transition hover:text-ink;
+    }
+
+    .tab[aria-selected='true'] {
+        @apply border-accent text-ink;
     }
 }

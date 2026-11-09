@@ -76,7 +76,7 @@
                         </div>
                         <nav class="py-1" aria-label="Profil">
                             <a href="{{ route('profile.edit') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="user" size="18" class="text-muted" /> Profil &amp; Einstellungen</a>
-                            <a href="{{ route('notifications.settings') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="bell" size="18" class="text-muted" /> Benachrichtigungen</a>
+                            <a href="{{ route('notifications.settings') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="settings" size="18" class="text-muted" /> Benachrichtigungs-Einstellungen</a>
                             @can('admin')
                                 <a href="{{ route('admin.index') }}" class="flex min-h-11 items-center gap-3 px-4 text-[15px] font-semibold hover:bg-line-soft"><x-icon name="shield" size="18" class="text-muted" /> Admin</a>
                             @endcan
@@ -107,7 +107,8 @@
          class="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-md rounded-chip bg-ink px-4 py-3 text-sm font-bold text-white shadow-lg sm:bottom-8"
          x-text="$store.sync.notice"></div>
 
-    <main class="mx-auto max-w-5xl px-4 pt-6 pb-28 sm:pb-16">
+    {{-- Unten Platz für Navigation und schwebenden Button, damit nichts verdeckt bleibt --}}
+    <main class="mx-auto max-w-5xl px-4 pt-6 pb-40 sm:pb-24">
         <x-flash />
         {{ $slot }}
     </main>

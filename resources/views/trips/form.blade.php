@@ -12,7 +12,7 @@
     $selectedMembers = collect(old('members', $trip->relationLoaded('members') ? $trip->members->pluck('id')->all() : []))->map(fn ($id) => (int) $id);
     $coverTrip = $source ?? $trip;
     $coverUrl = $coverTrip->cover_path ? route('trips.cover', ['trip' => $coverTrip, 'v' => $coverTrip->updated_at?->timestamp]) : null;
-    $title = $editing ? 'Reise bearbeiten' : ($source ? 'Reise duplizieren' : 'Neue Liste');
+    $title = $editing ? 'Reise bearbeiten' : ($source ? 'Reise duplizieren' : 'Neue Reise');
     $backUrl = $editing ? route('trips.show', $trip) : ($source ? route('trips.show', $source) : route('home'));
 @endphp
 <x-layouts.app :title="$title">
@@ -25,7 +25,7 @@
         @if ($source)
             <p class="mb-4 flex items-start gap-2 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
                 <x-icon name="copy" size="16" class="mt-0.5 shrink-0" />
-                <span>Vorlage ist „{{ $source->name }}“. Trag den neuen Zeitraum ein – deine Packliste mit Modulen und Behältnissen wird übernommen, Abgehaktes startet wieder offen.</span>
+                <span>Kopie von „{{ $source->name }}“. Trag den neuen Zeitraum ein – deine Packliste mit Vorlagen und Behältnissen wird übernommen, Abgehaktes startet wieder offen.</span>
             </p>
         @endif
 
@@ -35,10 +35,10 @@
             @if ($editing) @method('PUT') @endif
             @if ($source)<input type="hidden" name="source_trip" value="{{ $source->slug }}">@endif
 
-            {{-- Art der Liste --}}
+            {{-- Art der Reise --}}
             <fieldset class="card p-5">
-                <legend class="sr-only">Art der Liste</legend>
-                <p class="card-title mb-3">Für wen ist die Liste?</p>
+                <legend class="sr-only">Art der Reise</legend>
+                <p class="card-title mb-3">Für wen ist die Reise?</p>
                 <div class="grid grid-cols-2 gap-3">
                     @foreach ([[TripMode::Solo, 'user', 'Für mich', 'Privat – nur du siehst sie'], [TripMode::Group, 'users', 'Für eine Gruppe', 'Gemeinsam mit Freunden']] as [$case, $icon, $title, $hint])
                         <label class="flex cursor-pointer flex-col gap-2 rounded-card border-2 border-line p-4 transition hover:border-muted has-checked:border-accent has-checked:bg-accent-soft has-focus-visible:outline-2 has-focus-visible:outline-accent">
@@ -272,7 +272,7 @@
 
             <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                 <a href="{{ $backUrl }}" class="btn btn-secondary">Abbrechen</a>
-                <button type="submit" class="btn btn-primary">{{ $editing ? 'Speichern' : ($source ? 'Duplikat anlegen' : 'Liste anlegen') }}</button>
+                <button type="submit" class="btn btn-primary">{{ $editing ? 'Speichern' : ($source ? 'Duplikat anlegen' : 'Reise anlegen') }}</button>
             </div>
         </form>
 
