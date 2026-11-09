@@ -21,7 +21,25 @@ const storage = {
 };
 
 /**
- * Titelbild mit Ausschnitt: Statt fest zuzuschneiden merken wir uns den Bildpunkt, der sichtbar
+ * Schwebender Button: beim Runterscrollen nur noch „+“, damit er weniger vom Inhalt verdeckt;
+ * beim Hochscrollen oder oben auf der Seite wieder mit Beschriftung.
+ */
+Alpine.data('fab', () => ({
+    compact: false,
+    lastY: 0,
+    init() {
+        this.lastY = window.scrollY;
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY;
+            if (Math.abs(y - this.lastY) < 8) return;
+            this.compact = y > 120 && y > this.lastY;
+            this.lastY = y;
+        }, { passive: true });
+    },
+}));
+
+/**
+ * Titelbild mit Ausschnitt:Statt fest zuzuschneiden merken wir uns den Bildpunkt, der sichtbar
  * bleiben soll (x, y in Prozent), und einen Zoom – Card und Reiseseite haben verschiedene Formate.
  */
 Alpine.data('coverPicker', (initialUrl = null, focus = { x: 50, y: 50, zoom: 100 }) => ({

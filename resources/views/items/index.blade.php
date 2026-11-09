@@ -171,8 +171,8 @@
                     <span><span class="block text-[15px] font-bold">Behältnis</span><span class="block text-xs font-semibold text-muted">Koffer, Rucksack, Tasche …</span></span>
                 </a>
             </div>
-            <button type="button" class="btn btn-primary shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)]" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
-                <x-icon name="plus" size="18" class="transition-transform" ::class="open && 'rotate-45'" /> Neu
+            <button type="button" x-data="fab" class="btn btn-primary shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] transition-[padding]" :class="compact && !open && 'px-3.5'" @click="open = !open" :aria-expanded="open" aria-haspopup="true" aria-label="Neu anlegen">
+                <x-icon name="plus" size="18" class="transition-transform" ::class="open && 'rotate-45'" /> <span x-show="!compact || open">Neu</span>
             </button>
         </div>
     @endif

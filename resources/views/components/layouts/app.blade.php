@@ -107,7 +107,8 @@
          class="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-md rounded-chip bg-ink px-4 py-3 text-sm font-bold text-white shadow-lg sm:bottom-8"
          x-text="$store.sync.notice"></div>
 
-    <main class="mx-auto max-w-5xl px-4 pt-6 pb-28 sm:pb-16">
+    {{-- Unten Platz für Navigation und schwebenden Button, damit nichts verdeckt bleibt --}}
+    <main class="mx-auto max-w-5xl px-4 pt-6 pb-40 sm:pb-24">
         <x-flash />
         {{ $slot }}
     </main>

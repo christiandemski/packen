@@ -103,9 +103,9 @@
             </div>
         @endif
 
-        <div class="segment" role="tablist" aria-label="Bereiche der Reise">
+        <div class="tabs" role="tablist" aria-label="Bereiche der Reise">
             @foreach (['packlist' => ['list-checks', 'Packliste'], 'outfits' => ['shirt', 'Outfits'], 'review' => ['history', 'Rückblick']] as $key => [$icon, $label])
-                <button type="button" role="tab" class="segment-item" :aria-selected="tab === '{{ $key }}'" @click="tab = '{{ $key }}'">
+                <button type="button" role="tab" class="tab" :aria-selected="tab === '{{ $key }}'" @click="tab = '{{ $key }}'">
                     <x-icon :name="$icon" size="16" /> {{ $label }}
                 </button>
             @endforeach
@@ -170,19 +170,21 @@
             @elseif ($isEmpty)
                 <div class="card p-5 text-sm text-muted">Diese Liste ist noch leer.</div>
             @else
-                @if ($returnAvailable)
-                    <div class="segment mb-4" role="group" aria-label="Richtung">
-                        <button type="button" class="segment-item" :aria-pressed="direction === 'there'" @click="direction = 'there'"><x-icon name="luggage" size="16" /> Hinweg</button>
-                        <button type="button" class="segment-item" :aria-pressed="direction === 'back'" @click="direction = 'back'; editing = false"><x-icon name="repeat" size="16" /> Rückweg</button>
-                    </div>
-                    <p x-show="direction === 'back'" x-cloak class="mb-4 flex items-start gap-2 rounded-chip bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-ink">
-                        <x-icon name="repeat" size="16" class="mt-0.5" />
-                        <span>Rückweg: Hak ab, was wieder im Gepäck ist – Ladekabel in der Steckdose, Jacke an der Garderobe?</span>
-                    </p>
-                @endif
-
-                {{-- Fortschritt --}}
+                {{-- Fortschritt; Hinweg/Rückweg schaltet nur die Haken um, deshalb klein hier oben. --}}
                 <div class="card p-5">
+                    @if ($returnAvailable)
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <span class="eyebrow">Packen für</span>
+                            <div class="segment segment-sm" role="group" aria-label="Richtung">
+                                <button type="button" class="segment-item" :aria-pressed="direction === 'there'" @click="direction = 'there'"><x-icon name="luggage" size="14" /> Hinweg</button>
+                                <button type="button" class="segment-item" :aria-pressed="direction === 'back'" @click="direction = 'back'; editing = false"><x-icon name="repeat" size="14" /> Rückweg</button>
+                            </div>
+                        </div>
+                        <p x-show="direction === 'back'" x-cloak class="mb-4 flex items-start gap-2 rounded-chip bg-accent-soft px-3 py-2.5 text-sm font-semibold text-accent-ink">
+                            <x-icon name="repeat" size="16" class="mt-0.5 shrink-0" />
+                            <span>Hak ab, was wieder im Gepäck ist – Ladekabel in der Steckdose, Jacke an der Garderobe?</span>
+                        </p>
+                    @endif
                     <div class="flex items-baseline justify-between gap-3">
                         <p class="text-[15px] font-bold"><span x-text="done">{{ $progress['packed'] }}</span> von <span x-text="total">{{ $progress['total'] }}</span> <span x-text="direction === 'back' ? 'wieder eingepackt' : 'gepackt'">gepackt</span></p>
                         <p class="text-2xl font-extrabold text-accent"><span x-text="percent">{{ $progress['total'] ? round($progress['packed'] / $progress['total'] * 100) : 0 }}</span> %</p>
@@ -190,7 +192,14 @@
                     <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-line-soft" role="progressbar" aria-label="Packfortschritt" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100">
                         <div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="`width: ${percent}%`" style="width: {{ $progress['total'] ? round($progress['packed'] / $progress['total'] * 100) : 0 }}%"></div>
                     </div>
-                    @if ($weight['total'] > 0)
+                    @if ($weight['total'] > 0 && $weight['total'] === $weight['containers'])
+                        {{-- Nur Behältnisse gewogen: eine Summe wäre irreführend --}}
+                        <p class="mt-3 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-muted">
+                            <x-icon name="scale" size="16" />
+                            <span>Noch keine Gewichte bei den Gegenständen –</span>
+                            <a href="{{ route('items.index') }}" class="font-bold text-accent-ink hover:underline">im Katalog ergänzen</a>
+                        </p>
+                    @elseif ($weight['total'] > 0)
                         <p class="mt-3 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-muted">
                             <x-icon name="scale" size="16" />
                             <span>Gesamtgewicht <span class="font-extrabold text-ink">{{ $weight['missing'] ? 'mind. ' : '' }}{{ Container::kg($weight['total']) }}</span></span>
@@ -216,6 +225,13 @@
                                 <x-icon name="pencil" size="16" /> <span x-text="editing ? 'Fertig' : 'Anpassen'">Anpassen</span>
                             </button>
                         @endif
+                        @if ($userContainers->isNotEmpty())
+                            <button type="button" class="btn btn-ghost min-h-11 px-3 text-sm" @click="view = view === 'groups' ? 'containers' : 'groups'"
+                                    :aria-label="view === 'groups' ? 'Nach Behältnis ordnen' : 'Nach Gruppe ordnen'">
+                                <x-icon name="luggage" size="16" x-show="view === 'groups'" /><x-icon name="list-checks" size="16" x-show="view === 'containers'" x-cloak />
+                                <span x-text="view === 'groups' ? 'Behältnisse' : 'Gruppen'">Behältnisse</span>
+                            </button>
+                        @endif
                         <button type="button" class="btn btn-ghost min-h-11 px-3 text-sm" @click="$dispatch('open-sheet', 'export')"><x-icon name="share" size="16" /> Exportieren</button>
                         <button type="button" role="switch" :aria-checked="onlyOpen" @click="toggleOnlyOpen" class="flex min-h-11 items-center gap-2 text-sm font-bold">
                             Nur offene
@@ -235,13 +251,6 @@
                     </div>
                 @endif
 
-                @if ($userContainers->isNotEmpty())
-                    <div class="segment mt-4" role="group" aria-label="Ansicht der Packliste">
-                        <button type="button" class="segment-item" :aria-pressed="view === 'groups'" @click="view = 'groups'"><x-icon name="list-checks" size="16" /> Nach Gruppe</button>
-                        <button type="button" class="segment-item" :aria-pressed="view === 'containers'" @click="view = 'containers'"><x-icon name="luggage" size="16" /> Nach Behältnis</button>
-                    </div>
-                @endif
-
                 {{-- Nach Gruppe --}}
                 <div class="mt-4 space-y-4" x-show="view === 'groups'">
                     @foreach ($groups as $entries)
@@ -252,7 +261,7 @@
                                 <h2 class="card-title flex items-center gap-2">
                                     <x-icon :name="$group->icon" size="18" class="text-accent" /> {{ $group->label }}
                                     @if ($group->is(PacklistGroup::DepartureDay))
-                                        <span class="chip bg-accent-soft text-accent-ink">Zuletzt</span>
+                                        <span class="chip bg-accent-soft text-accent-ink">Kurz vor Abfahrt</span>
                                     @elseif ($group->is(PacklistGroup::Clothing) && $hasOutfitEntries)
                                         <button type="button" @click="tab = 'outfits'; window.scrollTo({ top: 0, behavior: 'smooth' })" class="chip bg-accent-soft text-accent-ink hover:bg-accent hover:text-white">Aus Outfits</button>
                                     @endif
@@ -411,9 +420,9 @@
                 <span class="min-w-0 flex-1 truncate" x-text="undoError || (undo && `„${undo.name}“ entfernt`)"></span>
                 <button type="button" x-show="undo" @click="undoRemove()" class="min-h-11 shrink-0 rounded-chip px-3 font-extrabold text-accent-soft hover:bg-white/10">Rückgängig</button>
             </div>
-            <button type="button" @click="$dispatch('open-sheet', 'add-entry')"
-                    class="btn btn-primary fixed right-4 bottom-20 z-20 shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] sm:bottom-6">
-                <x-icon name="plus" size="18" /> Gegenstand
+            <button type="button" x-data="fab" @click="$dispatch('open-sheet', 'add-entry')" aria-label="Gegenstand hinzufügen"
+                    class="btn btn-primary fixed right-4 bottom-20 z-20 shadow-[0_12px_28px_-10px_rgba(14,107,94,0.6)] transition-[padding] sm:bottom-6" :class="compact && 'px-3.5'">
+                <x-icon name="plus" size="18" /> <span x-show="!compact">Gegenstand</span>
             </button>
             @endif
         </div>
