@@ -15,11 +15,11 @@
             @if ($pushKey)
                 <div x-data="pushToggle(@js($pushKey), @js(route('push.store')), @js(route('push.test')))">
                     <p class="mt-1 text-sm text-muted">
-                        Nachrichten aufs Handy oder in den Browser, auch wenn Packen geschlossen ist. Gilt für jedes Gerät einzeln
+                        Nachrichten aufs Handy oder in den Browser, auch wenn {{ config('app.name') }} geschlossen ist. Gilt für jedes Gerät einzeln
                         – eingeschaltet auf {{ $devices }} {{ $devices === 1 ? 'Gerät' : 'Geräten' }}.
                     </p>
                     <template x-if="!supported">
-                        <p class="mt-3 rounded-chip bg-line-soft p-3 text-sm font-semibold text-muted">Dieser Browser kann keine Push-Nachrichten. Auf dem iPhone geht es, wenn du Packen über „Teilen → Zum Home-Bildschirm“ hinzufügst und von dort öffnest.</p>
+                        <p class="mt-3 rounded-chip bg-line-soft p-3 text-sm font-semibold text-muted">Dieser Browser kann keine Push-Nachrichten. Auf dem iPhone geht es, wenn du {{ config('app.name') }} über „Teilen → Zum Home-Bildschirm“ hinzufügst und von dort öffnest.</p>
                     </template>
                     <div x-show="supported" class="mt-4 flex flex-wrap items-center gap-2">
                         <button type="button" role="switch" :aria-checked="active" @click="toggle" :disabled="busy" class="flex min-h-11 items-center gap-3 text-[15px] font-bold">

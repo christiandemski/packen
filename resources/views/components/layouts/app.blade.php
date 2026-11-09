@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/app-icons/favicon-32.png">
     <link rel="apple-touch-icon" href="/app-icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Packen">
+    <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-dvh" data-auth="1">

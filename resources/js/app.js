@@ -551,7 +551,7 @@ Alpine.data('pushToggle', (publicKey, url, testUrl) => ({
                 return;
             }
             if ((await Notification.requestPermission()) !== 'granted') {
-                this.message = 'Benachrichtigungen sind für Packen blockiert – in den Browser-Einstellungen erlauben.';
+                this.message = 'Benachrichtigungen sind für PackPal blockiert – in den Browser-Einstellungen erlauben.';
                 return;
             }
             const key = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
