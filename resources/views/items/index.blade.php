@@ -34,12 +34,18 @@
                 <x-icon name="search" size="18" class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
                 <input type="search" x-model="q" placeholder="Im Katalog suchen" aria-label="Im Katalog suchen" class="input pl-10">
             </div>
+            {{-- Legende nur auf Wunsch, damit sie nicht zwischen Suche und Inhalt steht --}}
             @if ($marks->isNotEmpty())
-                <p class="-mt-2 mb-5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted" aria-hidden="true">
-                    @foreach ($marks as [$icon, $label, $accent])
-                        <span class="inline-flex items-center gap-1"><x-icon :name="$icon" size="13" class="{{ $accent ? 'text-accent' : '' }}" /> {{ $label }}</span>
-                    @endforeach
-                </p>
+                <details class="group -mt-3 mb-4 text-xs font-semibold text-muted">
+                    <summary class="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 font-bold hover:text-ink [&::-webkit-details-marker]:hidden">
+                        <x-icon name="chevron-right" size="14" class="transition group-open:rotate-90" /> Was bedeuten die Symbole?
+                    </summary>
+                    <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 pl-5">
+                        @foreach ($marks as [$icon, $label, $accent])
+                            <span class="inline-flex items-center gap-1"><x-icon :name="$icon" size="13" class="{{ $accent ? 'text-accent' : '' }}" /> {{ $label }}</span>
+                        @endforeach
+                    </p>
+                </details>
             @endif
         @endif
 
