@@ -216,6 +216,14 @@ it('lässt vorbei, aber nicht abgehakte Reisen oben stehen', function () {
     $this->actingAs($this->anna)->get(route('trips.show', $ended))->assertSee('Die Reise ist vorbei');
 });
 
+it('zeigt die laufende Reise groß, nicht die vorbeie', function () {
+    Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom', 'start_date' => now()->subDays(6), 'end_date' => now()->subDays(2)]);
+    Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Lissabon', 'start_date' => now()->subDay(), 'end_date' => now()->addDays(3)]);
+
+    // Die große Card steht vor den Zeilen, obwohl Rom früher beginnt.
+    $this->actingAs($this->anna)->get(route('home'))->assertSeeInOrder(['Lissabon', 'Rom']);
+});
+
 it('hakt Reisen ab und nimmt sie wieder auf', function () {
     $trip = Trip::factory()->for($this->anna, 'owner')->create(['name' => 'Rom']);
 
