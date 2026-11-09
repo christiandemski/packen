@@ -2,5 +2,5 @@
     <span class="inline-flex size-9 items-center justify-center rounded-chip bg-accent text-white">
         <x-icon name="luggage" size="20" />
     </span>
-    {{ config('app.name') }}
+    PackPal
 </span>
