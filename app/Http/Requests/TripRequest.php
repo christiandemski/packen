@@ -70,7 +70,7 @@ class TripRequest extends FormRequest
             'start_date' => 'Anreise',
             'end_date' => 'Abreise',
             'type' => 'Reiseart',
-            'mode' => 'Art der Liste',
+            'mode' => 'Art der Reise',
             'accommodation' => 'Unterkunft',
             'transports' => 'Anreise mit',
             'transports.*' => 'Anreise mit',

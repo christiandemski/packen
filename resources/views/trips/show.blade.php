@@ -131,7 +131,7 @@
             @if ($isEmpty && $canEdit)
                 <div class="card p-5">
                     <p class="card-title">Stell deine Packliste zusammen</p>
-                    <p class="mt-1 text-sm text-muted">Wähle Module – doppelte Gegenstände werden zusammengeführt, „pro Tag“ wird mit {{ $trip->days() }} Tagen gerechnet.</p>
+                    <p class="mt-1 text-sm text-muted">Wähle Vorlagen – doppelte Gegenstände werden zusammengeführt, „pro Tag“ wird mit {{ $trip->days() }} Tagen gerechnet.</p>
 
                     @if ($templates->isNotEmpty())
                         <form method="POST" action="{{ route('packlist.templates', $trip) }}" class="mt-4">
@@ -216,7 +216,7 @@
                                 <span class="chip bg-ink text-white">{{ $template->name }}</span>
                             @endforeach
                             <button type="button" class="chip border border-dashed border-muted/60 text-muted hover:border-ink hover:text-ink" @click="$dispatch('open-sheet', 'modules')">
-                                <x-icon name="plus" size="12" /> Modul
+                                <x-icon name="plus" size="12" /> Vorlage
                             </button>
                         </div>
                         <div class="flex flex-wrap items-center gap-1">
@@ -504,12 +504,12 @@
         </details>
     </div>
 
-    {{-- Module wählen --}}
-    <x-sheet name="modules" title="Module">
+    {{-- Vorlagen wählen --}}
+    <x-sheet name="modules" title="Vorlagen">
         @if ($templates->isNotEmpty())
             <form method="POST" action="{{ route('packlist.templates', $trip) }}">
                 @csrf @method('PUT')
-                <p class="mb-3 text-sm text-muted">Abgewählte Module nehmen ihre Gegenstände wieder mit – außer du hast sie selbst hinzugefügt.</p>
+                <p class="mb-3 text-sm text-muted">Abgewählte Vorlagen nehmen ihre Gegenstände wieder mit – außer du hast sie selbst hinzugefügt.</p>
                 <div class="space-y-2">
                     @foreach ($templates as $template)
                         <label class="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-chip border border-line px-3 py-2 has-checked:border-accent has-checked:bg-accent-soft/50">

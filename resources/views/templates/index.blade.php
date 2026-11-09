@@ -1,6 +1,6 @@
 <x-layouts.app title="Vorlagen">
     <div class="mb-5">
-        <p class="eyebrow">Module für deine Packlisten</p>
+        <p class="eyebrow">Bausteine für deine Packlisten</p>
         <h1 class="page-title mt-1">Vorlagen</h1>
         <p class="mt-2 max-w-xl text-[15px] text-muted">Eine Packliste setzt sich aus mehreren Vorlagen zusammen, z. B. Basis + Städtetrip. Doppelte Gegenstände werden dabei zusammengeführt.</p>
     </div>

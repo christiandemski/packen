@@ -7,23 +7,8 @@
                 <h1 class="page-title mt-1">Deine Reisen</h1>
             </div>
 
-            <div class="flex items-center gap-2">
-                <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
-                    <button type="button" class="btn btn-primary" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
-                        <x-icon name="plus" size="18" /> Neue Liste
-                    </button>
-                    <div x-cloak x-show="open" x-transition.origin.top.right class="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-card border border-line bg-surface p-1.5 shadow-[0_20px_40px_-16px_rgba(23,33,30,0.35)]">
-                        <a href="{{ route('trips.create', ['mode' => 'solo']) }}" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
-                            <span class="inline-flex size-10 items-center justify-center rounded-chip bg-line-soft"><x-icon name="user" /></span>
-                            <span><span class="block text-[15px] font-bold">Für mich</span><span class="block text-xs font-semibold text-muted">Private Packliste</span></span>
-                        </a>
-                        <a href="{{ route('trips.create', ['mode' => 'group']) }}" class="flex items-center gap-3 rounded-chip p-3 hover:bg-line-soft">
-                            <span class="inline-flex size-10 items-center justify-center rounded-chip bg-accent-soft text-accent-ink"><x-icon name="users" /></span>
-                            <span><span class="block text-[15px] font-bold">Für eine Gruppe</span><span class="block text-xs font-semibold text-muted">Gemeinsame Reise mit Freunden</span></span>
-                        </a>
-                    </div>
-                </div>
-            </div>
+            {{-- Für mich oder Gruppe wird im Formular gewählt, deshalb kein Zwischenmenü --}}
+            <a href="{{ route('trips.create') }}" class="btn btn-primary"><x-icon name="plus" size="18" /> Neue Reise</a>
         </div>
 
         @if (auth()->user()->starter_templates_at === null)
