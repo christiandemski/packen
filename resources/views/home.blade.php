@@ -61,10 +61,11 @@
             <section class="mb-10" aria-labelledby="section-{{ $loop->index }}">
                 <h2 id="section-{{ $loop->index }}" class="eyebrow mb-3">{{ $heading }} · {{ $trips->count() }}</h2>
 
-                @php($hero = $heading === 'Demnächst' ? $trips->first() : null)
+                {{-- Groß wird die laufende oder nächste Reise, nicht eine vorbeie, die nur noch aufs Abhaken wartet. --}}
+                @php($hero = $heading === 'Demnächst' ? $trips->first(fn ($trip) => in_array($trip->status(), ['running', 'upcoming'], true)) : null)
                 @if ($hero)
                     <x-trip-card :trip="$hero" :progress="$progress[$hero->id] ?? null" />
-                    @php($trips = $trips->slice(1))
+                    @php($trips = $trips->reject(fn ($trip) => $trip->is($hero)))
                 @endif
 
                 @if ($trips->isNotEmpty())
