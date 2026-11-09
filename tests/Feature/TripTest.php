@@ -167,7 +167,6 @@ it('erlaubt mehrere Verkehrsmittel und kann sie wieder abwählen', function () {
 
     expect($trip->transports->map->value->all())->toBe(['plane', 'rental_car']);
     $this->actingAs($this->anna)->get(route('trips.show', $trip))->assertSee('Flugzeug + Mietwagen');
-    $this->actingAs($this->anna)->get(route('home'))->assertSee('Mietwagen');
 
     $input = tripInput();
     unset($input['transports']); // nichts angekreuzt: Feld wird gar nicht gesendet

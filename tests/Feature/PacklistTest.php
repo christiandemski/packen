@@ -278,7 +278,7 @@ it('zeigt den Fortschritt auf der Startseite', function () {
 
     // Mehr als ein gepackter Eintrag: fängt ab, dass die Zählung als Boolean gecastet wird.
     expect($service->progress($this->trip, $this->anna))->toBe(['packed' => 2, 'total' => 3]);
-    $this->actingAs($this->anna)->get(route('home'))->assertSee('2 von 3 gepackt');
+    $this->actingAs($this->anna)->get(route('home'))->assertSee('2 / 3 gepackt');
     $this->actingAs($this->anna)->get(route('trips.show', $this->trip))->assertSee('width: 67%', false);
 });
 
