@@ -55,16 +55,25 @@
             </div>
         @endif
 
+        {{-- Die nächste Reise groß mit Bild, alle weiteren als kompakte Zeilen. --}}
         @foreach (['Demnächst' => $upcoming, 'Zurückliegend' => $past] as $heading => $trips)
             @continue($trips->isEmpty())
             <section class="mb-10" aria-labelledby="section-{{ $loop->index }}">
                 <h2 id="section-{{ $loop->index }}" class="eyebrow mb-3">{{ $heading }} · {{ $trips->count() }}</h2>
 
-                <div class="grid gap-3 md:grid-cols-2 md:gap-4">
-                    @foreach ($trips as $trip)
-                        <x-trip-card :trip="$trip" :progress="$progress[$trip->id] ?? null" />
-                    @endforeach
-                </div>
+                @php($hero = $heading === 'Demnächst' ? $trips->first() : null)
+                @if ($hero)
+                    <x-trip-card :trip="$hero" :progress="$progress[$hero->id] ?? null" />
+                    @php($trips = $trips->slice(1))
+                @endif
+
+                @if ($trips->isNotEmpty())
+                    <div @class(['grid gap-2.5 md:grid-cols-2 md:gap-3', 'mt-3' => $hero])>
+                        @foreach ($trips as $trip)
+                            <x-trip-row :trip="$trip" :progress="$progress[$trip->id] ?? null" />
+                        @endforeach
+                    </div>
+                @endif
             </section>
         @endforeach
     </div>
