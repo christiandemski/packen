@@ -50,7 +50,7 @@
             @endforeach
         </div>
 
-        <p class="mt-6 text-[11px] text-muted print:fixed print:bottom-0">Stand {{ now()->translatedFormat('j. F Y, H:i') }} Uhr · Packen</p>
+        <p class="mt-6 text-[11px] text-muted print:fixed print:bottom-0">Stand {{ now()->translatedFormat('j. F Y, H:i') }} Uhr · {{ config('app.name') }}</p>
     </main>
 </body>
 </html>

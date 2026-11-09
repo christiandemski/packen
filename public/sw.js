@@ -1,5 +1,5 @@
 /*
- * Service Worker für Packen.
+ * Service Worker für PackPal.
  *
  * - Seiten (Startseite, Reisen): erst Netz, sonst Cache, sonst Offline-Seite. Jede geöffnete
  *   Reise landet so automatisch im Cache und lässt sich ohne Netz öffnen.

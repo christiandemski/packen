@@ -75,7 +75,7 @@ class TripController extends Controller
         Gate::authorize('delete', $trip);
 
         if ($trip->isGroup() && $trip->members()->count() > 1) {
-            return response()->json(['message' => 'Die Reise hat Mitreisende und lässt sich nur in Packen selbst löschen.', 'url' => route('trips.show', $trip)], 409);
+            return response()->json(['message' => 'Die Reise hat Mitreisende und lässt sich nur in '.config('app.name').' selbst löschen.', 'url' => route('trips.show', $trip)], 409);
         }
 
         $this->trips->delete($trip);
